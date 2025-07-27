@@ -1,8 +1,9 @@
 
 import NextAuth, { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
-import { google } from "googleapis"
+import { google, calendar_v3 } from "googleapis"
 import db from "@/lib/db"
+import { HDate } from "@hebcal/core"
 
 if (!process.env.GOOGLE_CLIENT_ID) {
   throw new Error("Missing GOOGLE_CLIENT_ID environment variable")
@@ -43,7 +44,7 @@ export const authOptions: NextAuthOptions = {
       const calendar = google.calendar({ version: "v3", auth: oauth2Client })
 
       const { data: calendars } = await calendar.calendarList.list()
-      let calbrewCalendar = calendars.items.find(c => c.summary === "Calbrew")
+      let calbrewCalendar = calendars.items?.find(c => c.summary === "Calbrew")
 
       if (!calbrewCalendar) {
         const { data: newCalendar } = await calendar.calendars.insert({
@@ -52,6 +53,11 @@ export const authOptions: NextAuthOptions = {
           },
         })
         calbrewCalendar = newCalendar
+      }
+
+      if (!calbrewCalendar?.id) {
+        console.error("Could not find or create Calbrew calendar")
+        return false
       }
 
       const userInDb = await new Promise<any>((resolve, reject) => {
@@ -79,6 +85,74 @@ export const authOptions: NextAuthOptions = {
             resolve()
           })
         })
+      }
+
+      // On-demand sync
+      const eventsToSync = await new Promise<any[]>((resolve, reject) => {
+        db.all("SELECT * FROM events WHERE user_id = ?", [user.id], (err, rows) => {
+          if (err) reject(err)
+          resolve(rows)
+        })
+      })
+
+      const currentHebrewYear = new HDate().getFullYear()
+      const syncToYear = currentHebrewYear + 10
+
+      for (const event of eventsToSync) {
+        if (event.last_synced_hebrew_year < syncToYear) {
+          const yearsToSync = Array.from({ length: syncToYear - event.last_synced_hebrew_year }, (_, i) => event.last_synced_hebrew_year + 1 + i)
+
+          for (const year of yearsToSync) {
+            const gregorianDate = new HDate(event.hebrew_day, event.hebrew_month, year).greg()
+            const dateString = `${gregorianDate.getFullYear()}-${String(gregorianDate.getMonth() + 1).padStart(2, '0')}-${String(gregorianDate.getDate()).padStart(2, '0')}`
+
+            const calendarEvent: calendar_v3.Schema$Event = {
+              summary: event.title,
+              start: {
+                date: dateString,
+              },
+              end: {
+                date: dateString,
+              },
+              extendedProperties: {
+                private: {
+                  calbrew_event_id: event.id,
+                },
+              },
+            }
+
+            if (event.description) {
+              calendarEvent.description = event.description
+            }
+
+            try {
+              const createdEvent = await calendar.events.insert({
+                calendarId: calbrewCalendar.id,
+                requestBody: calendarEvent,
+              })
+
+              await new Promise<void>((resolve, reject) => {
+                db.run(
+                  "INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id) VALUES (?, ?, ?, ?)",
+                  [crypto.randomUUID(), event.id, dateString, createdEvent.data.id!],
+                  (err) => {
+                    if (err) reject(err)
+                    resolve()
+                  }
+                )
+              })
+            } catch (error) {
+              console.error(`Failed to create event for year ${year}:`, error)
+            }
+          }
+
+          await new Promise<void>((resolve, reject) => {
+            db.run("UPDATE events SET last_synced_hebrew_year = ? WHERE id = ?", [syncToYear, event.id], (err) => {
+              if (err) reject(err)
+              resolve()
+            })
+          })
+        }
       }
 
       return true

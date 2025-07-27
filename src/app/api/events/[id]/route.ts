@@ -4,18 +4,11 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import db from "@/lib/db"
 import { google } from "googleapis"
 
-interface Event {
+interface EventOccurrence {
   id: string;
-  user_id: string;
-  title: string;
-  description: string | null;
-  hebrew_year: number;
-  hebrew_month: string;
-  hebrew_day: number;
-  recurrence_rule: string;
-  google_calendar_id: string | null;
-  created_at: string;
-  updated_at: string;
+  event_id: string;
+  gregorian_date: string;
+  google_event_id: string;
 }
 
 export async function DELETE(
@@ -28,24 +21,20 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const event = await new Promise<Event | undefined>((resolve, reject) => {
-    db.get("SELECT * FROM events WHERE id = ? AND user_id = ?", [params.id, session.user.id], (err, row: Event) => {
+  const occurrences = await new Promise<EventOccurrence[]>((resolve, reject) => {
+    db.all("SELECT * FROM event_occurrences WHERE event_id = ?", [params.id], (err, rows: EventOccurrence[]) => {
       if (err) {
         reject(err)
       } else {
-        resolve(row)
+        resolve(rows)
       }
     })
   })
 
-  if (!event) {
-    return NextResponse.json({ error: "Event not found" }, { status: 404 })
-  }
-
-  if (!event.google_calendar_id) {
-    // If there's no google calendar id, we can just delete it from our db
+  if (occurrences.length === 0) {
+    // If there are no occurrences, just delete the master event
     await new Promise<void>((resolve, reject) => {
-      db.run("DELETE FROM events WHERE id = ?", [params.id], (err) => {
+      db.run("DELETE FROM events WHERE id = ? AND user_id = ?", [params.id, session.user.id], (err) => {
         if (err) {
           reject(err)
         } else {
@@ -67,9 +56,21 @@ export async function DELETE(
   const calendar = google.calendar({ version: "v3", auth: oauth2Client })
 
   try {
-    await calendar.events.delete({
-      calendarId: session.user.calbrew_calendar_id,
-      eventId: event.google_calendar_id,
+    for (const occurrence of occurrences) {
+      await calendar.events.delete({
+        calendarId: session.user.calbrew_calendar_id,
+        eventId: occurrence.google_event_id,
+      })
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      db.run("DELETE FROM event_occurrences WHERE event_id = ?", [params.id], (err) => {
+        if (err) {
+          reject(err)
+        } else {
+          resolve()
+        }
+      })
     })
 
     await new Promise<void>((resolve, reject) => {
@@ -85,6 +86,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: "Failed to delete event from Google Calendar" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to delete events from Google Calendar" }, { status: 500 })
   }
 }
