@@ -113,6 +113,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id }, { status: 201 })
   } catch (error) {
     console.error(error)
-    return NextResponse.json({ error: `Failed to create event in Google Calendar: ${error.message}` }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    return NextResponse.json({ error: `Failed to create event in Google Calendar: ${errorMessage}` }, { status: 500 })
   }
 }
