@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
@@ -75,14 +74,17 @@ export async function POST(req: NextRequest) {
 
   const calendar = google.calendar({ version: "v3", auth: oauth2Client })
 
+  const gregorianDate = new HDate(hebrew_day, hebrew_month, hebrew_year).greg()
+  const dateString = `${gregorianDate.getFullYear()}-${String(gregorianDate.getMonth() + 1).padStart(2, '0')}-${String(gregorianDate.getDate()).padStart(2, '0')}`
+
   const event = {
     summary: title,
     description: description,
     start: {
-      date: new HDate(hebrew_day, hebrew_month, hebrew_year).greg().toISOString().split("T")[0],
+      date: dateString,
     },
     end: {
-      date: new HDate(hebrew_day, hebrew_month, hebrew_year).greg().toISOString().split("T")[0],
+      date: dateString,
     },
     recurrence: [`RRULE:FREQ=YEARLY;COUNT=25`],
     extendedProperties: {
