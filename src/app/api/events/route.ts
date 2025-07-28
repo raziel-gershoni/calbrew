@@ -1,4 +1,3 @@
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
@@ -12,12 +11,27 @@ interface Event {
   title: string;
   description: string | null;
   hebrew_year: number;
-  hebrew_month: string;
+  hebrew_month: number;
   hebrew_day: number;
   recurrence_rule: string;
   last_synced_hebrew_year: number | null;
   created_at: string;
   updated_at: string;
+}
+
+function calculateSyncWindow(event_start_year: number): { start: number, end: number } {
+  const current_year = new HDate().getFullYear()
+
+  if (event_start_year < current_year - 10) {
+    // Scenario 1: Event in the Distant Past
+    return { start: current_year - 10, end: current_year + 10 }
+  } else if (event_start_year <= current_year) {
+    // Scenario 2: Event in the Recent Past
+    return { start: event_start_year, end: current_year + 10 }
+  } else {
+    // Scenario 3: Event in the Future
+    return { start: event_start_year, end: event_start_year + 10 }
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -50,8 +64,8 @@ export async function POST(req: NextRequest) {
   const { title, description, hebrew_year, hebrew_month, hebrew_day, recurrence_rule } = await req.json()
 
   const eventId = crypto.randomUUID()
-  const currentHebrewYear = new HDate().getFullYear()
-  const lastSyncedHebrewYear = currentHebrewYear + 10
+  const syncWindow = calculateSyncWindow(hebrew_year)
+  const lastSyncedHebrewYear = syncWindow.end
 
   await new Promise<void>((resolve, reject) => {
     db.run(
@@ -77,9 +91,9 @@ export async function POST(req: NextRequest) {
 
   const calendar = google.calendar({ version: "v3", auth: oauth2Client })
 
-  const yearWindow = Array.from({ length: 21 }, (_, i) => currentHebrewYear - 10 + i)
+  const yearRange = Array.from({ length: syncWindow.end - syncWindow.start + 1 }, (_, i) => syncWindow.start + i)
 
-  for (const year of yearWindow) {
+  for (const year of yearRange) {
     const gregorianDate = new HDate(hebrew_day, hebrew_month, year).greg()
     const dateString = `${gregorianDate.getFullYear()}-${String(gregorianDate.getMonth() + 1).padStart(2, '0')}-${String(gregorianDate.getDate()).padStart(2, '0')}`
 

@@ -21,7 +21,7 @@ db.serialize(() => {
       title TEXT NOT NULL,
       description TEXT,
       hebrew_year INTEGER NOT NULL,
-      hebrew_month TEXT NOT NULL,
+      hebrew_month INTEGER NOT NULL,
       hebrew_day INTEGER NOT NULL,
       recurrence_rule TEXT NOT NULL,
       last_synced_hebrew_year INTEGER,

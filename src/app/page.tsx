@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { useSession, signIn, signOut } from 'next-auth/react'
-import { HDate, months } from '@hebcal/core';
+import EventForm from '@/components/EventForm'
+import EventList from '@/components/EventList'
 
 interface Event {
   id: string;
   title: string;
   description: string;
   hebrew_year: number;
-  hebrew_month: string;
+  hebrew_month: number;
   hebrew_day: number;
   recurrence_rule: string;
 }
@@ -17,12 +18,6 @@ interface Event {
 export default function Home() {
   const { data: session, status } = useSession()
   const [events, setEvents] = useState<Event[]>([])
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [hebrew_year, setHebrewYear] = useState(new HDate().getFullYear())
-  const [hebrew_month, setHebrewMonth] = useState('Nisan')
-  const [hebrew_day, setHebrewDay] = useState(1)
-  const [recurrence_rule, setRecurrenceRule] = useState('yearly')
 
   const fetchEvents = () => {
     if (status === 'authenticated') {
@@ -36,94 +31,68 @@ export default function Home() {
     fetchEvents()
   }, [status])
 
-  const addEvent = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const newEvent = { title, description, hebrew_year, hebrew_month, hebrew_day, recurrence_rule }
+  const handleAddEvent = async (event: any) => {
     await fetch('/api/events', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(newEvent)
+      body: JSON.stringify(event)
     })
-    fetchEvents()
+    fetchEvents() // Refetch events after adding
   }
 
-  const deleteEvent = async (id: string) => {
+  const handleDeleteEvent = async (id: string) => {
     await fetch(`/api/events/${id}`, {
       method: 'DELETE'
     })
-    setEvents(events.filter(event => event.id !== id))
+    fetchEvents() // Refetch events after deleting
   }
 
   if (status === 'loading') {
-    return <div>Loading...</div>
-  }
-
-  if (status === 'unauthenticated') {
     return (
-      <div>
-        <h1>Please sign in to continue</h1>
-        <button onClick={() => signIn('google')}>Sign in with Google</button>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-lg">Loading...</div>
       </div>
     )
   }
 
-  const monthNames = Object.keys(months);
+  if (status === 'unauthenticated') {
+    return (
+      <div className="flex flex-col justify-center items-center min-h-screen bg-gray-100">
+        <h1 className="text-4xl font-bold mb-4">Welcome to Calbrew</h1>
+        <p className="text-lg mb-8">Your Hebrew Calendar Event Manager</p>
+        <button 
+          onClick={() => signIn('google')} 
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg"
+        >
+          Sign in with Google
+        </button>
+      </div>
+    )
+  }
 
   return (
-    <div>
-      <button onClick={() => signOut()}>Sign Out</button>
-      <h1>Hebrew Calendar Events</h1>
-      <form onSubmit={addEvent}>
-        <input 
-          type="text" 
-          placeholder="Event Title" 
-          value={title} 
-          onChange={(e) => setTitle(e.target.value)} 
-          required 
-        />
-        <textarea 
-          placeholder="Description" 
-          value={description} 
-          onChange={(e) => setDescription(e.target.value)} 
-        />
-        <input 
-          type="number" 
-          placeholder="Hebrew Year" 
-          value={hebrew_year} 
-          onChange={(e) => setHebrewYear(parseInt(e.target.value))} 
-          required 
-        />
-        <select value={hebrew_month} onChange={(e) => setHebrewMonth(e.target.value)}>
-          {monthNames.map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
-        <input 
-          type="number" 
-          placeholder="Hebrew Day" 
-          value={hebrew_day} 
-          onChange={(e) => setHebrewDay(parseInt(e.target.value))} 
-          required 
-          min="1" 
-          max="30" 
-        />
-        <select value={recurrence_rule} onChange={(e) => setRecurrenceRule(e.target.value)}>
-          <option value="yearly">Yearly</option>
-          <option value="monthly">Monthly</option>
-          <option value="weekly">Weekly</option>
-        </select>
-        <button type="submit">Add Event</button>
-      </form>
-      <ul>
-        {events && events.map(event => (
-          <li key={event.id}>
-            {event.title} - {event.hebrew_day} {event.hebrew_month} {event.hebrew_year}
-            <button onClick={() => deleteEvent(event.id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Calbrew</h1>
+          <button 
+            onClick={() => signOut()} 
+            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-md"
+          >
+            Sign Out
+          </button>
+        </div>
+      </header>
+      <main className="py-10">
+        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          <div className="mb-10">
+            <EventForm onAddEvent={handleAddEvent} />
+          </div>
+          <EventList events={events} onDelete={handleDeleteEvent} />
+        </div>
+      </main>
     </div>
   )
 }

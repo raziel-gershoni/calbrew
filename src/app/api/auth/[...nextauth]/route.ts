@@ -1,4 +1,3 @@
-
 import NextAuth, { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { google, calendar_v3 } from "googleapis"
@@ -11,6 +10,21 @@ if (!process.env.GOOGLE_CLIENT_ID) {
 
 if (!process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error("Missing GOOGLE_CLIENT_SECRET environment variable")
+}
+
+function calculateSyncWindow(event_start_year: number): { start: number, end: number } {
+  const current_year = new HDate().getFullYear()
+
+  if (event_start_year < current_year - 10) {
+    // Scenario 1: Event in the Distant Past
+    return { start: current_year - 10, end: current_year + 10 }
+  } else if (event_start_year <= current_year) {
+    // Scenario 2: Event in the Recent Past
+    return { start: event_start_year, end: current_year + 10 }
+  } else {
+    // Scenario 3: Event in the Future
+    return { start: event_start_year, end: event_start_year + 10 }
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -95,12 +109,10 @@ export const authOptions: NextAuthOptions = {
         })
       })
 
-      const currentHebrewYear = new HDate().getFullYear()
-      const syncToYear = currentHebrewYear + 10
-
       for (const event of eventsToSync) {
-        if (event.last_synced_hebrew_year < syncToYear) {
-          const yearsToSync = Array.from({ length: syncToYear - event.last_synced_hebrew_year }, (_, i) => event.last_synced_hebrew_year + 1 + i)
+        const syncWindow = calculateSyncWindow(event.hebrew_year)
+        if (event.last_synced_hebrew_year < syncWindow.end) {
+          const yearsToSync = Array.from({ length: syncWindow.end - event.last_synced_hebrew_year }, (_, i) => event.last_synced_hebrew_year + 1 + i)
 
           for (const year of yearsToSync) {
             const gregorianDate = new HDate(event.hebrew_day, event.hebrew_month, year).greg()
@@ -147,7 +159,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           await new Promise<void>((resolve, reject) => {
-            db.run("UPDATE events SET last_synced_hebrew_year = ? WHERE id = ?", [syncToYear, event.id], (err) => {
+            db.run("UPDATE events SET last_synced_hebrew_year = ? WHERE id = ?", [syncWindow.end, event.id], (err) => {
               if (err) reject(err)
               resolve()
             })
