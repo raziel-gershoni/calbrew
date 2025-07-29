@@ -1,4 +1,3 @@
-
 import NextAuth, { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import { google, calendar_v3 } from "googleapis"
@@ -116,11 +115,14 @@ export const authOptions: NextAuthOptions = {
           const yearsToSync = Array.from({ length: syncWindow.end - event.last_synced_hebrew_year }, (_, i) => event.last_synced_hebrew_year + 1 + i)
 
           for (const year of yearsToSync) {
+            const anniversary = year - event.hebrew_year
+            const eventTitle = anniversary > 0 ? `(${anniversary}) ${event.title}` : event.title
+
             const gregorianDate = new HDate(event.hebrew_day, event.hebrew_month, year).greg()
             const dateString = `${gregorianDate.getFullYear()}-${String(gregorianDate.getMonth() + 1).padStart(2, '0')}-${String(gregorianDate.getDate()).padStart(2, '0')}`
 
             const calendarEvent: calendar_v3.Schema$Event = {
-              summary: event.title,
+              summary: eventTitle,
               start: {
                 date: dateString,
               },
@@ -140,7 +142,7 @@ export const authOptions: NextAuthOptions = {
 
             try {
               const createdEvent = await calendar.events.insert({
-                calendarId: calbrewCalendar.id,
+                calendarId: calbrewCalendar.id!,
                 requestBody: calendarEvent,
               })
 

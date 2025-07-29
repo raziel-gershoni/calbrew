@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
@@ -94,11 +95,14 @@ export async function POST(req: NextRequest) {
   const yearRange = Array.from({ length: syncWindow.end - syncWindow.start + 1 }, (_, i) => syncWindow.start + i)
 
   for (const year of yearRange) {
+    const anniversary = year - hebrew_year
+    const eventTitle = anniversary > 0 ? `(${anniversary}) ${title}` : title
+
     const gregorianDate = new HDate(hebrew_day, hebrew_month, year).greg()
     const dateString = `${gregorianDate.getFullYear()}-${String(gregorianDate.getMonth() + 1).padStart(2, '0')}-${String(gregorianDate.getDate()).padStart(2, '0')}`
 
     const event = {
-      summary: title,
+      summary: eventTitle,
       description: description,
       start: {
         date: dateString,
@@ -122,7 +126,7 @@ export async function POST(req: NextRequest) {
       await new Promise<void>((resolve, reject) => {
         db.run(
           "INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id) VALUES (?, ?, ?, ?)",
-          [crypto.randomUUID(), eventId, dateString, createdEvent.data.id],
+          [crypto.randomUUID(), eventId, dateString, createdEvent.data.id!],
           (err) => {
             if (err) {
               reject(err)
