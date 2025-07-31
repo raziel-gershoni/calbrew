@@ -1,7 +1,6 @@
+'use client';
 
-'use client'
-
-import EventCard from './EventCard'
+import EventCard from './EventCard';
 
 interface Event {
   id: string;
@@ -19,12 +18,21 @@ interface EventListProps {
   deletingEventId: string | null;
 }
 
-export default function EventList({ events, onDelete, deletingEventId }: EventListProps) {
+export default function EventList({
+  events,
+  onDelete,
+  deletingEventId,
+}: EventListProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {events.map(event => (
-        <EventCard key={event.id} event={event} onDelete={onDelete} isDeleting={deletingEventId === event.id} />
+    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+      {events.map((event) => (
+        <EventCard
+          key={event.id}
+          event={event}
+          onDelete={onDelete}
+          isDeleting={deletingEventId === event.id}
+        />
       ))}
     </div>
-  )
+  );
 }
