@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, Navigate } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import CustomToolbar from './CustomToolbar';
@@ -21,6 +21,7 @@ export default function CalendarView() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [date, setDate] = useState(new Date());
 
   const fetchEvents = useCallback(() => {
     fetch('/api/events')
@@ -73,6 +74,10 @@ export default function CalendarView() {
     }
   };
 
+  const handleNavigate = (newDate: Date) => {
+    setDate(newDate);
+  };
+
   return (
     <div>
       <Calendar
@@ -83,6 +88,8 @@ export default function CalendarView() {
         style={{ height: 500 }}
         rtl={true}
         selectable
+        date={date}
+        onNavigate={handleNavigate}
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleDeleteEvent}
         components={{

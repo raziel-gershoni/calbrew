@@ -40,13 +40,13 @@ export default function CustomToolbar({
     <div className='rbc-toolbar'>
       <span className='rbc-btn-group'>
         <button type='button' onClick={() => onNavigate('PREV')}>
-          Back
+          &#x2192;
         </button>
         <button type='button' onClick={() => onNavigate('TODAY')}>
           Today
         </button>
         <button type='button' onClick={() => onNavigate('NEXT')}>
-          Next
+          &#x2190;
         </button>
       </span>
       <span className='rbc-toolbar-label'>{title}</span>
