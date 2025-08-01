@@ -1,59 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import EventForm from '@/components/EventForm';
-import EventList from '@/components/EventList';
-
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  hebrew_year: number;
-  hebrew_month: number;
-  hebrew_day: number;
-  recurrence_rule: string;
-}
+import CalendarView from '@/components/CalendarView';
 
 export default function Home() {
   const { status } = useSession();
-  const [events, setEvents] = useState<Event[]>([]);
-  const [isCreating, setIsCreating] = useState(false);
-  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
-
-  const fetchEvents = useCallback(() => {
-    if (status === 'authenticated') {
-      fetch('/api/events')
-        .then((res) => res.json())
-        .then((data: Event[]) => setEvents(data));
-    }
-  }, [status]);
-
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
-  const handleAddEvent = async (event: Omit<Event, 'id'>) => {
-    setIsCreating(true);
-    await fetch('/api/events', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(event),
-    });
-    fetchEvents(); // Refetch events after adding
-    setIsCreating(false);
-  };
-
-  const handleDeleteEvent = async (id: string) => {
-    setDeletingEventId(id);
-    await fetch(`/api/events/${id}`, {
-      method: 'DELETE',
-    });
-    fetchEvents(); // Refetch events after deleting
-    setDeletingEventId(null);
-  };
 
   if (status === 'loading') {
     return (
@@ -101,14 +52,7 @@ export default function Home() {
       </header>
       <main className='py-10'>
         <div className='max-w-7xl mx-auto sm:px-6 lg:px-8'>
-          <div className='mb-10'>
-            <EventForm onAddEvent={handleAddEvent} isCreating={isCreating} />
-          </div>
-          <EventList
-            events={events}
-            onDelete={handleDeleteEvent}
-            deletingEventId={deletingEventId}
-          />
+          <CalendarView />
         </div>
       </main>
     </div>

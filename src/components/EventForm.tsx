@@ -6,6 +6,7 @@ import { HDate, gematriya, Locale } from '@hebcal/core';
 interface EventFormProps {
   onAddEvent: (event: Omit<Event, 'id'>) => void;
   isCreating: boolean;
+  selectedDate: Date | null;
 }
 
 interface Event {
@@ -18,7 +19,11 @@ interface Event {
   recurrence_rule: string;
 }
 
-export default function EventForm({ onAddEvent, isCreating }: EventFormProps) {
+export default function EventForm({
+  onAddEvent,
+  isCreating,
+  selectedDate,
+}: EventFormProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [hebrew_year, setHebrewYear] = useState(new HDate().getFullYear());
@@ -27,6 +32,15 @@ export default function EventForm({ onAddEvent, isCreating }: EventFormProps) {
   );
   const [hebrew_day, setHebrewDay] = useState(new HDate().getDate());
   const [recurrence_rule, setRecurrenceRule] = useState('yearly');
+
+  useEffect(() => {
+    if (selectedDate) {
+      const hdate = new HDate(selectedDate);
+      setHebrewYear(hdate.getFullYear());
+      setHebrewMonthNum(hdate.getMonth());
+      setHebrewDay(hdate.getDate());
+    }
+  }, [selectedDate]);
 
   const numMonths = HDate.monthsInYear(hebrew_year);
   const yearMonths = Array.from({ length: numMonths }, (_, i) => {
