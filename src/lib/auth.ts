@@ -97,7 +97,9 @@ export const authOptions: NextAuthOptions = {
       const userInDb = await new Promise<User | undefined>(
         (resolve, reject) => {
           db.get('SELECT * FROM users WHERE id = ?', [user.id], (err, row) => {
-            if (err) reject(err);
+            if (err) {
+              reject(err);
+            }
             resolve(row as User | undefined);
           });
         },
@@ -109,7 +111,9 @@ export const authOptions: NextAuthOptions = {
             'INSERT INTO users (id, name, email, image, calbrew_calendar_id) VALUES (?, ?, ?, ?, ?)',
             [user.id, user.name, user.email, user.image, calbrewCalendar.id],
             (err) => {
-              if (err) reject(err);
+              if (err) {
+                reject(err);
+              }
               resolve();
             },
           );
@@ -120,7 +124,9 @@ export const authOptions: NextAuthOptions = {
             'UPDATE users SET calbrew_calendar_id = ? WHERE id = ?',
             [calbrewCalendar.id, user.id],
             (err) => {
-              if (err) reject(err);
+              if (err) {
+                reject(err);
+              }
               resolve();
             },
           );
@@ -133,7 +139,9 @@ export const authOptions: NextAuthOptions = {
           'SELECT * FROM events WHERE user_id = ?',
           [user.id],
           (err, rows) => {
-            if (err) reject(err);
+            if (err) {
+              reject(err);
+            }
             resolve(rows as Event[]);
           },
         );
@@ -197,7 +205,9 @@ export const authOptions: NextAuthOptions = {
                       createdEvent.data.id!,
                     ],
                     (err) => {
-                      if (err) reject(err);
+                      if (err) {
+                        reject(err);
+                      }
                       resolve();
                     },
                   );
@@ -215,7 +225,9 @@ export const authOptions: NextAuthOptions = {
                 'UPDATE events SET last_synced_hebrew_year = ? WHERE id = ?',
                 [syncWindow.end, event.id],
                 (err) => {
-                  if (err) reject(err);
+                  if (err) {
+                    reject(err);
+                  }
                   resolve();
                 },
               );
@@ -241,8 +253,11 @@ export const authOptions: NextAuthOptions = {
             'SELECT calbrew_calendar_id FROM users WHERE id = ?',
             [user.id],
             (err, row: { calbrew_calendar_id: string }) => {
-              if (err) reject(err);
-              else resolve(row);
+              if (err) {
+                reject(err);
+              } else {
+                resolve(row);
+              }
             },
           );
         });
