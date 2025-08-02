@@ -11,16 +11,47 @@ interface EventOccurrence {
   google_event_id: string;
 }
 
-export async function DELETE(
+export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  const { title, description } = await req.json();
+  const { id } = await params;
+
+  await new Promise<void>((resolve, reject) => {
+    db.run(
+      'UPDATE events SET title = ?, description = ? WHERE id = ? AND user_id = ?',
+      [title, description, id, session.user.id],
+      (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      },
+    );
+  });
+
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session || !session.user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { id } = await params;
 
   const occurrences = await new Promise<EventOccurrence[]>(
     (resolve, reject) => {

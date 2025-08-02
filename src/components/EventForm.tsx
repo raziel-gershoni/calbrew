@@ -1,7 +1,8 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import { HDate, gematriya, Locale } from '@hebcal/core';
+import { useState, useEffect } from 'react'
+import { HDate, gematriya, Locale } from '@hebcal/core'
+import { Event } from '@/types/event'
 
 interface EventFormProps {
   onAddEvent: (event: Omit<Event, 'id'>) => void;
@@ -9,29 +10,15 @@ interface EventFormProps {
   selectedDate: Date | null;
 }
 
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  hebrew_year: number;
-  hebrew_month: number;
-  hebrew_day: number;
-  recurrence_rule: string;
-}
-
-export default function EventForm({
-  onAddEvent,
-  isCreating,
-  selectedDate,
-}: EventFormProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [hebrew_year, setHebrewYear] = useState(new HDate().getFullYear());
+export default function EventForm({ onAddEvent, isCreating, selectedDate }: EventFormProps) {
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [hebrew_year, setHebrewYear] = useState(new HDate().getFullYear())
   const [hebrew_month_num, setHebrewMonthNum] = useState(
     new HDate().getMonth(),
-  );
-  const [hebrew_day, setHebrewDay] = useState(new HDate().getDate());
-  const [recurrence_rule, setRecurrenceRule] = useState('yearly');
+  )
+  const [hebrew_day, setHebrewDay] = useState(new HDate().getDate())
+  const [recurrence_rule, setRecurrenceRule] = useState('yearly')
 
   useEffect(() => {
     if (selectedDate) {
@@ -42,31 +29,31 @@ export default function EventForm({
     }
   }, [selectedDate]);
 
-  const numMonths = HDate.monthsInYear(hebrew_year);
+  const numMonths = HDate.monthsInYear(hebrew_year)
   const yearMonths = Array.from({ length: numMonths }, (_, i) => {
-    const monthNum = i + 1;
-    const hdate = new HDate(1, monthNum, hebrew_year);
-    const monthNameEn = hdate.getMonthName();
-    const monthNameHe = Locale.gettext(monthNameEn, 'he');
-    return { num: monthNum, name: monthNameHe };
-  });
-
-  const monthDays = new HDate(1, hebrew_month_num, hebrew_year).daysInMonth();
+    const monthNum = i + 1
+    const hdate = new HDate(1, monthNum, hebrew_year)
+    const monthNameEn = hdate.getMonthName()
+    const monthNameHe = Locale.gettext(monthNameEn, 'he')
+    return { num: monthNum, name: monthNameHe }
+  })
+  
+  const monthDays = new HDate(1, hebrew_month_num, hebrew_year).daysInMonth()
 
   useEffect(() => {
     if (!yearMonths.find((m) => m.num === hebrew_month_num)) {
-      setHebrewMonthNum(yearMonths[0].num);
+      setHebrewMonthNum(yearMonths[0].num)
     }
-  }, [hebrew_year, yearMonths, hebrew_month_num]);
+  }, [hebrew_year, yearMonths, hebrew_month_num])
 
   useEffect(() => {
     if (hebrew_day > monthDays) {
-      setHebrewDay(1);
+      setHebrewDay(1)
     }
-  }, [hebrew_month_num, hebrew_year, monthDays, hebrew_day]);
+  }, [hebrew_month_num, hebrew_year, monthDays, hebrew_day])
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     onAddEvent({
       title,
       description,
@@ -74,10 +61,10 @@ export default function EventForm({
       hebrew_month: hebrew_month_num,
       hebrew_day,
       recurrence_rule,
-    });
-    setTitle('');
-    setDescription('');
-  };
+    })
+    setTitle('')
+    setDescription('')
+  }
 
   return (
     <form
