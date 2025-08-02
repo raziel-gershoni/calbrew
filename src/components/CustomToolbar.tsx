@@ -1,15 +1,18 @@
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import moment from 'moment';
+import { ToolbarProps } from 'react-big-calendar';
 
-interface CustomToolbarProps {
-  date: Date;
-  onNavigate: (action: string) => void;
+interface CalendarEvent {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
 }
 
 export default function CustomToolbar({
   date,
   onNavigate,
-}: CustomToolbarProps) {
+}: ToolbarProps<CalendarEvent, object>) {
   const startDate = moment(date).startOf('month');
   const endDate = moment(date).endOf('month');
 

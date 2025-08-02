@@ -1,33 +1,64 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Calendar, momentLocalizer, Navigate } from 'react-big-calendar';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
+import 'moment/locale/he';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import '@/styles/calendar.css';
 import CustomToolbar from './CustomToolbar';
 import { HDate, gematriya } from '@hebcal/core';
 import EventForm from './EventForm';
 
+moment.locale('he');
 const localizer = momentLocalizer(moment);
 
-interface Event {
+const messages = {
+  previous: '→',
+  next: '←',
+  today: 'היום',
+  month: 'חודש',
+  week: 'שבוע',
+  day: 'יום',
+  agenda: 'סדר יום',
+  date: 'תאריך',
+  time: 'שעה',
+  event: 'אירוע',
+  showMore: (total: number) => `+${total} עוד`,
+};
+
+interface CalendarEvent {
   id: string;
   title: string;
   start: Date;
   end: Date;
 }
 
+interface RawEvent {
+  id: string;
+  title: string;
+  hebrew_day: number;
+  hebrew_month: number;
+  hebrew_year: number;
+}
+
 export default function CalendarView() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null,
+  );
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [date, setDate] = useState(new Date());
 
   const fetchEvents = useCallback(() => {
     fetch('/api/events')
       .then((res) => res.json())
-      .then((data) => {
-        const formattedEvents = data.map((event: any) => {
+      .then((data: RawEvent[]) => {
+        const formattedEvents = data.map((event) => {
           const hebrewDate = new HDate(
             event.hebrew_day,
             event.hebrew_month,
@@ -53,7 +84,8 @@ export default function CalendarView() {
     setIsModalOpen(true);
   };
 
-  const handleAddEvent = async (event: any) => {
+  const handleAddEvent = async (event: Omit<RawEvent, 'id'>) => {
+    setIsCreating(true);
     await fetch('/api/events', {
       method: 'POST',
       headers: {
@@ -63,14 +95,23 @@ export default function CalendarView() {
     });
     fetchEvents();
     setIsModalOpen(false);
+    setIsCreating(false);
   };
 
-  const handleDeleteEvent = async (event: Event) => {
-    if (window.confirm(`Are you sure you want to delete "${event.title}"?`)) {
-      await fetch(`/api/events/${event.id}`, {
+  const handleSelectEvent = (event: CalendarEvent) => {
+    setSelectedEvent(event);
+    setIsEventModalOpen(true);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (selectedEvent) {
+      setIsDeleting(true);
+      await fetch(`/api/events/${selectedEvent.id}`, {
         method: 'DELETE',
       });
       fetchEvents();
+      setIsEventModalOpen(false);
+      setIsDeleting(false);
     }
   };
 
@@ -91,7 +132,8 @@ export default function CalendarView() {
         date={date}
         onNavigate={handleNavigate}
         onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleDeleteEvent}
+        onSelectEvent={handleSelectEvent}
+        messages={messages}
         components={{
           toolbar: CustomToolbar,
           month: {
@@ -114,12 +156,32 @@ export default function CalendarView() {
           <div className='bg-white p-4 rounded-lg'>
             <EventForm
               onAddEvent={handleAddEvent}
-              isCreating={false}
+              isCreating={isCreating}
               selectedDate={selectedDate}
             />
             <button
               onClick={() => setIsModalOpen(false)}
               className='mt-4 bg-red-500 text-white p-2 rounded-md'
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+      {isEventModalOpen && selectedEvent && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center'>
+          <div className='bg-white p-4 rounded-lg'>
+            <h2 className='text-xl font-bold mb-4'>{selectedEvent.title}</h2>
+            <button
+              onClick={handleDeleteEvent}
+              disabled={isDeleting}
+              className='bg-red-500 text-white p-2 rounded-md disabled:bg-red-400'
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </button>
+            <button
+              onClick={() => setIsEventModalOpen(false)}
+              className='mt-4 bg-gray-500 text-white p-2 rounded-md'
             >
               Close
             </button>

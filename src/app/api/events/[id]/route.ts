@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth';
 import db from '@/lib/db';
 import { google } from 'googleapis';
 
@@ -13,8 +13,9 @@ interface EventOccurrence {
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user) {
@@ -25,7 +26,7 @@ export async function DELETE(
     (resolve, reject) => {
       db.all(
         'SELECT * FROM event_occurrences WHERE event_id = ?',
-        [params.id],
+        [id],
         (err, rows: EventOccurrence[]) => {
           if (err) {
             reject(err);
@@ -42,7 +43,7 @@ export async function DELETE(
     await new Promise<void>((resolve, reject) => {
       db.run(
         'DELETE FROM events WHERE id = ? AND user_id = ?',
-        [params.id, session.user.id],
+        [id, session.user.id],
         (err) => {
           if (err) {
             reject(err);
@@ -76,7 +77,7 @@ export async function DELETE(
     await new Promise<void>((resolve, reject) => {
       db.run(
         'DELETE FROM event_occurrences WHERE event_id = ?',
-        [params.id],
+        [id],
         (err) => {
           if (err) {
             reject(err);
@@ -88,7 +89,7 @@ export async function DELETE(
     });
 
     await new Promise<void>((resolve, reject) => {
-      db.run('DELETE FROM events WHERE id = ?', [params.id], (err) => {
+      db.run('DELETE FROM events WHERE id = ?', [id], (err) => {
         if (err) {
           reject(err);
         } else {
