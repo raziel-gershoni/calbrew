@@ -1,35 +1,35 @@
-.rbc-calendar {
+.dark .rbc-calendar {
   background-color: #1f2937;
   color: #d1d5db;
 }
 
-.rbc-toolbar {
+.dark .rbc-toolbar {
   background-color: #374151;
   color: #d1d5db;
 }
 
-.rbc-toolbar button {
+.dark .rbc-toolbar button {
   color: #d1d5db;
 }
 
-.rbc-month-view,
-.rbc-time-view {
+.dark .rbc-month-view,
+.dark .rbc-time-view {
   border-color: #4b5563;
 }
 
-.rbc-header {
+.dark .rbc-header {
   border-bottom-color: #4b5563;
 }
 
-.rbc-day-bg {
+.dark .rbc-day-bg {
   border-left-color: #4b5563;
 }
 
-.rbc-today {
+.dark .rbc-today {
   background-color: #4b5563;
 }
 
-.rbc-event {
+.dark .rbc-event {
   background-color: #4f46e5;
   border-color: #4338ca;
 }
