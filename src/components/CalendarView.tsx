@@ -33,10 +33,12 @@ const messages = {
 interface CalendarDisplayEvent extends Event {
   start: Date;
   end: Date;
+  anniversary?: number;
 }
 
 export default function CalendarView() {
-  const [events, setEvents] = useState<CalendarDisplayEvent[]>([]);
+  const [masterEvents, setMasterEvents] = useState<Event[]>([]);
+  const [occurrences, setOccurrences] = useState<CalendarDisplayEvent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedEvent, setSelectedEvent] =
@@ -48,19 +50,7 @@ export default function CalendarView() {
     fetch('/api/events')
       .then((res) => res.json())
       .then((data: Event[]) => {
-        const formattedEvents = data.map((event) => {
-          const hebrewDate = new HDate(
-            event.hebrew_day,
-            event.hebrew_month,
-            event.hebrew_year,
-          );
-          return {
-            ...event,
-            start: hebrewDate.greg(),
-            end: hebrewDate.greg(),
-          };
-        });
-        setEvents(formattedEvents);
+        setMasterEvents(data);
       });
   }, []);
 
@@ -68,8 +58,51 @@ export default function CalendarView() {
     fetchEvents();
   }, [fetchEvents]);
 
+  useEffect(() => {
+    const startOfMonth = moment(date).startOf('month').toDate();
+    const endOfMonth = moment(date).endOf('month').toDate();
+
+    const newOccurrences = masterEvents.flatMap((event) => {
+      const occurrencesInRange: CalendarDisplayEvent[] = [];
+      const startYear = new HDate(startOfMonth).getFullYear();
+      const endYear = new HDate(endOfMonth).getFullYear();
+
+      for (let year = startYear; year <= endYear; year++) {
+        const hebrewDate = new HDate(
+          event.hebrew_day,
+          event.hebrew_month,
+          year,
+        );
+        const gregorianDate = hebrewDate.greg();
+
+        if (
+          moment(gregorianDate).isBetween(
+            startOfMonth,
+            endOfMonth,
+            undefined,
+            '[]',
+          )
+        ) {
+          const anniversary = year - event.hebrew_year;
+          occurrencesInRange.push({
+            ...event,
+            start: gregorianDate,
+            end: gregorianDate,
+            title:
+              anniversary > 0 ? `(${anniversary}) ${event.title}` : event.title,
+            anniversary,
+          });
+        }
+      }
+      return occurrencesInRange;
+    });
+
+    setOccurrences(newOccurrences);
+  }, [masterEvents, date]);
+
   const handleSelectSlot = (slotInfo: { start: Date }) => {
     setSelectedDate(slotInfo.start);
+    setSelectedEvent(null);
   };
 
   const handleAddEvent = async (event: Omit<Event, 'id'>) => {
@@ -107,7 +140,7 @@ export default function CalendarView() {
     setDate(newDate);
   };
 
-  const dayEvents = events.filter((event) =>
+  const dayEvents = occurrences.filter((event) =>
     moment(event.start).isSame(selectedDate, 'day'),
   );
 
@@ -115,7 +148,7 @@ export default function CalendarView() {
     <div>
       <Calendar
         localizer={localizer}
-        events={events}
+        events={occurrences}
         startAccessor='start'
         endAccessor='end'
         style={{ height: 500 }}
@@ -144,15 +177,15 @@ export default function CalendarView() {
         }}
       />
       <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'>
-        <DayEvents
-          events={dayEvents}
-          onSelectEvent={handleSelectEvent}
-          onAddEvent={() => setIsModalOpen(true)}
-        />
         <EventDetails
           event={selectedEvent}
           onDelete={handleDeleteEvent}
           onSave={handleSaveEvent}
+        />
+        <DayEvents
+          events={dayEvents}
+          onSelectEvent={handleSelectEvent}
+          onAddEvent={() => setIsModalOpen(true)}
         />
       </div>
       {isModalOpen && (
