@@ -44,6 +44,8 @@ export default function CalendarView() {
   const [selectedEvent, setSelectedEvent] =
     useState<CalendarDisplayEvent | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [date, setDate] = useState(new Date());
 
   const fetchEvents = useCallback(() => {
@@ -125,15 +127,29 @@ export default function CalendarView() {
   };
 
   const handleDeleteEvent = async (id: string) => {
+    setIsDeleting(true);
     await fetch(`/api/events/${id}`, {
       method: 'DELETE',
     });
     fetchEvents();
     setSelectedEvent(null);
+    setIsDeleting(false);
   };
 
-  const handleSaveEvent = async (_event: Event) => {
-    // TODO: Implement save logic
+  const handleSaveEvent = async (event: Event) => {
+    setIsSaving(true);
+    await fetch(`/api/events/${event.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(event),
+    });
+    fetchEvents();
+    if (selectedEvent) {
+      setSelectedEvent({ ...selectedEvent, ...event });
+    }
+    setIsSaving(false);
   };
 
   const handleNavigate = (newDate: Date) => {
@@ -181,6 +197,8 @@ export default function CalendarView() {
           event={selectedEvent}
           onDelete={handleDeleteEvent}
           onSave={handleSaveEvent}
+          isSaving={isSaving}
+          isDeleting={isDeleting}
         />
         <DayEvents
           events={dayEvents}

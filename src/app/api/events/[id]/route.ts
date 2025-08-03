@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import db from '@/lib/db';
 import { google } from 'googleapis';
+import { HDate } from '@hebcal/core';
 
 interface EventOccurrence {
   id: string;
@@ -21,7 +22,7 @@ export async function PUT(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { title, description } = await req.json();
+  const { title, description, hebrew_year } = await req.json();
   const { id } = await params;
 
   await new Promise<void>((resolve, reject) => {
@@ -37,6 +38,49 @@ export async function PUT(
       },
     );
   });
+
+  const occurrences = await new Promise<EventOccurrence[]>(
+    (resolve, reject) => {
+      db.all(
+        'SELECT * FROM event_occurrences WHERE event_id = ?',
+        [id],
+        (err, rows: EventOccurrence[]) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        },
+      );
+    },
+  );
+
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI,
+  );
+
+  oauth2Client.setCredentials({ access_token: session.accessToken });
+
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+  for (const occurrence of occurrences) {
+    const occurrenceYear = new Date(occurrence.gregorian_date).getFullYear();
+    const anniversary =
+      new HDate(new Date(occurrence.gregorian_date)).getFullYear() -
+      hebrew_year;
+    const eventTitle = anniversary > 0 ? `(${anniversary}) ${title}` : title;
+
+    await calendar.events.patch({
+      calendarId: session.user.calbrew_calendar_id,
+      eventId: occurrence.google_event_id,
+      requestBody: {
+        summary: eventTitle,
+        description,
+      },
+    });
+  }
 
   return NextResponse.json({ success: true });
 }
