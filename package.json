@@ -14,6 +14,7 @@
     "@hebcal/core": "^5.10.0",
     "google-auth-library": "^10.1.0",
     "googleapis": "^154.0.0",
+    "i18next": "^25.3.2",
     "moment": "^2.30.1",
     "next": "15.4.3",
     "next-auth": "^4.24.11",
@@ -21,6 +22,7 @@
     "react": "19.1.0",
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.1.0",
+    "react-i18next": "^15.6.1",
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {

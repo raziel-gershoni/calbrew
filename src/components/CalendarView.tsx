@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -13,23 +12,9 @@ import EventForm from './EventForm'
 import DayEvents from './DayEvents'
 import EventDetails from './EventDetails'
 import { Event } from '@/types/event'
+import { useTranslation } from 'react-i18next'
 
-moment.locale('he');
 const localizer = momentLocalizer(moment)
-
-const messages = {
-  previous: '→',
-  next: '←',
-  today: 'היום',
-  month: 'חודש',
-  week: 'שבוע',
-  day: 'יום',
-  agenda: 'סדר יום',
-  date: 'תאריך',
-  time: 'שעה',
-  event: 'אירוע',
-  showMore: (total: number) => `+${total} עוד`,
-};
 
 interface CalendarDisplayEvent extends Event {
   start: Date;
@@ -38,6 +23,7 @@ interface CalendarDisplayEvent extends Event {
 }
 
 export default function CalendarView() {
+  const { t, i18n } = useTranslation();
   const [masterEvents, setMasterEvents] = useState<Event[]>([])
   const [occurrences, setOccurrences] = useState<CalendarDisplayEvent[]>([])
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -158,15 +144,35 @@ export default function CalendarView() {
 
   const dayEvents = occurrences.filter(event => moment(event.start).isSame(selectedDate, 'day'))
 
+  const messages = {
+    previous: '→',
+    next: '←',
+    today: t('Today'),
+    month: t('Month'),
+    week: t('Week'),
+    day: t('Day'),
+    agenda: t('Agenda'),
+    date: t('Date'),
+    time: t('Time'),
+    event: t('Event'),
+    showMore: (total: number) => `+${total} ${t('more')}`,
+  };
+
   return (
-    <div>
+    <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold">Calbrew</h1>
+        <button onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en')} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg">
+          {i18n.language === 'en' ? 'עברית' : 'English'}
+        </button>
+      </div>
       <Calendar
         localizer={localizer}
         events={occurrences}
         startAccessor="start"
         endAccessor="end"
         style={{ height: 500 }}
-        rtl={true}
+        rtl={i18n.language === 'he'}
         selectable
         date={date}
         onNavigate={handleNavigate}
@@ -190,15 +196,15 @@ export default function CalendarView() {
           }
         }}
       />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <EventDetails event={selectedEvent} onDelete={handleDeleteEvent} onSave={handleSaveEvent} isSaving={isSaving} isDeleting={isDeleting} />
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ${i18n.language === 'en' ? 'md:grid-flow-col-dense' : ''}`}>
         <DayEvents events={dayEvents} onSelectEvent={handleSelectEvent} onAddEvent={() => setIsModalOpen(true)} selectedDate={selectedDate} />
+        <EventDetails event={selectedEvent} onDelete={handleDeleteEvent} onSave={handleSaveEvent} isSaving={isSaving} isDeleting={isDeleting} />
       </div>
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
           <div className="bg-white p-4 rounded-lg">
             <EventForm onAddEvent={handleAddEvent} isCreating={isCreating} selectedDate={selectedDate} />
-            <button onClick={() => setIsModalOpen(false)} className="mt-4 bg-red-500 text-white p-2 rounded-md">Close</button>
+            <button onClick={() => setIsModalOpen(false)} className="mt-4 bg-red-500 text-white p-2 rounded-md">{t('Close')}</button>
           </div>
         </div>
       )}

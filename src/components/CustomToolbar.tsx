@@ -2,16 +2,18 @@ import { HDate, gematriya, Locale } from '@hebcal/core';
 import moment from 'moment';
 import { ToolbarProps } from 'react-big-calendar';
 import { Event } from '@/types/event';
+import { useTranslation } from 'react-i18next';
 
 interface CalendarDisplayEvent extends Event {
   start: Date;
   end: Date;
 }
 
-export default function CustomToolbar({
-  date,
-  onNavigate,
-}: ToolbarProps<CalendarDisplayEvent>) {
+export default function CustomToolbar({ date, onNavigate }: ToolbarProps<CalendarDisplayEvent>) {
+  const { t, i18n } = useTranslation();
+
+  moment.locale(i18n.language);
+
   const startDate = moment(date).startOf('month');
   const endDate = moment(date).endOf('month');
 
@@ -27,28 +29,44 @@ export default function CustomToolbar({
   const startYear = startHDate.getFullYear();
   const endYear = endHDate.getFullYear();
 
-  let title = '';
-  if (startYear === endYear) {
-    if (startMonthNameHe === endMonthNameHe) {
-      title = `${startMonthNameHe}, ${gematriya(startYear)}`;
+  let hebrewDateStr = '';
+  if (i18n.language === 'he') {
+    if (startYear === endYear) {
+      if (startMonthNameHe === endMonthNameHe) {
+        hebrewDateStr = `${startMonthNameHe}, ${gematriya(startYear)}`;
+      } else {
+        hebrewDateStr = `${startMonthNameHe} / ${endMonthNameHe}, ${gematriya(startYear)}`;
+      }
     } else {
-      title = `${startMonthNameHe} / ${endMonthNameHe}, ${gematriya(startYear)}`;
+      hebrewDateStr = `${startMonthNameHe}, ${gematriya(startYear)} / ${endMonthNameHe}, ${gematriya(endYear)}`;
     }
   } else {
-    title = `${startMonthNameHe}, ${gematriya(startYear)} / ${endMonthNameHe}, ${gematriya(endYear)}`;
+    if (startYear === endYear) {
+      if (startMonthNameEn === endMonthNameEn) {
+        hebrewDateStr = `${startMonthNameEn}, ${startYear}`;
+      } else {
+        hebrewDateStr = `${startMonthNameEn} / ${endMonthNameEn}, ${startYear}`;
+      }
+    } else {
+      hebrewDateStr = `${startMonthNameEn}, ${startYear} / ${endMonthNameEn}, ${endYear}`;
+    }
   }
+
+  const gregorianDateStr = moment(date).format('MMMM YYYY');
+
+  const title = i18n.language === 'he' ? `${hebrewDateStr} (${gregorianDateStr})` : `${gregorianDateStr} (${hebrewDateStr})`;
 
   return (
     <div className='rbc-toolbar'>
       <span className='rbc-btn-group'>
         <button type='button' onClick={() => onNavigate('PREV')}>
-          &#x2192;
+          {i18n.language === 'he' ? '→' : '←'}
         </button>
         <button type='button' onClick={() => onNavigate('TODAY')}>
-          Today
+          {t('Today')}
         </button>
         <button type='button' onClick={() => onNavigate('NEXT')}>
-          &#x2190;
+          {i18n.language === 'he' ? '←' : '→'}
         </button>
       </span>
       <span className='rbc-toolbar-label'>{title}</span>
