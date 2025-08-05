@@ -27,6 +27,7 @@ const resources = {
       Weekly: 'Weekly',
       'Creating...': 'Creating...',
       Close: 'Close',
+      'Sign Out': 'Sign Out',
     },
   },
   he: {
@@ -53,6 +54,7 @@ const resources = {
       Weekly: 'שבועי',
       'Creating...': 'יוצר...',
       Close: 'סגור',
+      'Sign Out': 'התנתק',
     },
   },
 };

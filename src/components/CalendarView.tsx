@@ -1,20 +1,21 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { Calendar, momentLocalizer } from 'react-big-calendar'
-import moment from 'moment'
-import 'moment/locale/he'
-import 'react-big-calendar/lib/css/react-big-calendar.css'
-import '@/styles/calendar.css'
-import CustomToolbar from './CustomToolbar'
-import { HDate, gematriya } from '@hebcal/core'
-import EventForm from './EventForm'
-import DayEvents from './DayEvents'
-import EventDetails from './EventDetails'
-import { Event } from '@/types/event'
-import { useTranslation } from 'react-i18next'
+import { useState, useEffect, useCallback } from 'react';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'moment/locale/he';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import '@/styles/calendar.css';
+import CustomToolbar from './CustomToolbar';
+import { HDate, gematriya } from '@hebcal/core';
+import EventForm from './EventForm';
+import DayEvents from './DayEvents';
+import EventDetails from './EventDetails';
+import { Event } from '@/types/event';
+import { useTranslation } from 'react-i18next';
+import { useSession, signOut } from 'next-auth/react';
 
-const localizer = momentLocalizer(moment)
+const localizer = momentLocalizer(moment);
 
 interface CalendarDisplayEvent extends Event {
   start: Date;
@@ -24,48 +25,62 @@ interface CalendarDisplayEvent extends Event {
 
 export default function CalendarView() {
   const { t, i18n } = useTranslation();
-  const [masterEvents, setMasterEvents] = useState<Event[]>([])
-  const [occurrences, setOccurrences] = useState<CalendarDisplayEvent[]>([])
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
-  const [selectedEvent, setSelectedEvent] = useState<CalendarDisplayEvent | null>(null)
-  const [isCreating, setIsCreating] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [date, setDate] = useState(new Date())
+  const { data: session } = useSession();
+  const [masterEvents, setMasterEvents] = useState<Event[]>([]);
+  const [occurrences, setOccurrences] = useState<CalendarDisplayEvent[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedEvent, setSelectedEvent] =
+    useState<CalendarDisplayEvent | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [date, setDate] = useState(new Date());
 
   const fetchEvents = useCallback(() => {
     fetch('/api/events')
-      .then(res => res.json())
+      .then((res) => res.json())
       .then((data: Event[]) => {
-        setMasterEvents(data)
-      })
-  }, [])
+        setMasterEvents(data);
+      });
+  }, []);
 
   useEffect(() => {
-    fetchEvents()
-  }, [fetchEvents])
+    fetchEvents();
+  }, [fetchEvents]);
 
   useEffect(() => {
     const startOfMonth = moment(date).startOf('month').toDate();
     const endOfMonth = moment(date).endOf('month').toDate();
 
-    const newOccurrences = masterEvents.flatMap(event => {
+    const newOccurrences = masterEvents.flatMap((event) => {
       const occurrencesInRange: CalendarDisplayEvent[] = [];
       const startYear = new HDate(startOfMonth).getFullYear();
       const endYear = new HDate(endOfMonth).getFullYear();
 
       for (let year = startYear; year <= endYear; year++) {
-        const hebrewDate = new HDate(event.hebrew_day, event.hebrew_month, year);
+        const hebrewDate = new HDate(
+          event.hebrew_day,
+          event.hebrew_month,
+          year,
+        );
         const gregorianDate = hebrewDate.greg();
 
-        if (moment(gregorianDate).isBetween(startOfMonth, endOfMonth, undefined, '[]')) {
+        if (
+          moment(gregorianDate).isBetween(
+            startOfMonth,
+            endOfMonth,
+            undefined,
+            '[]',
+          )
+        ) {
           const anniversary = year - event.hebrew_year;
           occurrencesInRange.push({
             ...event,
             start: gregorianDate,
             end: gregorianDate,
-            title: anniversary > 0 ? `(${anniversary}) ${event.title}` : event.title,
+            title:
+              anniversary > 0 ? `(${anniversary}) ${event.title}` : event.title,
             anniversary,
           });
         }
@@ -77,54 +92,54 @@ export default function CalendarView() {
   }, [masterEvents, date]);
 
   const handleSelectSlot = (slotInfo: { start: Date }) => {
-    setSelectedDate(slotInfo.start)
-    setSelectedEvent(null)
-  }
+    setSelectedDate(slotInfo.start);
+    setSelectedEvent(null);
+  };
 
   const handleAddEvent = async (event: Omit<Event, 'id'>) => {
-    setIsCreating(true)
+    setIsCreating(true);
     await fetch('/api/events', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(event)
-    })
-    fetchEvents()
-    setIsModalOpen(false)
-    setIsCreating(false)
-  }
+      body: JSON.stringify(event),
+    });
+    fetchEvents();
+    setIsModalOpen(false);
+    setIsCreating(false);
+  };
 
   const handleSelectEvent = (event: CalendarDisplayEvent) => {
-    setSelectedEvent(event)
-    setSelectedDate(event.start)
-  }
+    setSelectedEvent(event);
+    setSelectedDate(event.start);
+  };
 
   const handleDeleteEvent = async (id: string) => {
-    setIsDeleting(true)
+    setIsDeleting(true);
     await fetch(`/api/events/${id}`, {
-      method: 'DELETE'
-    })
-    fetchEvents()
-    setSelectedEvent(null)
-    setIsDeleting(false)
-  }
+      method: 'DELETE',
+    });
+    fetchEvents();
+    setSelectedEvent(null);
+    setIsDeleting(false);
+  };
 
   const handleSaveEvent = async (event: Event) => {
-    setIsSaving(true)
+    setIsSaving(true);
     await fetch(`/api/events/${event.id}`, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(event)
-    })
-    fetchEvents()
+      body: JSON.stringify(event),
+    });
+    fetchEvents();
     if (selectedEvent) {
-      setSelectedEvent({ ...selectedEvent, ...event })
+      setSelectedEvent({ ...selectedEvent, ...event });
     }
-    setIsSaving(false)
-  }
+    setIsSaving(false);
+  };
 
   const handleNavigate = (newDate: Date) => {
     setDate(newDate);
@@ -142,7 +157,9 @@ export default function CalendarView() {
     return {};
   };
 
-  const dayEvents = occurrences.filter(event => moment(event.start).isSame(selectedDate, 'day'))
+  const dayEvents = occurrences.filter((event) =>
+    moment(event.start).isSame(selectedDate, 'day'),
+  );
 
   const messages = {
     previous: '→',
@@ -160,17 +177,33 @@ export default function CalendarView() {
 
   return (
     <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Calbrew</h1>
-        <button onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en')} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg">
-          {i18n.language === 'en' ? 'עברית' : 'English'}
-        </button>
+      <div className='flex justify-between items-center mb-4'>
+        <h1 className='text-2xl font-bold'>Calbrew</h1>
+        <div className='flex items-center'>
+          <span className='mx-4'>
+            {session?.user?.name} ({session?.user?.email})
+          </span>
+          <button
+            onClick={() => signOut()}
+            className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
+          >
+            {t('Sign Out')}
+          </button>
+          <button
+            onClick={() =>
+              i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en')
+            }
+            className='mx-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
+          >
+            {i18n.language === 'en' ? 'עברית' : 'English'}
+          </button>
+        </div>
       </div>
       <Calendar
         localizer={localizer}
         events={occurrences}
-        startAccessor="start"
-        endAccessor="end"
+        startAccessor='start'
+        endAccessor='end'
         style={{ height: 500 }}
         rtl={i18n.language === 'he'}
         selectable
@@ -185,29 +218,56 @@ export default function CalendarView() {
           month: {
             dateHeader: ({ date, label }) => {
               const hdate = new HDate(date);
-              const isSelected = selectedDate && moment(date).isSame(selectedDate, 'day');
+              const isSelected =
+                selectedDate && moment(date).isSame(selectedDate, 'day');
               return (
-                <div className="flex flex-col items-center">
+                <div className='flex flex-col items-center'>
                   <span>{label}</span>
-                  <span className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500'}`}>{gematriya(hdate.getDate())}</span>
+                  <span
+                    className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500'}`}
+                  >
+                    {gematriya(hdate.getDate())}
+                  </span>
                 </div>
-              )
-            }
-          }
+              );
+            },
+          },
         }}
       />
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ${i18n.language === 'en' ? 'md:grid-flow-col-dense' : ''}`}>
-        <DayEvents events={dayEvents} onSelectEvent={handleSelectEvent} onAddEvent={() => setIsModalOpen(true)} selectedDate={selectedDate} />
-        <EventDetails event={selectedEvent} onDelete={handleDeleteEvent} onSave={handleSaveEvent} isSaving={isSaving} isDeleting={isDeleting} />
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ${i18n.language === 'en' ? 'md:grid-flow-col-dense' : ''}`}
+      >
+        <DayEvents
+          events={dayEvents}
+          onSelectEvent={handleSelectEvent}
+          onAddEvent={() => setIsModalOpen(true)}
+          selectedDate={selectedDate}
+        />
+        <EventDetails
+          event={selectedEvent}
+          onDelete={handleDeleteEvent}
+          onSave={handleSaveEvent}
+          isSaving={isSaving}
+          isDeleting={isDeleting}
+        />
       </div>
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-          <div className="bg-white p-4 rounded-lg">
-            <EventForm onAddEvent={handleAddEvent} isCreating={isCreating} selectedDate={selectedDate} />
-            <button onClick={() => setIsModalOpen(false)} className="mt-4 bg-red-500 text-white p-2 rounded-md">{t('Close')}</button>
+        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center'>
+          <div className='bg-white p-4 rounded-lg'>
+            <EventForm
+              onAddEvent={handleAddEvent}
+              isCreating={isCreating}
+              selectedDate={selectedDate}
+            />
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className='mt-4 bg-red-500 text-white p-2 rounded-md'
+            >
+              {t('Close')}
+            </button>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -9,7 +9,10 @@ interface CalendarDisplayEvent extends Event {
   end: Date;
 }
 
-export default function CustomToolbar({ date, onNavigate }: ToolbarProps<CalendarDisplayEvent>) {
+export default function CustomToolbar({
+  date,
+  onNavigate,
+}: ToolbarProps<CalendarDisplayEvent>) {
   const { t, i18n } = useTranslation();
 
   moment.locale(i18n.language);
@@ -54,7 +57,10 @@ export default function CustomToolbar({ date, onNavigate }: ToolbarProps<Calenda
 
   const gregorianDateStr = moment(date).format('MMMM YYYY');
 
-  const title = i18n.language === 'he' ? `${hebrewDateStr} (${gregorianDateStr})` : `${gregorianDateStr} (${hebrewDateStr})`;
+  const title =
+    i18n.language === 'he'
+      ? `${hebrewDateStr} (${gregorianDateStr})`
+      : `${gregorianDateStr} (${hebrewDateStr})`;
 
   return (
     <div className='rbc-toolbar'>

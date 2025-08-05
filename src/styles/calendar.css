@@ -35,14 +35,14 @@
 }
 
 /* RTL Support using modern CSS logical properties */
-[dir="rtl"] {
+[dir='rtl'] {
   direction: rtl;
 }
 
-[dir="rtl"] .text-start {
+[dir='rtl'] .text-start {
   text-align: start;
 }
 
-[dir="rtl"] .text-end {
+[dir='rtl'] .text-end {
   text-align: end;
 }
