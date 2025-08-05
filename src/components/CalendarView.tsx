@@ -177,25 +177,45 @@ export default function CalendarView() {
 
   return (
     <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-      <div className='flex justify-between items-center mb-4'>
-        <h1 className='text-2xl font-bold'>Calbrew</h1>
-        <div className='flex items-center'>
+      <div className='flex flex-col md:flex-row justify-between items-center mb-4 p-2'>
+        <div className='flex justify-between w-full md:w-auto'>
+          <h1 className='text-2xl font-bold'>Calbrew</h1>
+          <div className='md:hidden flex items-center'>
+            <button
+              onClick={() =>
+                i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en')
+              }
+              className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg mx-2'
+            >
+              {i18n.language === 'en' ? 'עברית' : 'English'}
+            </button>
+            <button
+              onClick={() => signOut()}
+              className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
+            >
+              {t('Sign Out')}
+            </button>
+          </div>
+        </div>
+        <div className='w-full md:w-auto mt-4 md:mt-0 flex justify-center'>
           <span className='mx-4'>
             {session?.user?.name} ({session?.user?.email})
           </span>
+        </div>
+        <div className='hidden md:flex items-center'>
+          <button
+            onClick={() =>
+              i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en')
+            }
+            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg mx-2'
+          >
+            {i18n.language === 'en' ? 'עברית' : 'English'}
+          </button>
           <button
             onClick={() => signOut()}
             className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
           >
             {t('Sign Out')}
-          </button>
-          <button
-            onClick={() =>
-              i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en')
-            }
-            className='mx-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
-          >
-            {i18n.language === 'en' ? 'עברית' : 'English'}
           </button>
         </div>
       </div>
@@ -235,7 +255,7 @@ export default function CalendarView() {
         }}
       />
       <div
-        className={`grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ${i18n.language === 'en' ? 'md:grid-flow-col-dense' : ''}`}
+        className={`grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ${i18n.language === 'he' ? 'md:grid-flow-col-dense' : ''}`}
       >
         <DayEvents
           events={dayEvents}

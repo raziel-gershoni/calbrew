@@ -37,7 +37,7 @@ export default function Home() {
 
   return (
     <div className='min-h-screen bg-gray-50 dark:bg-gray-800'>
-      <main className='py-10'>
+      <main>
         <div className='max-w-7xl mx-auto sm:px-6 lg:px-8'>
           <CalendarView />
         </div>
