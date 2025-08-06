@@ -179,7 +179,12 @@ export default function CalendarView() {
     <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
       <div className='flex flex-col md:flex-row justify-between items-center mb-4 p-2'>
         <div className='flex justify-between w-full md:w-auto'>
-          <h1 className='text-2xl font-bold'>Calbrew</h1>
+          <div className='flex-1 md:w-auto flex justify-start'>
+            <span className='mx-4'>
+              {session?.user?.name}
+              <div className='text-xs'>{session?.user?.email}</div>
+            </span>
+          </div>
           <div className='md:hidden flex items-center'>
             <button
               onClick={() =>
@@ -198,9 +203,10 @@ export default function CalendarView() {
           </div>
         </div>
         <div className='w-full md:w-auto mt-4 md:mt-0 flex justify-center'>
-          <span className='mx-4'>
-            {session?.user?.name} ({session?.user?.email})
-          </span>
+          <h1 className='text-2xl font-bold md:hidden'>Calbrew</h1>
+        </div>
+        <div className='hidden md:flex items-center flex-1 justify-center'>
+          <h1 className='text-2xl font-bold mx-4'>Calbrew</h1>
         </div>
         <div className='hidden md:flex items-center'>
           <button
