@@ -29,13 +29,17 @@ const resources = {
       Close: 'Close',
       'Sign Out': 'Sign Out',
       'Loading your events...': 'Loading your events...',
-      'Failed to load events. Please try refreshing the page.': 'Failed to load events. Please try refreshing the page.',
+      'Failed to load events. Please try refreshing the page.':
+        'Failed to load events. Please try refreshing the page.',
       'Event created successfully!': 'Event created successfully!',
-      'Failed to create event. Please try again.': 'Failed to create event. Please try again.',
+      'Failed to create event. Please try again.':
+        'Failed to create event. Please try again.',
       'Event deleted successfully!': 'Event deleted successfully!',
-      'Failed to delete event. Please try again.': 'Failed to delete event. Please try again.',
+      'Failed to delete event. Please try again.':
+        'Failed to delete event. Please try again.',
       'Event saved successfully!': 'Event saved successfully!',
-      'Failed to save event. Please try again.': 'Failed to save event. Please try again.',
+      'Failed to save event. Please try again.':
+        'Failed to save event. Please try again.',
       more: 'more',
       Week: 'Week',
       Agenda: 'Agenda',
@@ -68,13 +72,17 @@ const resources = {
       Close: 'סגור',
       'Sign Out': 'התנתק',
       'Loading your events...': 'טוען את האירועים שלך...',
-      'Failed to load events. Please try refreshing the page.': 'נכשל בטעינת האירועים. אנא רענן את הדף.',
+      'Failed to load events. Please try refreshing the page.':
+        'נכשל בטעינת האירועים. אנא רענן את הדף.',
       'Event created successfully!': 'האירוע נוצר בהצלחה!',
-      'Failed to create event. Please try again.': 'נכשל ביצירת האירוע. אנא נסה שוב.',
+      'Failed to create event. Please try again.':
+        'נכשל ביצירת האירוע. אנא נסה שוב.',
       'Event deleted successfully!': 'האירוע נמחק בהצלחה!',
-      'Failed to delete event. Please try again.': 'נכשל במחיקת האירוע. אנא נסה שוב.',
+      'Failed to delete event. Please try again.':
+        'נכשל במחיקת האירוע. אנא נסה שוב.',
       'Event saved successfully!': 'האירוע נשמר בהצלחה!',
-      'Failed to save event. Please try again.': 'נכשל בשמירת האירוע. אנא נסה שוב.',
+      'Failed to save event. Please try again.':
+        'נכשל בשמירת האירוע. אנא נסה שוב.',
       more: 'עוד',
       Week: 'שבוע',
       Agenda: 'סדר יום',

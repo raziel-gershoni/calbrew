@@ -118,11 +118,11 @@ export default function CalendarView() {
         },
         body: JSON.stringify(event),
       });
-      
+
       if (!res.ok) {
         throw new Error(`Failed to create event: ${res.statusText}`);
       }
-      
+
       await fetchEvents();
       setIsModalOpen(false);
       showSuccess(t('Event created successfully!'));
@@ -145,11 +145,11 @@ export default function CalendarView() {
       const res = await fetch(`/api/events/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!res.ok) {
         throw new Error(`Failed to delete event: ${res.statusText}`);
       }
-      
+
       await fetchEvents();
       setSelectedEvent(null);
       showSuccess(t('Event deleted successfully!'));
@@ -171,11 +171,11 @@ export default function CalendarView() {
         },
         body: JSON.stringify(event),
       });
-      
+
       if (!res.ok) {
         throw new Error(`Failed to save event: ${res.statusText}`);
       }
-      
+
       await fetchEvents();
       if (selectedEvent) {
         setSelectedEvent({ ...selectedEvent, ...event });
@@ -206,34 +206,39 @@ export default function CalendarView() {
   };
 
   // Memoize expensive calculations
-  const dayEvents = useMemo(() =>
-    occurrences.filter((event) =>
-      moment(event.start).isSame(selectedDate, 'day'),
-    ), [occurrences, selectedDate]
+  const dayEvents = useMemo(
+    () =>
+      occurrences.filter((event) =>
+        moment(event.start).isSame(selectedDate, 'day'),
+      ),
+    [occurrences, selectedDate],
   );
-  
+
   // Memoize calendar messages to avoid recreation on every render
-  const calendarMessages = useMemo(() => ({
-    previous: '→',
-    next: '←',
-    today: t('Today'),
-    month: t('Month'),
-    week: t('Week'),
-    day: t('Day'),
-    agenda: t('Agenda'),
-    date: t('Date'),
-    time: t('Time'),
-    event: t('Event'),
-    showMore: (total: number) => `+${total} ${t('more')}`,
-  }), [t]);
+  const calendarMessages = useMemo(
+    () => ({
+      previous: '→',
+      next: '←',
+      today: t('Today'),
+      month: t('Month'),
+      week: t('Week'),
+      day: t('Day'),
+      agenda: t('Agenda'),
+      date: t('Date'),
+      time: t('Time'),
+      event: t('Event'),
+      showMore: (total: number) => `+${total} ${t('more')}`,
+    }),
+    [t],
+  );
 
   // Show loading spinner while initial data loads
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
+      <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900'>
+        <div className='text-center'>
+          <div className='mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'></div>
+          <p className='mt-4 text-lg text-gray-600 dark:text-gray-400'>
             {t('Loading your events...')}
           </p>
         </div>
