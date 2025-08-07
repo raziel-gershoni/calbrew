@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/he';
@@ -14,6 +14,7 @@ import EventDetails from './EventDetails';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
 import { useSession, signOut } from 'next-auth/react';
+import { useToast } from './Toast';
 
 const localizer = momentLocalizer(moment);
 
@@ -26,6 +27,7 @@ interface CalendarDisplayEvent extends Event {
 export default function CalendarView() {
   const { t, i18n } = useTranslation();
   const { data: session } = useSession();
+  const { showError, showSuccess } = useToast();
   const [masterEvents, setMasterEvents] = useState<Event[]>([]);
   const [occurrences, setOccurrences] = useState<CalendarDisplayEvent[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,15 +37,25 @@ export default function CalendarView() {
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [date, setDate] = useState(new Date());
 
-  const fetchEvents = useCallback(() => {
-    fetch('/api/events')
-      .then((res) => res.json())
-      .then((data: Event[]) => {
-        setMasterEvents(data);
-      });
-  }, []);
+  const fetchEvents = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await fetch('/api/events');
+      if (!res.ok) {
+        throw new Error(`Failed to fetch events: ${res.statusText}`);
+      }
+      const data: Event[] = await res.json();
+      setMasterEvents(data);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      showError(t('Failed to load events. Please try refreshing the page.'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showError, t]);
 
   useEffect(() => {
     fetchEvents();
@@ -97,17 +109,29 @@ export default function CalendarView() {
   };
 
   const handleAddEvent = async (event: Omit<Event, 'id'>) => {
-    setIsCreating(true);
-    await fetch('/api/events', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(event),
-    });
-    fetchEvents();
-    setIsModalOpen(false);
-    setIsCreating(false);
+    try {
+      setIsCreating(true);
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(event),
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Failed to create event: ${res.statusText}`);
+      }
+      
+      await fetchEvents();
+      setIsModalOpen(false);
+      showSuccess(t('Event created successfully!'));
+    } catch (error) {
+      console.error('Error creating event:', error);
+      showError(t('Failed to create event. Please try again.'));
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleSelectEvent = (event: CalendarDisplayEvent) => {
@@ -116,29 +140,53 @@ export default function CalendarView() {
   };
 
   const handleDeleteEvent = async (id: string) => {
-    setIsDeleting(true);
-    await fetch(`/api/events/${id}`, {
-      method: 'DELETE',
-    });
-    fetchEvents();
-    setSelectedEvent(null);
-    setIsDeleting(false);
+    try {
+      setIsDeleting(true);
+      const res = await fetch(`/api/events/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Failed to delete event: ${res.statusText}`);
+      }
+      
+      await fetchEvents();
+      setSelectedEvent(null);
+      showSuccess(t('Event deleted successfully!'));
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      showError(t('Failed to delete event. Please try again.'));
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleSaveEvent = async (event: Event) => {
-    setIsSaving(true);
-    await fetch(`/api/events/${event.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(event),
-    });
-    fetchEvents();
-    if (selectedEvent) {
-      setSelectedEvent({ ...selectedEvent, ...event });
+    try {
+      setIsSaving(true);
+      const res = await fetch(`/api/events/${event.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(event),
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Failed to save event: ${res.statusText}`);
+      }
+      
+      await fetchEvents();
+      if (selectedEvent) {
+        setSelectedEvent({ ...selectedEvent, ...event });
+      }
+      showSuccess(t('Event saved successfully!'));
+    } catch (error) {
+      console.error('Error saving event:', error);
+      showError(t('Failed to save event. Please try again.'));
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleNavigate = (newDate: Date) => {
@@ -157,11 +205,15 @@ export default function CalendarView() {
     return {};
   };
 
-  const dayEvents = occurrences.filter((event) =>
-    moment(event.start).isSame(selectedDate, 'day'),
+  // Memoize expensive calculations
+  const dayEvents = useMemo(() =>
+    occurrences.filter((event) =>
+      moment(event.start).isSame(selectedDate, 'day'),
+    ), [occurrences, selectedDate]
   );
-
-  const messages = {
+  
+  // Memoize calendar messages to avoid recreation on every render
+  const calendarMessages = useMemo(() => ({
     previous: '→',
     next: '←',
     today: t('Today'),
@@ -173,7 +225,21 @@ export default function CalendarView() {
     time: t('Time'),
     event: t('Event'),
     showMore: (total: number) => `+${total} ${t('more')}`,
-  };
+  }), [t]);
+
+  // Show loading spinner while initial data loads
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">
+            {t('Loading your events...')}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
@@ -237,7 +303,7 @@ export default function CalendarView() {
         onNavigate={handleNavigate}
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
-        messages={messages}
+        messages={calendarMessages}
         dayPropGetter={dayPropGetter}
         components={{
           toolbar: CustomToolbar,
