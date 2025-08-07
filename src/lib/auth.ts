@@ -1,8 +1,7 @@
 import { NextAuthOptions, User } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import { google, calendar_v3 } from 'googleapis';
+import { google } from 'googleapis';
 import db from '@/lib/db';
-import { HDate } from '@hebcal/core';
 
 if (!process.env.GOOGLE_CLIENT_ID) {
   throw new Error('Missing GOOGLE_CLIENT_ID environment variable');
@@ -12,36 +11,64 @@ if (!process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error('Missing GOOGLE_CLIENT_SECRET environment variable');
 }
 
-function calculateSyncWindow(event_start_year: number): {
-  start: number;
-  end: number;
-} {
-  const current_year = new HDate().getFullYear();
-
-  if (event_start_year < current_year - 10) {
-    // Scenario 1: Event in the Distant Past
-    return { start: current_year - 10, end: current_year + 10 };
-  } else if (event_start_year <= current_year) {
-    // Scenario 2: Event in the Recent Past
-    return { start: event_start_year, end: current_year + 10 };
-  } else {
-    // Scenario 3: Event in the Future
-    return { start: event_start_year, end: event_start_year + 10 };
-  }
+// Helper function to handle database operations with proper error handling
+function dbGet<T>(sql: string, params: unknown[]): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) {
+        console.error('Database error in dbGet:', err);
+        reject(err);
+      } else {
+        resolve(row as T | undefined);
+      }
+    });
+  });
 }
 
-interface Event {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string | null;
-  hebrew_year: number;
-  hebrew_month: number;
-  hebrew_day: number;
-  recurrence_rule: string;
-  last_synced_hebrew_year: number | null;
-  created_at: string;
-  updated_at: string;
+function dbRun(sql: string, params: unknown[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, (err) => {
+      if (err) {
+        console.error('Database error in dbRun:', err);
+        reject(err);
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
+// Helper function to safely create or find Calbrew calendar
+async function ensureCalbrewCalendar(
+  accessToken: string,
+): Promise<string | null> {
+  try {
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+    );
+
+    oauth2Client.setCredentials({ access_token: accessToken });
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    const { data: calendars } = await calendar.calendarList.list();
+    let calbrewCalendar = calendars.items?.find((c) => c.summary === 'Calbrew');
+
+    if (!calbrewCalendar) {
+      const { data: newCalendar } = await calendar.calendars.insert({
+        requestBody: {
+          summary: 'Calbrew',
+          description: 'Hebrew calendar events managed by Calbrew',
+        },
+      });
+      calbrewCalendar = newCalendar;
+    }
+
+    return calbrewCalendar?.id || null;
+  } catch (error) {
+    console.error('Failed to create/find Calbrew calendar:', error);
+    return null;
+  }
 }
 
 export const authOptions: NextAuthOptions = {
@@ -62,181 +89,45 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (!account?.access_token) {
+        console.error('No access token received from Google');
         return false;
       }
 
-      const oauth2Client = new google.auth.OAuth2(
-        process.env.GOOGLE_CLIENT_ID,
-        process.env.GOOGLE_CLIENT_SECRET,
-        process.env.GOOGLE_REDIRECT_URI,
-      );
+      try {
+        // Only do essential setup during login - move heavy sync to background
+        const calendarId = await ensureCalbrewCalendar(account.access_token);
 
-      oauth2Client.setCredentials({ access_token: account.access_token });
-
-      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-
-      const { data: calendars } = await calendar.calendarList.list();
-      let calbrewCalendar = calendars.items?.find(
-        (c) => c.summary === 'Calbrew',
-      );
-
-      if (!calbrewCalendar) {
-        const { data: newCalendar } = await calendar.calendars.insert({
-          requestBody: {
-            summary: 'Calbrew',
-          },
-        });
-        calbrewCalendar = newCalendar;
-      }
-
-      if (!calbrewCalendar?.id) {
-        console.error('Could not find or create Calbrew calendar');
-        return false;
-      }
-
-      const userInDb = await new Promise<User | undefined>(
-        (resolve, reject) => {
-          db.get('SELECT * FROM users WHERE id = ?', [user.id], (err, row) => {
-            if (err) {
-              reject(err);
-            }
-            resolve(row as User | undefined);
-          });
-        },
-      );
-
-      if (!userInDb) {
-        await new Promise<void>((resolve, reject) => {
-          db.run(
-            'INSERT INTO users (id, name, email, image, calbrew_calendar_id) VALUES (?, ?, ?, ?, ?)',
-            [user.id, user.name, user.email, user.image, calbrewCalendar.id],
-            (err) => {
-              if (err) {
-                reject(err);
-              }
-              resolve();
-            },
-          );
-        });
-      } else {
-        await new Promise<void>((resolve, reject) => {
-          db.run(
-            'UPDATE users SET calbrew_calendar_id = ? WHERE id = ?',
-            [calbrewCalendar.id, user.id],
-            (err) => {
-              if (err) {
-                reject(err);
-              }
-              resolve();
-            },
-          );
-        });
-      }
-
-      // On-demand sync
-      const eventsToSync = await new Promise<Event[]>((resolve, reject) => {
-        db.all(
-          'SELECT * FROM events WHERE user_id = ?',
-          [user.id],
-          (err, rows) => {
-            if (err) {
-              reject(err);
-            }
-            resolve(rows as Event[]);
-          },
-        );
-      });
-
-      for (const event of eventsToSync) {
-        if (event.last_synced_hebrew_year) {
-          const syncWindow = calculateSyncWindow(event.hebrew_year);
-          if (event.last_synced_hebrew_year < syncWindow.end) {
-            const yearsToSync = Array.from(
-              { length: syncWindow.end - event.last_synced_hebrew_year },
-              (_, i) => event.last_synced_hebrew_year! + 1 + i,
-            );
-
-            for (const year of yearsToSync) {
-              const anniversary = year - event.hebrew_year;
-              const eventTitle =
-                anniversary > 0
-                  ? `(${anniversary}) ${event.title}`
-                  : event.title;
-
-              const gregorianDate = new HDate(
-                event.hebrew_day,
-                event.hebrew_month,
-                year,
-              ).greg();
-              const dateString = `${gregorianDate.getFullYear()}-${String(gregorianDate.getMonth() + 1).padStart(2, '0')}-${String(gregorianDate.getDate()).padStart(2, '0')}`;
-
-              const calendarEvent: calendar_v3.Schema$Event = {
-                summary: eventTitle,
-                start: {
-                  date: dateString,
-                },
-                end: {
-                  date: dateString,
-                },
-                extendedProperties: {
-                  private: {
-                    calbrew_event_id: event.id,
-                  },
-                },
-              };
-
-              if (event.description) {
-                calendarEvent.description = event.description;
-              }
-
-              try {
-                const createdEvent = await calendar.events.insert({
-                  calendarId: calbrewCalendar.id!,
-                  requestBody: calendarEvent,
-                });
-
-                await new Promise<void>((resolve, reject) => {
-                  db.run(
-                    'INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id) VALUES (?, ?, ?, ?)',
-                    [
-                      crypto.randomUUID(),
-                      event.id,
-                      dateString,
-                      createdEvent.data.id!,
-                    ],
-                    (err) => {
-                      if (err) {
-                        reject(err);
-                      }
-                      resolve();
-                    },
-                  );
-                });
-              } catch (error) {
-                console.error(
-                  `Failed to create event for year ${year}:`,
-                  error,
-                );
-              }
-            }
-
-            await new Promise<void>((resolve, reject) => {
-              db.run(
-                'UPDATE events SET last_synced_hebrew_year = ? WHERE id = ?',
-                [syncWindow.end, event.id],
-                (err) => {
-                  if (err) {
-                    reject(err);
-                  }
-                  resolve();
-                },
-              );
-            });
-          }
+        if (!calendarId) {
+          console.error('Failed to create/find Calbrew calendar');
+          return false;
         }
-      }
 
-      return true;
+        // Check if user exists
+        const userInDb = await dbGet<User>('SELECT * FROM users WHERE id = ?', [
+          user.id,
+        ]);
+
+        if (!userInDb) {
+          // Create new user
+          await dbRun(
+            'INSERT INTO users (id, name, email, image, calbrew_calendar_id) VALUES (?, ?, ?, ?, ?)',
+            [user.id, user.name, user.email, user.image, calendarId],
+          );
+        } else {
+          // Update existing user's calendar ID
+          await dbRun(
+            'UPDATE users SET calbrew_calendar_id = ?, name = ?, email = ?, image = ? WHERE id = ?',
+            [calendarId, user.name, user.email, user.image, user.id],
+          );
+        }
+
+        // Note: Heavy sync operations moved to a separate API endpoint
+        // that can be called after successful login
+        return true;
+      } catch (error) {
+        console.error('Error during sign in:', error);
+        return false;
+      }
     },
     async jwt({ token, account, user }) {
       // Initial sign-in
@@ -246,22 +137,17 @@ export const authOptions: NextAuthOptions = {
         token.expiresAt = account.expires_at;
         token.id = user.id;
 
-        const userFromDb = await new Promise<
-          { calbrew_calendar_id: string } | undefined
-        >((resolve, reject) => {
-          db.get(
+        try {
+          const userFromDb = await dbGet<{ calbrew_calendar_id: string }>(
             'SELECT calbrew_calendar_id FROM users WHERE id = ?',
             [user.id],
-            (err, row: { calbrew_calendar_id: string }) => {
-              if (err) {
-                reject(err);
-              } else {
-                resolve(row);
-              }
-            },
           );
-        });
-        token.calbrew_calendar_id = userFromDb?.calbrew_calendar_id;
+          token.calbrew_calendar_id = userFromDb?.calbrew_calendar_id;
+        } catch (error) {
+          console.error('Failed to fetch user calendar ID:', error);
+          // Continue without calendar ID - will be resolved on next request
+        }
+
         return token;
       }
 
@@ -271,6 +157,11 @@ export const authOptions: NextAuthOptions = {
       }
 
       // Access token has expired, try to update it
+      if (!token.refreshToken) {
+        console.error('No refresh token available');
+        return { ...token, error: 'RefreshAccessTokenError' as const };
+      }
+
       try {
         const response = await fetch('https://oauth2.googleapis.com/token', {
           method: 'POST',
@@ -281,13 +172,14 @@ export const authOptions: NextAuthOptions = {
             client_id: process.env.GOOGLE_CLIENT_ID!,
             client_secret: process.env.GOOGLE_CLIENT_SECRET!,
             grant_type: 'refresh_token',
-            refresh_token: token.refreshToken!,
+            refresh_token: token.refreshToken,
           }),
         });
 
         const refreshedTokens = await response.json();
 
         if (!response.ok) {
+          console.error('Token refresh failed:', refreshedTokens);
           throw refreshedTokens;
         }
 
@@ -298,7 +190,7 @@ export const authOptions: NextAuthOptions = {
           refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
         };
       } catch (error) {
-        console.error('Error refreshing access token', error);
+        console.error('Error refreshing access token:', error);
         // The user will be signed out on the client if the session is invalid
         return { ...token, error: 'RefreshAccessTokenError' as const };
       }

@@ -66,7 +66,6 @@ export async function PUT(
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
   for (const occurrence of occurrences) {
-    const occurrenceYear = new Date(occurrence.gregorian_date).getFullYear();
     const anniversary =
       new HDate(new Date(occurrence.gregorian_date)).getFullYear() -
       hebrew_year;
