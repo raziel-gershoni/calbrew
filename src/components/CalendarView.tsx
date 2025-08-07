@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/he';
@@ -11,94 +11,49 @@ import { HDate, gematriya } from '@hebcal/core';
 import EventForm from './EventForm';
 import DayEvents from './DayEvents';
 import EventDetails from './EventDetails';
+import CalendarHeader from './CalendarHeader';
+import LoadingSpinner from './LoadingSpinner';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
-import { useSession, signOut } from 'next-auth/react';
-import { useToast } from './Toast';
+import { useEvents } from '@/hooks/useEvents';
+import {
+  generateEventOccurrences,
+  EventOccurrence,
+} from '@/utils/hebrewDateUtils';
 
 const localizer = momentLocalizer(moment);
 
-interface CalendarDisplayEvent extends Event {
-  start: Date;
-  end: Date;
-  anniversary?: number;
-}
-
 export default function CalendarView() {
   const { t, i18n } = useTranslation();
-  const { data: session } = useSession();
-  const { showError, showSuccess } = useToast();
-  const [masterEvents, setMasterEvents] = useState<Event[]>([]);
-  const [occurrences, setOccurrences] = useState<CalendarDisplayEvent[]>([]);
+  const {
+    events: masterEvents,
+    isLoading,
+    isCreating,
+    isSaving,
+    isDeleting,
+    createEvent,
+    updateEvent,
+    deleteEvent,
+  } = useEvents();
+
+  const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedEvent, setSelectedEvent] =
-    useState<CalendarDisplayEvent | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<EventOccurrence | null>(
+    null,
+  );
   const [date, setDate] = useState(new Date());
 
-  const fetchEvents = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const res = await fetch('/api/events');
-      if (!res.ok) {
-        throw new Error(`Failed to fetch events: ${res.statusText}`);
-      }
-      const data: Event[] = await res.json();
-      setMasterEvents(data);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-      showError(t('Failed to load events. Please try refreshing the page.'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [showError, t]);
-
-  useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
-
+  // Generate event occurrences when events or date changes
   useEffect(() => {
     const startOfMonth = moment(date).startOf('month').toDate();
     const endOfMonth = moment(date).endOf('month').toDate();
 
-    const newOccurrences = masterEvents.flatMap((event) => {
-      const occurrencesInRange: CalendarDisplayEvent[] = [];
-      const startYear = new HDate(startOfMonth).getFullYear();
-      const endYear = new HDate(endOfMonth).getFullYear();
-
-      for (let year = startYear; year <= endYear; year++) {
-        const hebrewDate = new HDate(
-          event.hebrew_day,
-          event.hebrew_month,
-          year,
-        );
-        const gregorianDate = hebrewDate.greg();
-
-        if (
-          moment(gregorianDate).isBetween(
-            startOfMonth,
-            endOfMonth,
-            undefined,
-            '[]',
-          )
-        ) {
-          const anniversary = year - event.hebrew_year;
-          occurrencesInRange.push({
-            ...event,
-            start: gregorianDate,
-            end: gregorianDate,
-            title:
-              anniversary > 0 ? `(${anniversary}) ${event.title}` : event.title,
-            anniversary,
-          });
-        }
-      }
-      return occurrencesInRange;
-    });
+    const newOccurrences = generateEventOccurrences(
+      masterEvents,
+      startOfMonth,
+      endOfMonth,
+    );
 
     setOccurrences(newOccurrences);
   }, [masterEvents, date]);
@@ -109,83 +64,28 @@ export default function CalendarView() {
   };
 
   const handleAddEvent = async (event: Omit<Event, 'id'>) => {
-    try {
-      setIsCreating(true);
-      const res = await fetch('/api/events', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(event),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to create event: ${res.statusText}`);
-      }
-
-      await fetchEvents();
+    const success = await createEvent(event);
+    if (success) {
       setIsModalOpen(false);
-      showSuccess(t('Event created successfully!'));
-    } catch (error) {
-      console.error('Error creating event:', error);
-      showError(t('Failed to create event. Please try again.'));
-    } finally {
-      setIsCreating(false);
     }
   };
 
-  const handleSelectEvent = (event: CalendarDisplayEvent) => {
+  const handleSelectEvent = (event: EventOccurrence) => {
     setSelectedEvent(event);
     setSelectedDate(event.start);
   };
 
   const handleDeleteEvent = async (id: string) => {
-    try {
-      setIsDeleting(true);
-      const res = await fetch(`/api/events/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to delete event: ${res.statusText}`);
-      }
-
-      await fetchEvents();
+    const success = await deleteEvent(id);
+    if (success) {
       setSelectedEvent(null);
-      showSuccess(t('Event deleted successfully!'));
-    } catch (error) {
-      console.error('Error deleting event:', error);
-      showError(t('Failed to delete event. Please try again.'));
-    } finally {
-      setIsDeleting(false);
     }
   };
 
   const handleSaveEvent = async (event: Event) => {
-    try {
-      setIsSaving(true);
-      const res = await fetch(`/api/events/${event.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(event),
-      });
-
-      if (!res.ok) {
-        throw new Error(`Failed to save event: ${res.statusText}`);
-      }
-
-      await fetchEvents();
-      if (selectedEvent) {
-        setSelectedEvent({ ...selectedEvent, ...event });
-      }
-      showSuccess(t('Event saved successfully!'));
-    } catch (error) {
-      console.error('Error saving event:', error);
-      showError(t('Failed to save event. Please try again.'));
-    } finally {
-      setIsSaving(false);
+    const success = await updateEvent(event);
+    if (success && selectedEvent) {
+      setSelectedEvent({ ...selectedEvent, ...event });
     }
   };
 
@@ -234,68 +134,12 @@ export default function CalendarView() {
 
   // Show loading spinner while initial data loads
   if (isLoading) {
-    return (
-      <div className='min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900'>
-        <div className='text-center'>
-          <div className='mx-auto h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'></div>
-          <p className='mt-4 text-lg text-gray-600 dark:text-gray-400'>
-            {t('Loading your events...')}
-          </p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen />;
   }
 
   return (
     <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-      <div className='flex flex-col md:flex-row justify-between items-center mb-4 p-2'>
-        <div className='flex justify-between w-full md:w-auto'>
-          <div className='flex-1 md:w-auto flex justify-start'>
-            <span className='mx-4'>
-              {session?.user?.name}
-              <div className='text-xs'>{session?.user?.email}</div>
-            </span>
-          </div>
-          <div className='md:hidden flex items-center'>
-            <button
-              onClick={() =>
-                i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en')
-              }
-              className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg mx-2'
-            >
-              {i18n.language === 'en' ? 'עברית' : 'English'}
-            </button>
-            <button
-              onClick={() => signOut()}
-              className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
-            >
-              {t('Sign Out')}
-            </button>
-          </div>
-        </div>
-        <div className='w-full md:w-auto mt-4 md:mt-0 flex justify-center'>
-          <h1 className='text-2xl font-bold md:hidden'>Calbrew</h1>
-        </div>
-        <div className='hidden md:flex items-center flex-1 justify-center'>
-          <h1 className='text-2xl font-bold mx-4'>Calbrew</h1>
-        </div>
-        <div className='hidden md:flex items-center'>
-          <button
-            onClick={() =>
-              i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en')
-            }
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg mx-2'
-          >
-            {i18n.language === 'en' ? 'עברית' : 'English'}
-          </button>
-          <button
-            onClick={() => signOut()}
-            className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
-          >
-            {t('Sign Out')}
-          </button>
-        </div>
-      </div>
+      <CalendarHeader />
       <Calendar
         localizer={localizer}
         events={occurrences}

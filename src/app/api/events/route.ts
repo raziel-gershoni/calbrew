@@ -4,6 +4,24 @@ import { authOptions } from '@/lib/auth';
 import db from '@/lib/db';
 import { google } from 'googleapis';
 import { HDate } from '@hebcal/core';
+import { ensureCalendarExists } from '@/lib/google-calendar';
+
+// Helper function to get current calendar ID from database
+async function getCurrentCalendarId(userId: string): Promise<string | null> {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT calbrew_calendar_id FROM users WHERE id = ?',
+      [userId],
+      (err, row: { calbrew_calendar_id: string | null } | undefined) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(row?.calbrew_calendar_id || null);
+        }
+      },
+    );
+  });
+}
 
 interface Event {
   id: string;
@@ -105,6 +123,30 @@ export async function POST(req: NextRequest) {
     );
   });
 
+  // Get fresh calendar ID from database (more reliable than session)
+  let calendarId = await getCurrentCalendarId(session.user.id);
+
+  if (!calendarId) {
+    // Only check/create calendar if we don't have an ID stored
+    const calendarCheck = await ensureCalendarExists(
+      session.accessToken!,
+      session.user.id,
+      undefined, // No current ID to check
+    );
+
+    if (!calendarCheck.calendarId) {
+      return NextResponse.json(
+        {
+          error: `Failed to create calendar: ${calendarCheck.error || 'Unknown error'}`,
+        },
+        { status: 500 },
+      );
+    }
+
+    calendarId = calendarCheck.calendarId;
+    console.info(`Created/found Calbrew calendar: ${calendarId}`);
+  }
+
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -145,7 +187,7 @@ export async function POST(req: NextRequest) {
 
     try {
       const createdEvent = await calendar.events.insert({
-        calendarId: session.user.calbrew_calendar_id,
+        calendarId: calendarId,
         requestBody: event,
       });
 
@@ -162,8 +204,63 @@ export async function POST(req: NextRequest) {
           },
         );
       });
-    } catch (error) {
-      console.error(`Failed to create event for year ${year}:`, error);
+    } catch (error: unknown) {
+      // If calendar not found (404), try to create/find a new calendar and retry
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((error as any)?.status === 404 && year === yearRange[0]) {
+        console.warn(
+          `Calendar ${calendarId} not found, attempting to create/find new calendar`,
+        );
+
+        try {
+          const calendarCheck = await ensureCalendarExists(
+            session.accessToken!,
+            session.user.id,
+            undefined, // Force search/create
+          );
+
+          if (calendarCheck.calendarId) {
+            calendarId = calendarCheck.calendarId;
+            console.info(`Using new calendar: ${calendarId}`);
+
+            // Retry the event creation with new calendar ID
+            const createdEvent = await calendar.events.insert({
+              calendarId: calendarId,
+              requestBody: event,
+            });
+
+            await new Promise<void>((resolve, reject) => {
+              db.run(
+                'INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id) VALUES (?, ?, ?, ?)',
+                [
+                  crypto.randomUUID(),
+                  eventId,
+                  dateString,
+                  createdEvent.data.id!,
+                ],
+                (err) => {
+                  if (err) {
+                    reject(err);
+                  } else {
+                    resolve();
+                  }
+                },
+              );
+            });
+          } else {
+            console.error(
+              `Failed to create event for year ${year}: Could not create/find calendar`,
+            );
+          }
+        } catch (retryError) {
+          console.error(
+            `Failed to create event for year ${year} even after calendar retry:`,
+            retryError,
+          );
+        }
+      } else {
+        console.error(`Failed to create event for year ${year}:`, error);
+      }
       // Continue to the next year even if one fails
     }
   }

@@ -129,7 +129,7 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
-    async jwt({ token, account, user }) {
+    async jwt({ token, account, user, trigger }) {
       // Initial sign-in
       if (account && user) {
         token.accessToken = account.access_token;
@@ -148,6 +148,20 @@ export const authOptions: NextAuthOptions = {
           // Continue without calendar ID - will be resolved on next request
         }
 
+        return token;
+      }
+
+      // On update trigger (when session is manually updated), refresh calendar ID
+      if (trigger === 'update' && token.id) {
+        try {
+          const userFromDb = await dbGet<{ calbrew_calendar_id: string }>(
+            'SELECT calbrew_calendar_id FROM users WHERE id = ?',
+            [token.id as string],
+          );
+          token.calbrew_calendar_id = userFromDb?.calbrew_calendar_id;
+        } catch (error) {
+          console.error('Failed to refresh calendar ID from database:', error);
+        }
         return token;
       }
 
