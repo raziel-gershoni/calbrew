@@ -46,30 +46,48 @@ export default function CalendarView() {
   );
   const [date, setDate] = useState(new Date());
   const [calendarKey, setCalendarKey] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
+  // Separate touch detection from layout preferences
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [isMobileEventModalOpen, setIsMobileEventModalOpen] = useState(false);
 
-  // Track viewport changes and force calendar re-initialization when needed
+  // Detect device capabilities and screen size
   useEffect(() => {
-    const checkViewport = () => {
-      const newIsMobile = window.innerWidth < 768; // md breakpoint
-      if (newIsMobile !== isMobile) {
-        setIsMobile(newIsMobile);
-        // Force calendar re-render to fix event listener initialization
-        setCalendarKey((prev) => prev + 1);
+    const checkDevice = () => {
+      // Detect touch capability (for day clicking)
+      const hasTouchSupport =
+        'ontouchstart' in window ||
+        navigator.maxTouchPoints > 0 ||
+        (navigator as any).msMaxTouchPoints > 0;
+
+      // Detect small screens (for layout preferences)
+      // Use modal layout only for truly small screens (phones)
+      const newIsSmallScreen = window.innerWidth < 640; // sm breakpoint
+
+      const touchChanged = hasTouchSupport !== isTouchDevice;
+      const screenChanged = newIsSmallScreen !== isSmallScreen;
+
+      if (touchChanged || screenChanged) {
+        setIsTouchDevice(hasTouchSupport);
+        setIsSmallScreen(newIsSmallScreen);
+
+        // Force calendar re-render if touch detection changed
+        if (touchChanged) {
+          setCalendarKey((prev) => prev + 1);
+        }
       }
     };
 
-    // Check initial viewport
-    checkViewport();
+    // Check initial device
+    checkDevice();
 
     // Listen for viewport changes
-    window.addEventListener('resize', checkViewport);
+    window.addEventListener('resize', checkDevice);
 
     return () => {
-      window.removeEventListener('resize', checkViewport);
+      window.removeEventListener('resize', checkDevice);
     };
-  }, [isMobile]);
+  }, [isTouchDevice, isSmallScreen]);
 
   // Generate event occurrences when events or date changes
   useEffect(() => {
@@ -119,8 +137,8 @@ export default function CalendarView() {
     setSelectedEvent(event);
     setSelectedDate(event.start);
 
-    // On mobile, open modal for better UX
-    if (isMobile) {
+    // Only use modal on small screens (phones), not tablets
+    if (isSmallScreen) {
       setIsMobileEventModalOpen(true);
     }
   };
@@ -129,8 +147,8 @@ export default function CalendarView() {
     const success = await deleteEvent(id);
     if (success) {
       setSelectedEvent(null);
-      // Close mobile modal if open
-      if (isMobile) {
+      // Close modal if open on small screens
+      if (isSmallScreen) {
         setIsMobileEventModalOpen(false);
       }
     }
@@ -140,8 +158,8 @@ export default function CalendarView() {
     const success = await updateEvent(event);
     if (success && selectedEvent) {
       setSelectedEvent({ ...selectedEvent, ...event });
-      // Close mobile modal if open
-      if (isMobile) {
+      // Close modal if open on small screens
+      if (isSmallScreen) {
         setIsMobileEventModalOpen(false);
       }
     }
@@ -233,12 +251,12 @@ export default function CalendarView() {
               const isSelected =
                 selectedDate && moment(date).isSame(selectedDate, 'day');
 
-              // Mobile-only click handler
-              const handleMobileClick = (
+              // Touch device click handler
+              const handleTouchClick = (
                 e: React.MouseEvent | React.TouchEvent,
               ) => {
-                // Only handle clicks on mobile (touch devices)
-                if (isMobile) {
+                // Handle clicks on all touch devices (phones, tablets, etc.)
+                if (isTouchDevice) {
                   e.preventDefault();
                   e.stopPropagation();
                   handleDaySelect(date);
@@ -248,7 +266,7 @@ export default function CalendarView() {
               return (
                 <div
                   className={`flex flex-col items-center w-full h-full ${
-                    isMobile ? 'cursor-pointer' : ''
+                    isTouchDevice ? 'cursor-pointer' : ''
                   }`}
                   style={{
                     minHeight: '40px',
@@ -257,10 +275,10 @@ export default function CalendarView() {
                     justifyContent: 'center',
                     touchAction: 'manipulation',
                     // On desktop, let day background handle clicks
-                    pointerEvents: isMobile ? 'auto' : 'none',
+                    pointerEvents: isTouchDevice ? 'auto' : 'none',
                   }}
-                  onClick={handleMobileClick}
-                  onTouchEnd={handleMobileClick}
+                  onClick={handleTouchClick}
+                  onTouchEnd={handleTouchClick}
                 >
                   <span>{label}</span>
                   <span
@@ -287,7 +305,7 @@ export default function CalendarView() {
         }}
       />
       <div
-        className={`${isMobile ? 'mt-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'} ${i18n.language === 'he' ? 'md:grid-flow-col-dense' : ''}`}
+        className={`${isSmallScreen ? 'mt-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'} ${i18n.language === 'he' ? 'md:grid-flow-col-dense' : ''}`}
       >
         <DayEvents
           events={dayEvents}
@@ -295,8 +313,8 @@ export default function CalendarView() {
           onAddEvent={() => setIsModalOpen(true)}
           selectedDate={selectedDate}
         />
-        {/* Hide EventDetails on mobile - use modal instead */}
-        {!isMobile && (
+        {/* Hide EventDetails only on small screens (phones) - tablets get two-panel view */}
+        {!isSmallScreen && (
           <EventDetails
             event={selectedEvent}
             onDelete={handleDeleteEvent}
@@ -325,7 +343,7 @@ export default function CalendarView() {
         </div>
       )}
 
-      {/* Mobile event details modal */}
+      {/* Small screen event details modal (phones only) */}
       {isMobileEventModalOpen && selectedEvent && (
         <div className='fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 z-50 flex justify-center items-center p-4'>
           <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-600'>
