@@ -45,6 +45,7 @@ export default function CalendarView() {
   const [date, setDate] = useState(new Date());
   const [calendarKey, setCalendarKey] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [isMobileEventModalOpen, setIsMobileEventModalOpen] = useState(false);
 
   // Track viewport changes and force calendar re-initialization when needed
   useEffect(() => {
@@ -115,12 +116,21 @@ export default function CalendarView() {
   const handleSelectEvent = (event: EventOccurrence) => {
     setSelectedEvent(event);
     setSelectedDate(event.start);
+
+    // On mobile, open modal for better UX
+    if (isMobile) {
+      setIsMobileEventModalOpen(true);
+    }
   };
 
   const handleDeleteEvent = async (id: string) => {
     const success = await deleteEvent(id);
     if (success) {
       setSelectedEvent(null);
+      // Close mobile modal if open
+      if (isMobile) {
+        setIsMobileEventModalOpen(false);
+      }
     }
   };
 
@@ -128,7 +138,15 @@ export default function CalendarView() {
     const success = await updateEvent(event);
     if (success && selectedEvent) {
       setSelectedEvent({ ...selectedEvent, ...event });
+      // Close mobile modal if open
+      if (isMobile) {
+        setIsMobileEventModalOpen(false);
+      }
     }
+  };
+
+  const handleCloseMobileEventModal = () => {
+    setIsMobileEventModalOpen(false);
   };
 
   const handleNavigate = (newDate: Date) => {
@@ -259,7 +277,7 @@ export default function CalendarView() {
         }}
       />
       <div
-        className={`grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ${i18n.language === 'he' ? 'md:grid-flow-col-dense' : ''}`}
+        className={`${isMobile ? 'mt-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'} ${i18n.language === 'he' ? 'md:grid-flow-col-dense' : ''}`}
       >
         <DayEvents
           events={dayEvents}
@@ -267,17 +285,21 @@ export default function CalendarView() {
           onAddEvent={() => setIsModalOpen(true)}
           selectedDate={selectedDate}
         />
-        <EventDetails
-          event={selectedEvent}
-          onDelete={handleDeleteEvent}
-          onSave={handleSaveEvent}
-          isSaving={isSaving}
-          isDeleting={isDeleting}
-        />
+        {/* Hide EventDetails on mobile - use modal instead */}
+        {!isMobile && (
+          <EventDetails
+            event={selectedEvent}
+            onDelete={handleDeleteEvent}
+            onSave={handleSaveEvent}
+            isSaving={isSaving}
+            isDeleting={isDeleting}
+          />
+        )}
       </div>
+      {/* Event creation modal */}
       {isModalOpen && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center'>
-          <div className='bg-white p-4 rounded-lg'>
+        <div className='fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 z-50 flex justify-center items-center'>
+          <div className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-600'>
             <EventForm
               onAddEvent={handleAddEvent}
               isCreating={isCreating}
@@ -285,10 +307,43 @@ export default function CalendarView() {
             />
             <button
               onClick={() => setIsModalOpen(false)}
-              className='mt-4 bg-red-500 text-white p-2 rounded-md'
+              className='mt-4 w-full bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200'
             >
               {t('Close')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile event details modal */}
+      {isMobileEventModalOpen && selectedEvent && (
+        <div className='fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 z-50 flex justify-center items-center p-4'>
+          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-600'>
+            <div className='flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700'>
+              <h2
+                className={`text-lg font-semibold text-gray-900 dark:text-gray-100 ${
+                  i18n.language === 'he' ? 'text-right' : 'text-left'
+                }`}
+              >
+                {t('Event Details')}
+              </h2>
+              <button
+                onClick={handleCloseMobileEventModal}
+                className='text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400'
+                aria-label={t('Close')}
+              >
+                ×
+              </button>
+            </div>
+            <div className='p-4 overflow-y-auto bg-white dark:bg-gray-800'>
+              <EventDetails
+                event={selectedEvent}
+                onDelete={handleDeleteEvent}
+                onSave={handleSaveEvent}
+                isSaving={isSaving}
+                isDeleting={isDeleting}
+              />
+            </div>
           </div>
         </div>
       )}
