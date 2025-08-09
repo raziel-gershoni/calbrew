@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
 
@@ -9,11 +9,20 @@ export const useLanguage = () => {
   const { i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
 
+  // Use refs to prevent duplicate calls in Strict Mode
+  const hasInitializedRef = useRef(false);
+  const fetchingRef = useRef(false);
+
   // Fetch user's language preference on session load
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+
     if (session?.user?.id) {
+      hasInitializedRef.current = true;
       fetchUserLanguage();
-    } else {
+    } else if (session !== undefined) {
+      // Wait for session to be determined
+      hasInitializedRef.current = true;
       // If not logged in, use localStorage fallback
       const savedLanguage = localStorage.getItem('calbrew-language') || 'en';
       if (i18n.language !== savedLanguage) {
@@ -23,7 +32,11 @@ export const useLanguage = () => {
   }, [session?.user?.id, i18n]);
 
   const fetchUserLanguage = async () => {
+    // Prevent concurrent calls
+    if (fetchingRef.current) return;
+
     try {
+      fetchingRef.current = true;
       const response = await fetch('/api/user/language');
       if (response.ok) {
         const result = await response.json();
@@ -43,6 +56,8 @@ export const useLanguage = () => {
       if (i18n.language !== savedLanguage) {
         i18n.changeLanguage(savedLanguage);
       }
+    } finally {
+      fetchingRef.current = false;
     }
   };
 

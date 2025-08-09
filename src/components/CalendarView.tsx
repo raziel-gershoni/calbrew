@@ -16,6 +16,7 @@ import LoadingSpinner from './LoadingSpinner';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
 import { useEvents } from '@/hooks/useEvents';
+import { useLanguage } from '@/hooks/useLanguage';
 import {
   generateEventOccurrences,
   EventOccurrence,
@@ -35,6 +36,7 @@ export default function CalendarView() {
     updateEvent,
     deleteEvent,
   } = useEvents();
+  const { changeLanguage, isLoading: isLanguageLoading } = useLanguage();
 
   const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -149,6 +151,11 @@ export default function CalendarView() {
     setIsMobileEventModalOpen(false);
   };
 
+  const handleLanguageToggle = () => {
+    const newLanguage = i18n.language === 'en' ? 'he' : 'en';
+    changeLanguage(newLanguage);
+  };
+
   const handleNavigate = (newDate: Date) => {
     setDate(newDate);
   };
@@ -199,7 +206,10 @@ export default function CalendarView() {
 
   return (
     <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-      <CalendarHeader />
+      <CalendarHeader
+        onLanguageToggle={handleLanguageToggle}
+        isLanguageLoading={isLanguageLoading}
+      />
       <Calendar
         key={calendarKey}
         localizer={localizer}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Event } from '@/types/event';
 import { useToast } from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
@@ -34,8 +34,18 @@ export function useEvents(): UseEventsReturn {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Prevent duplicate calls
+  const fetchingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
+
   const fetchEvents = useCallback(async () => {
+    // Prevent concurrent calls
+    if (fetchingRef.current) {
+      return;
+    }
+
     try {
+      fetchingRef.current = true;
       setIsLoading(true);
       const res = await fetch('/api/events');
       const response: ApiResponse<Event[]> = await res.json();
@@ -57,12 +67,16 @@ export function useEvents(): UseEventsReturn {
       showError(t('Failed to load events. Please try refreshing the page.'));
     } finally {
       setIsLoading(false);
+      fetchingRef.current = false;
     }
   }, [showError, t]);
 
-  // Automatically fetch events on mount
+  // Automatically fetch events on mount (with deduplication)
   useEffect(() => {
-    fetchEvents();
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      fetchEvents();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run on mount
 
