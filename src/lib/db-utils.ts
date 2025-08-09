@@ -413,6 +413,53 @@ export async function createEventOccurrencesBatch(
   }, 'Create event occurrences batch');
 }
 
+// Language preference operations
+export async function getUserLanguage(userId: string): Promise<string> {
+  return withDatabaseRetry(async () => {
+    const stmt = getPreparedStatement(
+      'getUserLanguage',
+      'SELECT language FROM users WHERE id = ?',
+    );
+    return new Promise<string>((resolve, reject) => {
+      stmt.get([userId], (err: Error | null, row?: { language: string }) => {
+        if (err) {
+          reject(createDatabaseError('Failed to get user language', err));
+        } else {
+          resolve(row?.language || 'en');
+        }
+      });
+    });
+  }, 'Get user language');
+}
+
+export async function updateUserLanguage(
+  userId: string,
+  language: string,
+): Promise<void> {
+  return withDatabaseRetry(async () => {
+    const stmt = getPreparedStatement(
+      'updateUserLanguage',
+      'UPDATE users SET language = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    );
+    return new Promise<void>((resolve, reject) => {
+      stmt.run(
+        [language, userId],
+        function (this: { changes: number }, err: Error | null) {
+          if (err) {
+            reject(createDatabaseError('Failed to update user language', err));
+          } else if (this.changes === 0) {
+            reject(
+              createDatabaseError('User not found when updating language'),
+            );
+          } else {
+            resolve();
+          }
+        },
+      );
+    });
+  }, 'Update user language');
+}
+
 // Performance monitoring
 export function logPreparedStatementStats() {
   console.log(`Prepared statements cache size: ${preparedStatements.size}`);

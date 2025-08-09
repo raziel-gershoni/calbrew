@@ -44,6 +44,7 @@ const resources = {
       Week: 'Week',
       Agenda: 'Agenda',
       Time: 'Time',
+      'Event Details': 'Event Details',
     },
   },
   he: {
@@ -87,16 +88,32 @@ const resources = {
       Week: 'שבוע',
       Agenda: 'סדר יום',
       Time: 'שעה',
+      'Event Details': 'פרטי אירוע',
     },
   },
 };
 
+// Get saved language from localStorage or default to 'en' (fallback only)
+const getSavedLanguage = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('calbrew-language') || 'en';
+  }
+  return 'en';
+};
+
 i18n.use(initReactI18next).init({
   resources,
-  lng: 'en',
+  lng: getSavedLanguage(), // Initial fallback, will be overridden by useLanguage hook
   interpolation: {
     escapeValue: false,
   },
+});
+
+// Keep localStorage as backup for language changes
+i18n.on('languageChanged', (lng) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('calbrew-language', lng);
+  }
 });
 
 export default i18n;

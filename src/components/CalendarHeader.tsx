@@ -2,6 +2,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { useSession, signOut } from 'next-auth/react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface CalendarHeaderProps {
   className?: string;
@@ -12,9 +13,11 @@ export default function CalendarHeader({
 }: CalendarHeaderProps) {
   const { t, i18n } = useTranslation();
   const { data: session } = useSession();
+  const { currentLanguage, changeLanguage, isLoading } = useLanguage();
 
   const handleLanguageToggle = () => {
-    i18n.changeLanguage(i18n.language === 'en' ? 'he' : 'en');
+    const newLanguage = currentLanguage === 'en' ? 'he' : 'en';
+    changeLanguage(newLanguage);
   };
 
   return (
@@ -34,9 +37,10 @@ export default function CalendarHeader({
         <div className='md:hidden flex items-center'>
           <button
             onClick={handleLanguageToggle}
-            className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg mx-2'
+            disabled={isLoading}
+            className='bg-blue-500 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-2 px-4 rounded-lg shadow-lg mx-2 transition-colors duration-200'
           >
-            {i18n.language === 'en' ? 'עברית' : 'English'}
+            {isLoading ? '...' : currentLanguage === 'en' ? 'עברית' : 'English'}
           </button>
           <button
             onClick={() => signOut()}
@@ -66,9 +70,10 @@ export default function CalendarHeader({
         </button>
         <button
           onClick={handleLanguageToggle}
-          className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
+          disabled={isLoading}
+          className='bg-blue-500 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors duration-200'
         >
-          {i18n.language === 'en' ? 'עברית' : 'English'}
+          {isLoading ? '...' : currentLanguage === 'en' ? 'עברית' : 'English'}
         </button>
       </div>
     </div>

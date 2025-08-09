@@ -40,6 +40,7 @@ db.serialize(() => {
       emailVerified DATETIME,
       image TEXT,
       calbrew_calendar_id TEXT,
+      language TEXT DEFAULT 'en',
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -92,6 +93,14 @@ db.serialize(() => {
       }
     },
   );
+
+  // Add language column to existing users table if it doesn't exist
+  db.run(`ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'en'`, (err) => {
+    // Ignore error if column already exists
+    if (err && !err.message.includes('duplicate column name')) {
+      console.error('Error adding language column:', err.message);
+    }
+  });
 
   // Create indexes for better performance
   db.run(`CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id)`);
