@@ -60,9 +60,19 @@ export default function CalendarView() {
         navigator.maxTouchPoints > 0 ||
         (navigator as any).msMaxTouchPoints > 0;
 
-      // Detect small screens (for layout preferences)
-      // Use modal layout only for truly small screens (phones)
-      const newIsSmallScreen = window.innerWidth < 640; // sm breakpoint
+      // Smart layout detection using multiple factors
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      // Use modal layout when:
+      // 1. Very small screens (phones) - width < 640px
+      // 2. Limited height regardless of width - height < 600px (landscape phones/tablets)
+      // 3. Small total area (small devices) - area < 400,000 pixels
+      const isVerySmallWidth = width < 640;
+      const isLimitedHeight = height < 600;
+      const isSmallArea = width * height < 400000; // ~632x632 equivalent
+      
+      const newIsSmallScreen = isVerySmallWidth || isLimitedHeight || isSmallArea;
 
       const touchChanged = hasTouchSupport !== isTouchDevice;
       const screenChanged = newIsSmallScreen !== isSmallScreen;
@@ -74,6 +84,19 @@ export default function CalendarView() {
         // Force calendar re-render if touch detection changed
         if (touchChanged) {
           setCalendarKey((prev) => prev + 1);
+        }
+        
+        // Debug log for development (remove in production)
+        if (process.env.NODE_ENV === 'development' && screenChanged) {
+          console.log('Layout decision:', {
+            width,
+            height,
+            area: width * height,
+            isVerySmallWidth,
+            isLimitedHeight,
+            isSmallArea,
+            useModal: newIsSmallScreen
+          });
         }
       }
     };
