@@ -46,3 +46,187 @@
 [dir='rtl'] .text-end {
   text-align: end;
 }
+
+/* Fix mobile touch issues */
+.rbc-calendar {
+  /* Ensure proper touch handling */
+  touch-action: manipulation;
+}
+
+/* Fix mobile day selection by ensuring proper touch events */
+.rbc-day-bg {
+  cursor: pointer;
+  /* Enable touch events on mobile */
+  touch-action: manipulation;
+}
+
+/* Ensure month date headers are clickable on mobile */
+.rbc-date-cell {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Fix button press state getting stuck */
+.rbc-btn-group button {
+  /* Reset button appearance */
+  -webkit-appearance: none;
+  appearance: none;
+
+  /* Prevent sticky hover/active states */
+  -webkit-tap-highlight-color: transparent;
+
+  /* Ensure proper touch handling */
+  touch-action: manipulation;
+
+  /* Remove any persistent active state */
+  user-select: none;
+  -webkit-user-select: none;
+
+  /* Prevent focus outline from creating visual "stuck" state */
+  outline: none;
+
+  /* Quick transition to reset state */
+  transition: all 0.1s ease;
+}
+
+/* Ensure button states reset properly */
+.rbc-btn-group button:active {
+  transform: scale(0.95);
+}
+
+.rbc-btn-group button:not(:active):not(:hover):not(:focus) {
+  /* Force reset to normal state */
+  transform: none !important;
+  box-shadow: none !important;
+  background-color: initial;
+}
+
+/* Remove focus styles that can appear "stuck" */
+.rbc-btn-group button:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Ensure day cells are properly clickable on mobile */
+.rbc-month-view .rbc-date-cell {
+  /* Make the entire date cell clickable */
+  position: relative;
+}
+
+.rbc-month-view .rbc-date-cell > a {
+  /* Expand clickable area */
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Fix for custom date headers being unclickable */
+.rbc-date-cell .flex {
+  pointer-events: auto;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Enhanced mobile day cell interaction */
+.rbc-date-cell {
+  position: relative;
+  /* Ensure the entire cell is interactive */
+  min-height: 40px;
+}
+
+/* Make sure day cells respond to touch events */
+.rbc-month-view .rbc-date-cell {
+  /* Increase touch target size for mobile */
+  min-height: 50px;
+}
+
+/* Style for selected day cell */
+.rbc-date-cell.rbc-selected {
+  background-color: #3b82f6 !important;
+  color: white !important;
+}
+
+/* Ensure date headers fill the cell and are clickable */
+.rbc-date-cell > div {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  /* Ensure touch events work */
+  touch-action: manipulation;
+  /* Visual feedback for touch */
+  transition: background-color 0.1s ease;
+}
+
+.rbc-date-cell > div:active {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Make entire day cells clickable for day selection */
+.rbc-month-view .rbc-day-bg {
+  position: relative;
+  cursor: pointer;
+}
+
+/* Add invisible overlay to make empty day areas clickable */
+.rbc-month-view .rbc-day-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: pointer;
+  /* Make it invisible but clickable */
+  background: transparent;
+}
+
+/* Ensure events are still clickable by raising their z-index */
+.rbc-month-view .rbc-event {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+/* Ensure date headers are above the overlay */
+.rbc-month-view .rbc-date-cell {
+  position: relative;
+  z-index: 2;
+}
+
+/* Disable visual range selection feedback but keep single day selection */
+.rbc-day-bg.rbc-selected-bg {
+  background-color: transparent !important;
+}
+
+.rbc-day-bg.rbc-range-bg {
+  background-color: transparent !important;
+}
+
+.rbc-day-bg.rbc-range-start-bg {
+  background-color: transparent !important;
+}
+
+.rbc-day-bg.rbc-range-end-bg {
+  background-color: transparent !important;
+}
+
+/* Only show selection for our custom dayPropGetter styling */
+.rbc-day-bg.rbc-selected {
+  background-color: transparent !important;
+}
+
+/* Improve touch targets on mobile */
+@media (hover: none) and (pointer: coarse) {
+  .rbc-date-cell {
+    min-height: 60px;
+  }
+
+  .rbc-date-cell > div {
+    padding: 8px;
+  }
+}

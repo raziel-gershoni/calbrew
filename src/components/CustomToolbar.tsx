@@ -62,16 +62,41 @@ export default function CustomToolbar({
       ? `${hebrewDateStr} (${gregorianDateStr})`
       : `${gregorianDateStr} (${hebrewDateStr})`;
 
+  // Handle button press to prevent stuck active state
+  const handleButtonPress = (
+    action: 'PREV' | 'TODAY' | 'NEXT',
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    // Force blur to remove active/focus state
+    event.currentTarget.blur();
+    onNavigate(action);
+  };
+
   return (
     <div className='rbc-toolbar'>
       <span className='rbc-btn-group'>
-        <button type='button' onClick={() => onNavigate('PREV')}>
+        <button
+          type='button'
+          onClick={(e) => handleButtonPress('PREV', e)}
+          onMouseUp={(e) => e.currentTarget.blur()}
+          onTouchEnd={(e) => e.currentTarget.blur()}
+        >
           {i18n.language === 'he' ? '→' : '←'}
         </button>
-        <button type='button' onClick={() => onNavigate('TODAY')}>
+        <button
+          type='button'
+          onClick={(e) => handleButtonPress('TODAY', e)}
+          onMouseUp={(e) => e.currentTarget.blur()}
+          onTouchEnd={(e) => e.currentTarget.blur()}
+        >
           {t('Today')}
         </button>
-        <button type='button' onClick={() => onNavigate('NEXT')}>
+        <button
+          type='button'
+          onClick={(e) => handleButtonPress('NEXT', e)}
+          onMouseUp={(e) => e.currentTarget.blur()}
+          onTouchEnd={(e) => e.currentTarget.blur()}
+        >
           {i18n.language === 'he' ? '←' : '→'}
         </button>
       </span>

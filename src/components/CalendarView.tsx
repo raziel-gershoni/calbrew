@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/he';
@@ -62,6 +62,12 @@ export default function CalendarView() {
     setSelectedDate(slotInfo.start);
     setSelectedEvent(null);
   };
+
+  // Add mobile-specific day selection handler
+  const handleDayClick = useCallback((date: Date) => {
+    setSelectedDate(date);
+    setSelectedEvent(null);
+  }, []);
 
   const handleAddEvent = async (event: Omit<Event, 'id'>) => {
     const success = await createEvent(event);
@@ -147,7 +153,7 @@ export default function CalendarView() {
         endAccessor='end'
         style={{ height: 500 }}
         rtl={i18n.language === 'he'}
-        selectable
+        selectable={true}
         date={date}
         onNavigate={handleNavigate}
         onSelectSlot={handleSelectSlot}
@@ -162,13 +168,32 @@ export default function CalendarView() {
               const isSelected =
                 selectedDate && moment(date).isSame(selectedDate, 'day');
               return (
-                <div className='flex flex-col items-center'>
+                <div
+                  className='flex flex-col items-center cursor-pointer w-full h-full'
+                  onClick={() => handleDayClick(date)}
+                  onTouchStart={() => handleDayClick(date)}
+                  style={{
+                    minHeight: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    touchAction: 'manipulation',
+                  }}
+                >
                   <span>{label}</span>
                   <span
                     className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500'}`}
                   >
                     {gematriya(hdate.getDate())}
                   </span>
+                </div>
+              );
+            },
+            event: ({ event }) => {
+              // Custom event component that doesn't interfere with day selection
+              return (
+                <div className='rbc-event-content' title={event.title}>
+                  {event.title}
                 </div>
               );
             },
