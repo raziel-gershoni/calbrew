@@ -23,7 +23,8 @@
     "react-big-calendar": "^1.19.4",
     "react-dom": "19.1.0",
     "react-i18next": "^15.6.1",
-    "sqlite3": "^5.1.7"
+    "sqlite3": "^5.1.7",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

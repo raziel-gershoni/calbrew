@@ -2,10 +2,14 @@ import { useState, useCallback, useEffect } from 'react';
 import { Event } from '@/types/event';
 import { useToast } from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
+import { ApiResponse } from '@/lib/validation';
 
 interface DeleteResponse {
   success: boolean;
-  warning?: string;
+  data?: {
+    warning?: string;
+  };
+  warning?: string; // Legacy support
 }
 
 interface UseEventsReturn {
@@ -34,11 +38,20 @@ export function useEvents(): UseEventsReturn {
     try {
       setIsLoading(true);
       const res = await fetch('/api/events');
+      const response: ApiResponse<Event[]> = await res.json();
+
       if (!res.ok) {
+        if (response.success === false) {
+          throw new Error(response.error);
+        }
         throw new Error(`Failed to fetch events: ${res.statusText}`);
       }
-      const data: Event[] = await res.json();
-      setEvents(data);
+
+      if (response.success && response.data) {
+        setEvents(response.data);
+      } else {
+        setEvents([]);
+      }
     } catch (error) {
       console.error('Error fetching events:', error);
       showError(t('Failed to load events. Please try refreshing the page.'));
@@ -65,18 +78,35 @@ export function useEvents(): UseEventsReturn {
           body: JSON.stringify(event),
         });
 
+        const response: ApiResponse = await res.json();
+
         if (!res.ok) {
-          throw new Error(`Failed to create event: ${res.statusText}`);
+          if (response.success === false) {
+            // Show validation errors if available
+            if (
+              response.code === 'VALIDATION_ERROR' &&
+              response.details &&
+              Array.isArray(response.details)
+            ) {
+              const validationMessages = response.details
+                .map((detail) => `${detail.field}: ${detail.message}`)
+                .join(', ');
+              showError(`${t('Validation error')}: ${validationMessages}`);
+            } else {
+              showError(response.error);
+            }
+          } else {
+            throw new Error(`Failed to create event: ${res.statusText}`);
+          }
+          return false;
         }
 
         // Refetch events after successful creation
-        const refetchRes = await fetch('/api/events');
-        if (refetchRes.ok) {
-          const data: Event[] = await refetchRes.json();
-          setEvents(data);
-        }
+        await fetchEvents();
 
-        showSuccess(t('Event created successfully!'));
+        const successMessage =
+          response.success === true ? response.message : undefined;
+        showSuccess(successMessage || t('Event created successfully!'));
         return true;
       } catch (error) {
         console.error('Error creating event:', error);
@@ -86,7 +116,7 @@ export function useEvents(): UseEventsReturn {
         setIsCreating(false);
       }
     },
-    [showError, showSuccess, t],
+    [showError, showSuccess, t, fetchEvents],
   );
 
   const updateEvent = useCallback(
@@ -101,18 +131,35 @@ export function useEvents(): UseEventsReturn {
           body: JSON.stringify(event),
         });
 
+        const response: ApiResponse = await res.json();
+
         if (!res.ok) {
-          throw new Error(`Failed to save event: ${res.statusText}`);
+          if (response.success === false) {
+            // Show validation errors if available
+            if (
+              response.code === 'VALIDATION_ERROR' &&
+              response.details &&
+              Array.isArray(response.details)
+            ) {
+              const validationMessages = response.details
+                .map((detail) => `${detail.field}: ${detail.message}`)
+                .join(', ');
+              showError(`${t('Validation error')}: ${validationMessages}`);
+            } else {
+              showError(response.error);
+            }
+          } else {
+            throw new Error(`Failed to save event: ${res.statusText}`);
+          }
+          return false;
         }
 
         // Refetch events after successful update
-        const refetchRes = await fetch('/api/events');
-        if (refetchRes.ok) {
-          const data: Event[] = await refetchRes.json();
-          setEvents(data);
-        }
+        await fetchEvents();
 
-        showSuccess(t('Event saved successfully!'));
+        const successMessage =
+          response.success === true ? response.message : undefined;
+        showSuccess(successMessage || t('Event saved successfully!'));
         return true;
       } catch (error) {
         console.error('Error saving event:', error);
@@ -122,7 +169,7 @@ export function useEvents(): UseEventsReturn {
         setIsSaving(false);
       }
     },
-    [showError, showSuccess, t],
+    [showError, showSuccess, t, fetchEvents],
   );
 
   const deleteEvent = useCallback(
@@ -133,23 +180,30 @@ export function useEvents(): UseEventsReturn {
           method: 'DELETE',
         });
 
-        if (!res.ok) {
-          throw new Error(`Failed to delete event: ${res.statusText}`);
-        }
+        const response: ApiResponse<DeleteResponse> = await res.json();
 
-        const result: DeleteResponse = await res.json();
+        if (!res.ok) {
+          if (response.success === false) {
+            showError(response.error);
+          } else {
+            throw new Error(`Failed to delete event: ${res.statusText}`);
+          }
+          return false;
+        }
 
         // Refetch events after successful deletion
-        const refetchRes = await fetch('/api/events');
-        if (refetchRes.ok) {
-          const data: Event[] = await refetchRes.json();
-          setEvents(data);
-        }
+        await fetchEvents();
 
-        if (result.warning) {
-          showSuccess(`${t('Event deleted successfully!')} ${result.warning}`);
+        // Check for warnings in the new format or legacy format
+        const warning =
+          response.success === true ? response.data?.warning : undefined;
+        const successMessage =
+          response.success === true ? response.message : undefined;
+
+        if (warning) {
+          showSuccess(`${t('Event deleted successfully!')} ${warning}`);
         } else {
-          showSuccess(t('Event deleted successfully!'));
+          showSuccess(successMessage || t('Event deleted successfully!'));
         }
         return true;
       } catch (error) {
@@ -160,7 +214,7 @@ export function useEvents(): UseEventsReturn {
         setIsDeleting(false);
       }
     },
-    [showError, showSuccess, t],
+    [showError, showSuccess, t, fetchEvents],
   );
 
   return {
