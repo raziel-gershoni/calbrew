@@ -43,6 +43,30 @@ export default function CalendarView() {
     null,
   );
   const [date, setDate] = useState(new Date());
+  const [calendarKey, setCalendarKey] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Track viewport changes and force calendar re-initialization when needed
+  useEffect(() => {
+    const checkViewport = () => {
+      const newIsMobile = window.innerWidth < 768; // md breakpoint
+      if (newIsMobile !== isMobile) {
+        setIsMobile(newIsMobile);
+        // Force calendar re-render to fix event listener initialization
+        setCalendarKey((prev) => prev + 1);
+      }
+    };
+
+    // Check initial viewport
+    checkViewport();
+
+    // Listen for viewport changes
+    window.addEventListener('resize', checkViewport);
+
+    return () => {
+      window.removeEventListener('resize', checkViewport);
+    };
+  }, [isMobile]);
 
   // Generate event occurrences when events or date changes
   useEffect(() => {
@@ -58,13 +82,25 @@ export default function CalendarView() {
     setOccurrences(newOccurrences);
   }, [masterEvents, date]);
 
+  // Force calendar re-initialization after initial load to ensure mobile works
+  useEffect(() => {
+    if (!isLoading && masterEvents.length >= 0) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        setCalendarKey((prev) => prev + 1);
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, masterEvents.length]);
+
   const handleSelectSlot = (slotInfo: { start: Date }) => {
     setSelectedDate(slotInfo.start);
     setSelectedEvent(null);
   };
 
-  // Add mobile-specific day selection handler
-  const handleDayClick = useCallback((date: Date) => {
+  // Fallback day selection handler for mobile
+  const handleDaySelect = useCallback((date: Date) => {
     setSelectedDate(date);
     setSelectedEvent(null);
   }, []);
@@ -147,6 +183,7 @@ export default function CalendarView() {
     <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
       <CalendarHeader />
       <Calendar
+        key={calendarKey}
         localizer={localizer}
         events={occurrences}
         startAccessor='start'
@@ -167,18 +204,35 @@ export default function CalendarView() {
               const hdate = new HDate(date);
               const isSelected =
                 selectedDate && moment(date).isSame(selectedDate, 'day');
+
+              // Mobile-only click handler
+              const handleMobileClick = (
+                e: React.MouseEvent | React.TouchEvent,
+              ) => {
+                // Only handle clicks on mobile (touch devices)
+                if (isMobile) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleDaySelect(date);
+                }
+              };
+
               return (
                 <div
-                  className='flex flex-col items-center cursor-pointer w-full h-full'
-                  onClick={() => handleDayClick(date)}
-                  onTouchStart={() => handleDayClick(date)}
+                  className={`flex flex-col items-center w-full h-full ${
+                    isMobile ? 'cursor-pointer' : ''
+                  }`}
                   style={{
                     minHeight: '40px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     touchAction: 'manipulation',
+                    // On desktop, let day background handle clicks
+                    pointerEvents: isMobile ? 'auto' : 'none',
                   }}
+                  onClick={handleMobileClick}
+                  onTouchEnd={handleMobileClick}
                 >
                   <span>{label}</span>
                   <span
@@ -192,7 +246,11 @@ export default function CalendarView() {
             event: ({ event }) => {
               // Custom event component that doesn't interfere with day selection
               return (
-                <div className='rbc-event-content' title={event.title}>
+                <div
+                  className='rbc-event-content'
+                  title={event.title}
+                  style={{ position: 'relative', zIndex: 2 }}
+                >
                   {event.title}
                 </div>
               );

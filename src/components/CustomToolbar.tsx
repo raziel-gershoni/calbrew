@@ -72,6 +72,24 @@ export default function CustomToolbar({
     onNavigate(action);
   };
 
+  // Mobile-specific touch handler to prevent hover stuck states
+  const handleTouchEnd = (event: React.TouchEvent<HTMLButtonElement>) => {
+    // Force blur immediately
+    event.currentTarget.blur();
+    // Force a style reset on mobile by temporarily removing hover classes
+    const button = event.currentTarget;
+    button.style.backgroundColor = 'initial';
+    button.style.transform = 'none';
+    button.style.boxShadow = 'none';
+
+    // Reset after a short delay to ensure hover state is cleared
+    setTimeout(() => {
+      button.style.backgroundColor = '';
+      button.style.transform = '';
+      button.style.boxShadow = '';
+    }, 50);
+  };
+
   return (
     <div className='rbc-toolbar'>
       <span className='rbc-btn-group'>
@@ -79,7 +97,7 @@ export default function CustomToolbar({
           type='button'
           onClick={(e) => handleButtonPress('PREV', e)}
           onMouseUp={(e) => e.currentTarget.blur()}
-          onTouchEnd={(e) => e.currentTarget.blur()}
+          onTouchEnd={handleTouchEnd}
         >
           {i18n.language === 'he' ? '→' : '←'}
         </button>
@@ -87,7 +105,7 @@ export default function CustomToolbar({
           type='button'
           onClick={(e) => handleButtonPress('TODAY', e)}
           onMouseUp={(e) => e.currentTarget.blur()}
-          onTouchEnd={(e) => e.currentTarget.blur()}
+          onTouchEnd={handleTouchEnd}
         >
           {t('Today')}
         </button>
@@ -95,7 +113,7 @@ export default function CustomToolbar({
           type='button'
           onClick={(e) => handleButtonPress('NEXT', e)}
           onMouseUp={(e) => e.currentTarget.blur()}
-          onTouchEnd={(e) => e.currentTarget.blur()}
+          onTouchEnd={handleTouchEnd}
         >
           {i18n.language === 'he' ? '←' : '→'}
         </button>
