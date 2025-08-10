@@ -49,6 +49,7 @@ export default function CalendarView() {
   // Separate touch detection from layout preferences
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [isLandscapePhone, setIsLandscapePhone] = useState(false);
   const [calendarHeight, setCalendarHeight] = useState(500);
   const [isMobileEventModalOpen, setIsMobileEventModalOpen] = useState(false);
 
@@ -76,10 +77,18 @@ export default function CalendarView() {
       const newIsSmallScreen =
         isVerySmallWidth || isLimitedHeight || isSmallArea;
 
+      // Detect landscape phone layout (phones in landscape orientation)
+      const newIsLandscapePhone =
+        width > height && width < 1024 && width >= 640;
+
       // Dynamic calendar height based on screen size and available space
       let newCalendarHeight = 500; // Default height for tablets/desktop
 
-      if (width <= 375 && height <= 667) {
+      if (newIsLandscapePhone) {
+        // Landscape phones - fit available height minus header and padding
+        // Approximate header height: ~80px, padding: ~32px, leave some space for events
+        newCalendarHeight = Math.max(250, height - 120);
+      } else if (width <= 375 && height <= 667) {
         // iPhone SE and similar very small devices (375x667)
         newCalendarHeight = 300;
       } else if (width <= 390 && height >= 800 && height < 900) {
@@ -98,11 +107,13 @@ export default function CalendarView() {
 
       const touchChanged = hasTouchSupport !== isTouchDevice;
       const screenChanged = newIsSmallScreen !== isSmallScreen;
+      const landscapeChanged = newIsLandscapePhone !== isLandscapePhone;
       const heightChanged = newCalendarHeight !== calendarHeight;
 
-      if (touchChanged || screenChanged || heightChanged) {
+      if (touchChanged || screenChanged || landscapeChanged || heightChanged) {
         setIsTouchDevice(hasTouchSupport);
         setIsSmallScreen(newIsSmallScreen);
+        setIsLandscapePhone(newIsLandscapePhone);
         setCalendarHeight(newCalendarHeight);
 
         // Force calendar re-render if touch detection changed
@@ -138,7 +149,7 @@ export default function CalendarView() {
     return () => {
       window.removeEventListener('resize', checkDevice);
     };
-  }, [isTouchDevice, isSmallScreen, calendarHeight]);
+  }, [isTouchDevice, isSmallScreen, isLandscapePhone, calendarHeight]);
 
   // Generate event occurrences when events or date changes
   useEffect(() => {
@@ -279,162 +290,313 @@ export default function CalendarView() {
         onLanguageToggle={handleLanguageToggle}
         isLanguageLoading={isLanguageLoading}
       />
-      <Calendar
-        key={calendarKey}
-        localizer={localizer}
-        events={occurrences}
-        startAccessor='start'
-        endAccessor='end'
-        style={{ height: calendarHeight }}
-        rtl={i18n.language === 'he'}
-        selectable={true}
-        date={date}
-        onNavigate={handleNavigate}
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectEvent}
-        messages={calendarMessages}
-        dayPropGetter={dayPropGetter}
-        components={{
-          toolbar: CustomToolbar,
-          month: {
-            dateHeader: ({ date, label }) => {
-              const hdate = new HDate(date);
-              const isSelected =
-                selectedDate && moment(date).isSame(selectedDate, 'day');
+      {isLandscapePhone ? (
+        /* Landscape phone layout - calendar and events side by side with automatic RTL */
+        <div className='grid grid-cols-2 gap-4 mt-4'>
+          <Calendar
+            key={calendarKey}
+            localizer={localizer}
+            events={occurrences}
+            startAccessor='start'
+            endAccessor='end'
+            style={{ height: calendarHeight }}
+            rtl={i18n.language === 'he'}
+            selectable={true}
+            date={date}
+            onNavigate={handleNavigate}
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            messages={calendarMessages}
+            dayPropGetter={dayPropGetter}
+            components={{
+              toolbar: CustomToolbar,
+              month: {
+                dateHeader: ({ date, label }) => {
+                  const hdate = new HDate(date);
+                  const isSelected =
+                    selectedDate && moment(date).isSame(selectedDate, 'day');
 
-              // Count events for this day
-              const dayEventCount = occurrences.filter((event) =>
-                moment(event.start).isSame(date, 'day'),
-              ).length;
+                  // Count events for this day
+                  const dayEventCount = occurrences.filter((event) =>
+                    moment(event.start).isSame(date, 'day'),
+                  ).length;
 
-              // Adapt layout based on calendar height
-              const isVerySmallCalendar = calendarHeight <= 300;
+                  // Adapt layout based on calendar height
+                  const isVerySmallCalendar = calendarHeight <= 300;
 
-              // Touch device click handler
-              const handleTouchClick = (
-                e: React.MouseEvent | React.TouchEvent,
-              ) => {
-                // Handle clicks on all touch devices (phones, tablets, etc.)
-                if (isTouchDevice) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleDaySelect(date);
-                }
-              };
+                  // Touch device click handler
+                  const handleTouchClick = (
+                    e: React.MouseEvent | React.TouchEvent,
+                  ) => {
+                    // Handle clicks on all touch devices (phones, tablets, etc.)
+                    if (isTouchDevice) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDaySelect(date);
+                    }
+                  };
 
-              return (
-                <div
-                  className={`flex ${isVerySmallCalendar ? 'flex-col justify-center items-center' : 'flex-col items-center'} w-full h-full ${
-                    isTouchDevice ? 'cursor-pointer' : ''
-                  }`}
-                  style={{
-                    minHeight: isVerySmallCalendar ? '32px' : '40px',
-                    display: 'flex',
-                    padding: isVerySmallCalendar ? '1px 2px' : '4px',
-                    touchAction: 'manipulation',
-                    // On desktop, let day background handle clicks
-                    pointerEvents: isTouchDevice ? 'auto' : 'none',
-                  }}
-                  onClick={handleTouchClick}
-                  onTouchEnd={handleTouchClick}
-                >
-                  {isVerySmallCalendar ? (
-                    // Ultra-compact layout for very small screens - everything in one line
-                    <div className='flex items-center justify-center w-full h-full space-x-1'>
-                      <span
-                        className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}
-                      >
-                        {label}
-                      </span>
-                      {dayEventCount > 0 && (
-                        <span
-                          className={`inline-flex items-center justify-center w-3 h-3 text-xs rounded-full ${
-                            isSelected
-                              ? 'bg-white text-blue-600'
-                              : 'bg-blue-600 text-white'
-                          }`}
-                          style={{ fontSize: '9px', lineHeight: '1' }}
-                        >
-                          {dayEventCount > 9 ? '9' : dayEventCount}
-                        </span>
-                      )}
-                      <span
-                        className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
-                        style={{ fontSize: '10px' }}
-                      >
-                        {gematriya(hdate.getDate())}
-                      </span>
-                    </div>
-                  ) : (
-                    // Standard vertical layout for larger screens
-                    <>
-                      <div className='flex items-center space-x-1'>
-                        <span
-                          className={
-                            isSelected
-                              ? 'text-white'
-                              : 'text-gray-900 dark:text-gray-100'
-                          }
-                        >
-                          {label}
-                        </span>
-                        {dayEventCount > 0 && (
+                  return (
+                    <div
+                      className={`flex ${isVerySmallCalendar ? 'flex-col justify-center items-center' : 'flex-col items-center'} w-full h-full ${
+                        isTouchDevice ? 'cursor-pointer' : ''
+                      }`}
+                      style={{
+                        minHeight: isVerySmallCalendar ? '32px' : '40px',
+                        display: 'flex',
+                        padding: isVerySmallCalendar ? '1px 2px' : '4px',
+                        touchAction: 'manipulation',
+                        // On desktop, let day background handle clicks
+                        pointerEvents: isTouchDevice ? 'auto' : 'none',
+                      }}
+                      onClick={handleTouchClick}
+                      onTouchEnd={handleTouchClick}
+                    >
+                      {isVerySmallCalendar ? (
+                        // Ultra-compact layout for very small screens - everything in one line
+                        <div className='flex items-center justify-center w-full h-full space-x-1'>
                           <span
-                            className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full ${
-                              isSelected
-                                ? 'bg-white text-blue-600'
-                                : 'bg-blue-600 text-white'
-                            }`}
+                            className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}
                           >
-                            {dayEventCount > 9 ? '9+' : dayEventCount}
+                            {label}
                           </span>
-                        )}
-                      </div>
-                      <span
-                        className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
-                      >
-                        {gematriya(hdate.getDate())}
-                      </span>
-                    </>
-                  )}
-                </div>
-              );
-            },
-            event: ({ event }) => {
-              // Custom event component that doesn't interfere with day selection
-              return (
-                <div
-                  className='rbc-event-content'
-                  title={event.title}
-                  style={{ position: 'relative', zIndex: 2 }}
-                >
-                  {event.title}
-                </div>
-              );
-            },
-          },
-        }}
-      />
-      <div
-        className={`${isSmallScreen ? 'mt-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'} ${i18n.language === 'he' ? 'md:grid-flow-col-dense' : ''}`}
-      >
-        <DayEvents
-          events={dayEvents}
-          onSelectEvent={handleSelectEvent}
-          onAddEvent={() => setIsModalOpen(true)}
-          selectedDate={selectedDate}
-        />
-        {/* Hide EventDetails only on small screens (phones) - tablets get two-panel view */}
-        {!isSmallScreen && (
-          <EventDetails
-            event={selectedEvent}
-            onDelete={handleDeleteEvent}
-            onSave={handleSaveEvent}
-            isSaving={isSaving}
-            isDeleting={isDeleting}
+                          {dayEventCount > 0 && (
+                            <span
+                              className={`inline-flex items-center justify-center w-3 h-3 text-xs rounded-full ${
+                                isSelected
+                                  ? 'bg-white text-blue-600'
+                                  : 'bg-blue-600 text-white'
+                              }`}
+                              style={{ fontSize: '9px', lineHeight: '1' }}
+                            >
+                              {dayEventCount > 9 ? '9' : dayEventCount}
+                            </span>
+                          )}
+                          <span
+                            className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                            style={{ fontSize: '10px' }}
+                          >
+                            {gematriya(hdate.getDate())}
+                          </span>
+                        </div>
+                      ) : (
+                        // Standard vertical layout for larger screens
+                        <>
+                          <div className='flex items-center space-x-1'>
+                            <span
+                              className={
+                                isSelected
+                                  ? 'text-white'
+                                  : 'text-gray-900 dark:text-gray-100'
+                              }
+                            >
+                              {label}
+                            </span>
+                            {dayEventCount > 0 && (
+                              <span
+                                className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full ${
+                                  isSelected
+                                    ? 'bg-white text-blue-600'
+                                    : 'bg-blue-600 text-white'
+                                }`}
+                              >
+                                {dayEventCount > 9 ? '9+' : dayEventCount}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                          >
+                            {gematriya(hdate.getDate())}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  );
+                },
+                event: ({ event }) => {
+                  // Custom event component that doesn't interfere with day selection
+                  return (
+                    <div
+                      className='rbc-event-content'
+                      title={event.title}
+                      style={{ position: 'relative', zIndex: 2 }}
+                    >
+                      {event.title}
+                    </div>
+                  );
+                },
+              },
+            }}
           />
-        )}
-      </div>
+          <DayEvents
+            events={dayEvents}
+            onSelectEvent={handleSelectEvent}
+            onAddEvent={() => setIsModalOpen(true)}
+            selectedDate={selectedDate}
+          />
+        </div>
+      ) : (
+        /* Portrait phones and tablets - normal layout */
+        <>
+          <Calendar
+            key={calendarKey}
+            localizer={localizer}
+            events={occurrences}
+            startAccessor='start'
+            endAccessor='end'
+            style={{ height: calendarHeight }}
+            rtl={i18n.language === 'he'}
+            selectable={true}
+            date={date}
+            onNavigate={handleNavigate}
+            onSelectSlot={handleSelectSlot}
+            onSelectEvent={handleSelectEvent}
+            messages={calendarMessages}
+            dayPropGetter={dayPropGetter}
+            components={{
+              toolbar: CustomToolbar,
+              month: {
+                dateHeader: ({ date, label }) => {
+                  const hdate = new HDate(date);
+                  const isSelected =
+                    selectedDate && moment(date).isSame(selectedDate, 'day');
+
+                  // Count events for this day
+                  const dayEventCount = occurrences.filter((event) =>
+                    moment(event.start).isSame(date, 'day'),
+                  ).length;
+
+                  // Adapt layout based on calendar height
+                  const isVerySmallCalendar = calendarHeight <= 300;
+
+                  // Touch device click handler
+                  const handleTouchClick = (
+                    e: React.MouseEvent | React.TouchEvent,
+                  ) => {
+                    // Handle clicks on all touch devices (phones, tablets, etc.)
+                    if (isTouchDevice) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDaySelect(date);
+                    }
+                  };
+
+                  return (
+                    <div
+                      className={`flex ${isVerySmallCalendar ? 'flex-col justify-center items-center' : 'flex-col items-center'} w-full h-full ${
+                        isTouchDevice ? 'cursor-pointer' : ''
+                      }`}
+                      style={{
+                        minHeight: isVerySmallCalendar ? '32px' : '40px',
+                        display: 'flex',
+                        padding: isVerySmallCalendar ? '1px 2px' : '4px',
+                        touchAction: 'manipulation',
+                        // On desktop, let day background handle clicks
+                        pointerEvents: isTouchDevice ? 'auto' : 'none',
+                      }}
+                      onClick={handleTouchClick}
+                      onTouchEnd={handleTouchClick}
+                    >
+                      {isVerySmallCalendar ? (
+                        // Ultra-compact layout for very small screens - everything in one line
+                        <div className='flex items-center justify-center w-full h-full space-x-1'>
+                          <span
+                            className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}
+                          >
+                            {label}
+                          </span>
+                          {dayEventCount > 0 && (
+                            <span
+                              className={`inline-flex items-center justify-center w-3 h-3 text-xs rounded-full ${
+                                isSelected
+                                  ? 'bg-white text-blue-600'
+                                  : 'bg-blue-600 text-white'
+                              }`}
+                              style={{ fontSize: '9px', lineHeight: '1' }}
+                            >
+                              {dayEventCount > 9 ? '9' : dayEventCount}
+                            </span>
+                          )}
+                          <span
+                            className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                            style={{ fontSize: '10px' }}
+                          >
+                            {gematriya(hdate.getDate())}
+                          </span>
+                        </div>
+                      ) : (
+                        // Standard vertical layout for larger screens
+                        <>
+                          <div className='flex items-center space-x-1'>
+                            <span
+                              className={
+                                isSelected
+                                  ? 'text-white'
+                                  : 'text-gray-900 dark:text-gray-100'
+                              }
+                            >
+                              {label}
+                            </span>
+                            {dayEventCount > 0 && (
+                              <span
+                                className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full ${
+                                  isSelected
+                                    ? 'bg-white text-blue-600'
+                                    : 'bg-blue-600 text-white'
+                                }`}
+                              >
+                                {dayEventCount > 9 ? '9+' : dayEventCount}
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                          >
+                            {gematriya(hdate.getDate())}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  );
+                },
+                event: ({ event }) => {
+                  // Custom event component that doesn't interfere with day selection
+                  return (
+                    <div
+                      className='rbc-event-content'
+                      title={event.title}
+                      style={{ position: 'relative', zIndex: 2 }}
+                    >
+                      {event.title}
+                    </div>
+                  );
+                },
+              },
+            }}
+          />
+          <div
+            className={`${isSmallScreen ? 'mt-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'} ${i18n.language === 'he' ? 'md:grid-flow-col-dense' : ''}`}
+          >
+            <DayEvents
+              events={dayEvents}
+              onSelectEvent={handleSelectEvent}
+              onAddEvent={() => setIsModalOpen(true)}
+              selectedDate={selectedDate}
+            />
+            {/* Hide EventDetails only on small screens (phones) - tablets get two-panel view */}
+            {!isSmallScreen && (
+              <EventDetails
+                event={selectedEvent}
+                onDelete={handleDeleteEvent}
+                onSave={handleSaveEvent}
+                isSaving={isSaving}
+                isDeleting={isDeleting}
+              />
+            )}
+          </div>
+        </>
+      )}
       {/* Event creation modal */}
       {isModalOpen && (
         <div className='fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 z-50 flex justify-center items-center'>
