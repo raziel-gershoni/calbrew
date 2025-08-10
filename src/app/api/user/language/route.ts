@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { getUserLanguage, updateUserLanguage } from '@/lib/db-utils';
 
 // GET: Get user's language preference
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 

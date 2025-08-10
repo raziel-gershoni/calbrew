@@ -15,7 +15,9 @@ export const useLanguage = () => {
 
   // Fetch user's language preference on session load
   useEffect(() => {
-    if (hasInitializedRef.current) return;
+    if (hasInitializedRef.current) {
+      return;
+    }
 
     if (session?.user?.id) {
       hasInitializedRef.current = true;
@@ -33,7 +35,9 @@ export const useLanguage = () => {
 
   const fetchUserLanguage = async () => {
     // Prevent concurrent calls
-    if (fetchingRef.current) return;
+    if (fetchingRef.current) {
+      return;
+    }
 
     try {
       fetchingRef.current = true;

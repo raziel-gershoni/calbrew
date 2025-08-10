@@ -1,7 +1,9 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
-import { useSession, signOut } from 'next-auth/react';
+import { useState } from 'react';
+import { useSession } from 'next-auth/react';
+import HamburgerMenu from './HamburgerMenu';
+import UserProfileModal from './UserProfileModal';
 
 interface CalendarHeaderProps {
   className?: string;
@@ -20,8 +22,8 @@ export default function CalendarHeader({
   isSmallScreen = false,
   calendarHeight = 500,
 }: CalendarHeaderProps) {
-  const { t, i18n } = useTranslation();
   const { data: session } = useSession();
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const handleLanguageToggle = () => {
     if (onLanguageToggle) {
@@ -29,15 +31,22 @@ export default function CalendarHeader({
     }
   };
 
+  const openProfileModal = () => {
+    setIsProfileModalOpen(true);
+  };
+
+  const closeProfileModal = () => {
+    setIsProfileModalOpen(false);
+  };
+
   // Determine compact styling based on device characteristics
   const isVerySmallDevice = calendarHeight <= 300;
-  // Compact padding/margins for all landscape phones and small portrait phones
   const isCompactPhone = isSmallScreen && calendarHeight <= 400;
   const isLandscapeMode = isLandscapePhone;
 
   // Dynamic class for responsive padding and margins
   const headerClasses = [
-    'flex flex-col md:flex-row justify-between items-center',
+    'flex items-center',
     isVerySmallDevice
       ? 'mb-1 p-1'
       : isCompactPhone || isLandscapeMode
@@ -46,15 +55,7 @@ export default function CalendarHeader({
     className,
   ].join(' ');
 
-  // Dynamic button sizing - compact for very small devices and small portrait phones
-  const buttonSizeClass = isVerySmallDevice
-    ? 'py-1 px-2 text-xs'
-    : isCompactPhone
-      ? 'py-1.5 px-3 text-sm'
-      : 'py-2 px-4';
-
-  // Dynamic title sizing - separate logic for title to keep full size on landscape phones
-  // Only make title smaller for very small devices or small portrait phones
+  // Dynamic title sizing - keep full size on landscape phones
   const shouldCompactTitle =
     isVerySmallDevice || (isCompactPhone && !isLandscapePhone);
   const titleSizeClass = isVerySmallDevice
@@ -63,76 +64,64 @@ export default function CalendarHeader({
       ? 'text-xl'
       : 'text-2xl';
 
+  // Smart logic for showing user image based on horizontal space
+  const shouldShowUserImage =
+    // Always show on desktop/large screens (md and above - 768px+)
+    !isSmallScreen ||
+    // Show on landscape phones (more horizontal space available)
+    isLandscapePhone ||
+    // Show on tablets like iPad mini even in portrait (they have enough width)
+    // This covers devices roughly between 640px - 768px width
+    (isSmallScreen && !isVerySmallDevice && !isCompactPhone);
+
   return (
-    <div className={headerClasses}>
-      {/* User Info Section */}
-      <div className='flex justify-between w-full md:w-auto'>
-        <div className='flex-1 md:w-auto flex justify-start'>
-          <span className='mx-4'>
-            {session?.user?.name}
-            <div className='text-xs'>{session?.user?.email}</div>
-          </span>
-        </div>
-
-        {/* Mobile Controls */}
-        <div className='md:hidden flex items-center'>
+    <>
+      <div className={headerClasses}>
+        {/* Main Header Layout - Simple flexbox that works naturally with RTL */}
+        <div className='flex justify-between items-center w-full'>
+          {/* Clickable User Info */}
           <button
-            onClick={handleLanguageToggle}
-            disabled={isLanguageLoading}
-            className={`bg-blue-500 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold rounded-lg shadow-lg mx-2 transition-colors duration-200 ${buttonSizeClass}`}
+            onClick={openProfileModal}
+            className='flex items-center mx-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-left'
+            aria-label={`Open profile for ${session?.user?.name}`}
           >
-            {isLanguageLoading
-              ? '...'
-              : i18n.language === 'en'
-                ? 'עברית'
-                : 'English'}
+            {session?.user?.image && shouldShowUserImage && (
+              <img
+                src={session.user.image}
+                alt={session.user.name || 'User'}
+                className='w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 me-2'
+              />
+            )}
+            <div>
+              <div className='text-sm font-medium text-gray-900 dark:text-white'>
+                {session?.user?.name}
+              </div>
+              <div className='text-xs text-gray-600 dark:text-gray-400'>
+                {session?.user?.email}
+              </div>
+            </div>
           </button>
-          <button
-            onClick={() => signOut()}
-            className={`bg-red-500 hover:bg-red-700 text-white font-bold rounded-lg shadow-lg ${buttonSizeClass}`}
-          >
-            {t('Sign Out')}
-          </button>
+
+          {/* App Title - Centered */}
+          <div className='flex-1 flex justify-center'>
+            <h1 className={`${titleSizeClass} font-bold`}>Calbrew</h1>
+          </div>
+
+          {/* Hamburger Menu - Always on the end (right in LTR, left in RTL) */}
+          <HamburgerMenu
+            onLanguageToggle={handleLanguageToggle}
+            isLanguageLoading={isLanguageLoading}
+            onOpenProfile={openProfileModal}
+            className='flex-shrink-0'
+          />
         </div>
       </div>
 
-      {/* App Title */}
-      <div
-        className={`w-full md:w-auto flex justify-center ${
-          isVerySmallDevice
-            ? 'mt-1 md:mt-0'
-            : isCompactPhone
-              ? 'mt-2 md:mt-0'
-              : 'mt-4 md:mt-0'
-        }`}
-      >
-        <h1 className={`${titleSizeClass} font-bold md:hidden`}>Calbrew</h1>
-      </div>
-
-      <div className='hidden md:flex items-center flex-1 justify-center'>
-        <h1 className={`${titleSizeClass} font-bold mx-4`}>Calbrew</h1>
-      </div>
-
-      {/* Desktop Controls */}
-      <div className='hidden md:flex items-center'>
-        <button
-          onClick={() => signOut()}
-          className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg mx-2'
-        >
-          {t('Sign Out')}
-        </button>
-        <button
-          onClick={handleLanguageToggle}
-          disabled={isLanguageLoading}
-          className='bg-blue-500 hover:bg-blue-700 disabled:bg-blue-300 text-white font-bold py-2 px-4 rounded-lg shadow-lg transition-colors duration-200'
-        >
-          {isLanguageLoading
-            ? '...'
-            : i18n.language === 'en'
-              ? 'עברית'
-              : 'English'}
-        </button>
-      </div>
-    </div>
+      {/* User Profile Modal */}
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={closeProfileModal}
+      />
+    </>
   );
 }
