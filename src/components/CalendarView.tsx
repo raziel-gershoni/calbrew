@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, ToolbarProps } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/he';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -60,6 +60,7 @@ export default function CalendarView() {
       const hasTouchSupport =
         'ontouchstart' in window ||
         navigator.maxTouchPoints > 0 ||
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (navigator as any).msMaxTouchPoints > 0;
 
       // Smart layout detection using multiple factors
@@ -85,9 +86,11 @@ export default function CalendarView() {
       let newCalendarHeight = 500; // Default height for tablets/desktop
 
       if (newIsLandscapePhone) {
-        // Landscape phones - fit available height minus header and padding
-        // Approximate header height: ~80px, padding: ~32px, leave some space for events
-        newCalendarHeight = Math.max(250, height - 120);
+        // Landscape phones - be more aggressive with height usage
+        // Account for: app header (~40px compact), calendar toolbar (~30px compact), margins (~20px)
+        // Leave minimal space for events list, maximize calendar
+        const reservedSpace = isVerySmallWidth && height <= 375 ? 70 : 90; // iPhone SE vs larger phones
+        newCalendarHeight = Math.max(280, height - reservedSpace);
       } else if (width <= 375 && height <= 667) {
         // iPhone SE and similar very small devices (375x667)
         newCalendarHeight = 300;
@@ -289,10 +292,13 @@ export default function CalendarView() {
       <CalendarHeader
         onLanguageToggle={handleLanguageToggle}
         isLanguageLoading={isLanguageLoading}
+        isLandscapePhone={isLandscapePhone}
+        isSmallScreen={isSmallScreen}
+        calendarHeight={calendarHeight}
       />
       {isLandscapePhone ? (
         /* Landscape phone layout - calendar and events side by side with automatic RTL */
-        <div className='grid grid-cols-2 gap-4 mt-4'>
+        <div className='grid grid-cols-2 gap-2 mt-2'>
           <Calendar
             key={calendarKey}
             localizer={localizer}
@@ -309,7 +315,14 @@ export default function CalendarView() {
             messages={calendarMessages}
             dayPropGetter={dayPropGetter}
             components={{
-              toolbar: CustomToolbar,
+              toolbar: (props: ToolbarProps<EventOccurrence>) => (
+                <CustomToolbar
+                  {...props}
+                  isLandscapePhone={isLandscapePhone}
+                  isSmallScreen={isSmallScreen}
+                  calendarHeight={calendarHeight}
+                />
+              ),
               month: {
                 dateHeader: ({ date, label }) => {
                   const hdate = new HDate(date);
@@ -455,7 +468,14 @@ export default function CalendarView() {
             messages={calendarMessages}
             dayPropGetter={dayPropGetter}
             components={{
-              toolbar: CustomToolbar,
+              toolbar: (props: ToolbarProps<EventOccurrence>) => (
+                <CustomToolbar
+                  {...props}
+                  isLandscapePhone={isLandscapePhone}
+                  isSmallScreen={isSmallScreen}
+                  calendarHeight={calendarHeight}
+                />
+              ),
               month: {
                 dateHeader: ({ date, label }) => {
                   const hdate = new HDate(date);

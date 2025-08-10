@@ -9,10 +9,19 @@ interface CalendarDisplayEvent extends Event {
   end: Date;
 }
 
+interface CustomToolbarProps extends ToolbarProps<CalendarDisplayEvent> {
+  isLandscapePhone?: boolean;
+  isSmallScreen?: boolean;
+  calendarHeight?: number;
+}
+
 export default function CustomToolbar({
   date,
   onNavigate,
-}: ToolbarProps<CalendarDisplayEvent>) {
+  isLandscapePhone = false,
+  isSmallScreen = false,
+  calendarHeight = 500,
+}: CustomToolbarProps) {
   const { t, i18n } = useTranslation();
 
   moment.locale(i18n.language);
@@ -57,10 +66,43 @@ export default function CustomToolbar({
 
   const gregorianDateStr = moment(date).format('MMMM YYYY');
 
-  const title =
-    i18n.language === 'he'
-      ? `${hebrewDateStr} (${gregorianDateStr})`
-      : `${gregorianDateStr} (${hebrewDateStr})`;
+  // Determine compact styling
+  const isVerySmallCalendar = calendarHeight <= 300;
+  const isCompactDevice =
+    isLandscapePhone || isSmallScreen || isVerySmallCalendar;
+
+  // Always show both Hebrew and Gregorian months, adjust format based on space
+  let title = '';
+  if (isVerySmallCalendar) {
+    // Ultra-compact: abbreviated Gregorian but still show both
+    const shortGregorian = moment(date).format('MMM YY');
+    title =
+      i18n.language === 'he'
+        ? `${hebrewDateStr} (${shortGregorian})`
+        : `${shortGregorian} (${hebrewDateStr})`;
+  } else if (isCompactDevice) {
+    // Compact: abbreviated Gregorian format
+    const shortGregorian = moment(date).format('MMM YYYY');
+    title =
+      i18n.language === 'he'
+        ? `${hebrewDateStr} (${shortGregorian})`
+        : `${shortGregorian} (${hebrewDateStr})`;
+  } else {
+    // Full format for larger screens
+    title =
+      i18n.language === 'he'
+        ? `${hebrewDateStr} (${gregorianDateStr})`
+        : `${gregorianDateStr} (${hebrewDateStr})`;
+  }
+
+  // Dynamic toolbar classes for responsive sizing
+  const toolbarClasses = [
+    'rbc-toolbar',
+    isVerySmallCalendar ? 'rbc-toolbar-compact' : '',
+    isCompactDevice ? 'rbc-toolbar-mobile' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   // Handle button press to prevent stuck active state
   const handleButtonPress = (
@@ -91,7 +133,7 @@ export default function CustomToolbar({
   };
 
   return (
-    <div className='rbc-toolbar'>
+    <div className={toolbarClasses}>
       <span className='rbc-btn-group'>
         <button
           type='button'
