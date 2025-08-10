@@ -49,6 +49,7 @@ export default function CalendarView() {
   // Separate touch detection from layout preferences
   const [isTouchDevice, setIsTouchDevice] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
+  const [calendarHeight, setCalendarHeight] = useState(500);
   const [isMobileEventModalOpen, setIsMobileEventModalOpen] = useState(false);
 
   // Detect device capabilities and screen size
@@ -63,7 +64,7 @@ export default function CalendarView() {
       // Smart layout detection using multiple factors
       const width = window.innerWidth;
       const height = window.innerHeight;
-      
+
       // Use modal layout when:
       // 1. Very small screens (phones) - width < 640px
       // 2. Limited height regardless of width - height < 600px (landscape phones/tablets)
@@ -71,23 +72,49 @@ export default function CalendarView() {
       const isVerySmallWidth = width < 640;
       const isLimitedHeight = height < 600;
       const isSmallArea = width * height < 400000; // ~632x632 equivalent
-      
-      const newIsSmallScreen = isVerySmallWidth || isLimitedHeight || isSmallArea;
+
+      const newIsSmallScreen =
+        isVerySmallWidth || isLimitedHeight || isSmallArea;
+
+      // Dynamic calendar height based on screen size and available space
+      let newCalendarHeight = 500; // Default height for tablets/desktop
+
+      if (width <= 375 && height <= 667) {
+        // iPhone SE and similar very small devices (375x667)
+        newCalendarHeight = 300;
+      } else if (width <= 390 && height >= 800 && height < 900) {
+        // iPhone 14, iPhone 13 mini, etc. (390x844, etc.)
+        newCalendarHeight = 480;
+      } else if (width <= 428 && height >= 900) {
+        // iPhone 14 Pro Max, iPhone 15 Pro Max, etc. (430x932, 428x926) - utilize the huge screen
+        newCalendarHeight = 550;
+      } else if (width <= 414 && height >= 850) {
+        // iPhone 13 Pro Max, iPhone 12 Pro Max, etc. (414x896)
+        newCalendarHeight = 520;
+      } else if (width < 640) {
+        // Other phones (iPhone 12, iPhone 13, etc.)
+        newCalendarHeight = 450;
+      }
 
       const touchChanged = hasTouchSupport !== isTouchDevice;
       const screenChanged = newIsSmallScreen !== isSmallScreen;
+      const heightChanged = newCalendarHeight !== calendarHeight;
 
-      if (touchChanged || screenChanged) {
+      if (touchChanged || screenChanged || heightChanged) {
         setIsTouchDevice(hasTouchSupport);
         setIsSmallScreen(newIsSmallScreen);
+        setCalendarHeight(newCalendarHeight);
 
         // Force calendar re-render if touch detection changed
         if (touchChanged) {
           setCalendarKey((prev) => prev + 1);
         }
-        
+
         // Debug log for development (remove in production)
-        if (process.env.NODE_ENV === 'development' && screenChanged) {
+        if (
+          process.env.NODE_ENV === 'development' &&
+          (screenChanged || heightChanged)
+        ) {
           console.log('Layout decision:', {
             width,
             height,
@@ -95,7 +122,8 @@ export default function CalendarView() {
             isVerySmallWidth,
             isLimitedHeight,
             isSmallArea,
-            useModal: newIsSmallScreen
+            useModal: newIsSmallScreen,
+            calendarHeight: newCalendarHeight,
           });
         }
       }
@@ -110,7 +138,7 @@ export default function CalendarView() {
     return () => {
       window.removeEventListener('resize', checkDevice);
     };
-  }, [isTouchDevice, isSmallScreen]);
+  }, [isTouchDevice, isSmallScreen, calendarHeight]);
 
   // Generate event occurrences when events or date changes
   useEffect(() => {
@@ -257,7 +285,7 @@ export default function CalendarView() {
         events={occurrences}
         startAccessor='start'
         endAccessor='end'
-        style={{ height: 500 }}
+        style={{ height: calendarHeight }}
         rtl={i18n.language === 'he'}
         selectable={true}
         date={date}
@@ -274,6 +302,14 @@ export default function CalendarView() {
               const isSelected =
                 selectedDate && moment(date).isSame(selectedDate, 'day');
 
+              // Count events for this day
+              const dayEventCount = occurrences.filter((event) =>
+                moment(event.start).isSame(date, 'day'),
+              ).length;
+
+              // Adapt layout based on calendar height
+              const isVerySmallCalendar = calendarHeight <= 300;
+
               // Touch device click handler
               const handleTouchClick = (
                 e: React.MouseEvent | React.TouchEvent,
@@ -288,14 +324,13 @@ export default function CalendarView() {
 
               return (
                 <div
-                  className={`flex flex-col items-center w-full h-full ${
+                  className={`flex ${isVerySmallCalendar ? 'flex-col justify-center items-center' : 'flex-col items-center'} w-full h-full ${
                     isTouchDevice ? 'cursor-pointer' : ''
                   }`}
                   style={{
-                    minHeight: '40px',
+                    minHeight: isVerySmallCalendar ? '32px' : '40px',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                    padding: isVerySmallCalendar ? '1px 2px' : '4px',
                     touchAction: 'manipulation',
                     // On desktop, let day background handle clicks
                     pointerEvents: isTouchDevice ? 'auto' : 'none',
@@ -303,12 +338,65 @@ export default function CalendarView() {
                   onClick={handleTouchClick}
                   onTouchEnd={handleTouchClick}
                 >
-                  <span>{label}</span>
-                  <span
-                    className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500'}`}
-                  >
-                    {gematriya(hdate.getDate())}
-                  </span>
+                  {isVerySmallCalendar ? (
+                    // Ultra-compact layout for very small screens - everything in one line
+                    <div className='flex items-center justify-center w-full h-full space-x-1'>
+                      <span
+                        className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}
+                      >
+                        {label}
+                      </span>
+                      {dayEventCount > 0 && (
+                        <span
+                          className={`inline-flex items-center justify-center w-3 h-3 text-xs rounded-full ${
+                            isSelected
+                              ? 'bg-white text-blue-600'
+                              : 'bg-blue-600 text-white'
+                          }`}
+                          style={{ fontSize: '9px', lineHeight: '1' }}
+                        >
+                          {dayEventCount > 9 ? '9' : dayEventCount}
+                        </span>
+                      )}
+                      <span
+                        className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                        style={{ fontSize: '10px' }}
+                      >
+                        {gematriya(hdate.getDate())}
+                      </span>
+                    </div>
+                  ) : (
+                    // Standard vertical layout for larger screens
+                    <>
+                      <div className='flex items-center space-x-1'>
+                        <span
+                          className={
+                            isSelected
+                              ? 'text-white'
+                              : 'text-gray-900 dark:text-gray-100'
+                          }
+                        >
+                          {label}
+                        </span>
+                        {dayEventCount > 0 && (
+                          <span
+                            className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full ${
+                              isSelected
+                                ? 'bg-white text-blue-600'
+                                : 'bg-blue-600 text-white'
+                            }`}
+                          >
+                            {dayEventCount > 9 ? '9+' : dayEventCount}
+                          </span>
+                        )}
+                      </div>
+                      <span
+                        className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
+                      >
+                        {gematriya(hdate.getDate())}
+                      </span>
+                    </>
+                  )}
                 </div>
               );
             },
