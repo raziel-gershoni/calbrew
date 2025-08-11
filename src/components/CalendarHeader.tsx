@@ -7,8 +7,6 @@ import UserProfileModal from './UserProfileModal';
 
 interface CalendarHeaderProps {
   className?: string;
-  onLanguageToggle?: () => void;
-  isLanguageLoading?: boolean;
   isLandscapePhone?: boolean;
   isSmallScreen?: boolean;
   calendarHeight?: number;
@@ -16,20 +14,12 @@ interface CalendarHeaderProps {
 
 export default function CalendarHeader({
   className = '',
-  onLanguageToggle,
-  isLanguageLoading = false,
   isLandscapePhone = false,
   isSmallScreen = false,
   calendarHeight = 500,
 }: CalendarHeaderProps) {
   const { data: session } = useSession();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-
-  const handleLanguageToggle = () => {
-    if (onLanguageToggle) {
-      onLanguageToggle();
-    }
-  };
 
   const openProfileModal = () => {
     setIsProfileModalOpen(true);
@@ -109,8 +99,6 @@ export default function CalendarHeader({
 
           {/* Hamburger Menu - Always on the end (right in LTR, left in RTL) */}
           <HamburgerMenu
-            onLanguageToggle={handleLanguageToggle}
-            isLanguageLoading={isLanguageLoading}
             onOpenProfile={openProfileModal}
             className='flex-shrink-0'
           />

@@ -49,9 +49,12 @@ export async function PUT(request: NextRequest) {
     const { language } = body;
 
     // Validate language
-    if (!language || !['en', 'he'].includes(language)) {
+    if (!language || !['en', 'he', 'es'].includes(language)) {
       return NextResponse.json(
-        { success: false, error: 'Invalid language. Must be "en" or "he"' },
+        {
+          success: false,
+          error: 'Invalid language. Must be "en", "he", or "es"',
+        },
         { status: 400 },
       );
     }

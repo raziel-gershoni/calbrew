@@ -3,21 +3,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { signOut } from 'next-auth/react';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface HamburgerMenuProps {
-  onLanguageToggle?: () => void;
-  isLanguageLoading?: boolean;
   onOpenProfile?: () => void;
   className?: string;
 }
 
 export default function HamburgerMenu({
-  onLanguageToggle,
-  isLanguageLoading = false,
   onOpenProfile,
   className = '',
 }: HamburgerMenuProps) {
   const { t, i18n } = useTranslation();
+  const { changeLanguage, isLoading: isLanguageLoading } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -42,10 +40,8 @@ export default function HamburgerMenu({
     }
   }, [isOpen]);
 
-  const handleLanguageToggle = () => {
-    if (onLanguageToggle) {
-      onLanguageToggle();
-    }
+  const handleLanguageSelect = (language: 'en' | 'es' | 'he') => {
+    changeLanguage(language);
     setIsOpen(false);
   };
 
@@ -95,11 +91,15 @@ export default function HamburgerMenu({
           className='absolute end-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50'
         >
           <div className='py-2'>
-            {/* Language Toggle - First option */}
+            {/* English */}
             <button
-              onClick={handleLanguageToggle}
+              onClick={() => handleLanguageSelect('en')}
               disabled={isLanguageLoading}
-              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200'
+              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200 ${
+                i18n.language === 'en'
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
+                  : 'text-gray-700 dark:text-gray-200'
+              }`}
             >
               <svg
                 className='w-4 h-4 me-3'
@@ -112,11 +112,94 @@ export default function HamburgerMenu({
               >
                 <path d='M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' />
               </svg>
-              {isLanguageLoading
-                ? t('Loading...')
-                : i18n.language === 'en'
-                  ? 'עברית'
-                  : 'English'}
+              {i18n.language === 'en' && (
+                <svg
+                  className='w-3 h-3 me-2'
+                  fill='currentColor'
+                  viewBox='0 0 20 20'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              )}
+              English
+            </button>
+
+            {/* Spanish */}
+            <button
+              onClick={() => handleLanguageSelect('es')}
+              disabled={isLanguageLoading}
+              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200 ${
+                i18n.language === 'es'
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
+                  : 'text-gray-700 dark:text-gray-200'
+              }`}
+            >
+              <svg
+                className='w-4 h-4 me-3'
+                fill='none'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth='2'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
+              >
+                <path d='M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' />
+              </svg>
+              {i18n.language === 'es' && (
+                <svg
+                  className='w-3 h-3 me-2'
+                  fill='currentColor'
+                  viewBox='0 0 20 20'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              )}
+              Español
+            </button>
+
+            {/* Hebrew */}
+            <button
+              onClick={() => handleLanguageSelect('he')}
+              disabled={isLanguageLoading}
+              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200 ${
+                i18n.language === 'he'
+                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
+                  : 'text-gray-700 dark:text-gray-200'
+              }`}
+            >
+              <svg
+                className='w-4 h-4 me-3'
+                fill='none'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth='2'
+                viewBox='0 0 24 24'
+                stroke='currentColor'
+              >
+                <path d='M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' />
+              </svg>
+              {i18n.language === 'he' && (
+                <svg
+                  className='w-3 h-3 me-2'
+                  fill='currentColor'
+                  viewBox='0 0 20 20'
+                >
+                  <path
+                    fillRule='evenodd'
+                    d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
+                    clipRule='evenodd'
+                  />
+                </svg>
+              )}
+              עברית
             </button>
 
             {/* Divider */}

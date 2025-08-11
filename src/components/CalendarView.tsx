@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Calendar, momentLocalizer, ToolbarProps } from 'react-big-calendar';
 import moment from 'moment';
 import 'moment/locale/he';
+import 'moment/locale/es';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '@/styles/calendar.css';
 import CustomToolbar from './CustomToolbar';
@@ -16,7 +17,6 @@ import LoadingSpinner from './LoadingSpinner';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
 import { useEvents } from '@/hooks/useEvents';
-import { useLanguage } from '@/hooks/useLanguage';
 import {
   generateEventOccurrences,
   EventOccurrence,
@@ -36,7 +36,6 @@ export default function CalendarView() {
     updateEvent,
     deleteEvent,
   } = useEvents();
-  const { changeLanguage, isLoading: isLanguageLoading } = useLanguage();
 
   const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -180,6 +179,13 @@ export default function CalendarView() {
     }
   }, [isLoading, masterEvents.length]);
 
+  // Set moment locale when language changes
+  useEffect(() => {
+    moment.locale(
+      i18n.language === 'he' ? 'he' : i18n.language === 'es' ? 'es' : 'en',
+    );
+  }, [i18n.language]);
+
   const handleSelectSlot = (slotInfo: { start: Date }) => {
     setSelectedDate(slotInfo.start);
     setSelectedEvent(null);
@@ -234,11 +240,6 @@ export default function CalendarView() {
     setIsMobileEventModalOpen(false);
   };
 
-  const handleLanguageToggle = () => {
-    const newLanguage = i18n.language === 'en' ? 'he' : 'en';
-    changeLanguage(newLanguage);
-  };
-
   const handleNavigate = (newDate: Date) => {
     setDate(newDate);
   };
@@ -290,8 +291,6 @@ export default function CalendarView() {
   return (
     <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
       <CalendarHeader
-        onLanguageToggle={handleLanguageToggle}
-        isLanguageLoading={isLanguageLoading}
         isLandscapePhone={isLandscapePhone}
         isSmallScreen={isSmallScreen}
         calendarHeight={calendarHeight}
