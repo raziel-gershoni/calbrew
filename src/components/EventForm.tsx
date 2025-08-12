@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
+import moment from 'moment';
 
 interface EventFormProps {
   onAddEvent: (event: Omit<Event, 'id'>) => void;
@@ -113,79 +114,47 @@ export default function EventForm({
           className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
         />
       </div>
-      <div className='grid grid-cols-3 gap-4'>
-        <div>
-          <label
-            htmlFor='hebrew_year'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            {t('Year')}
-          </label>
-          <div className='flex items-center'>
-            <button
-              type='button'
-              onClick={() => setHebrewYear(hebrew_year - 1)}
-              className='px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-l-md text-gray-700 dark:text-gray-300'
-            >
-              -
-            </button>
-            <input
-              id='hebrew_year'
-              type='text'
-              value={
-                i18n.language === 'he' ? gematriya(hebrew_year) : hebrew_year
+      {/* Selected Date Display */}
+      <div>
+        <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
+          {t('Hebrew Date')}
+        </label>
+        <div
+          className={`p-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-center ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+        >
+          <span className='text-lg font-medium text-gray-900 dark:text-gray-100'>
+            {(() => {
+              if (!selectedDate) {
+                return t('No date selected');
               }
-              readOnly
-              className='text-center w-full px-3 py-2 bg-white dark:bg-gray-800 border-t border-b border-gray-300 dark:border-gray-600 shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100'
-            />
-            <button
-              type='button'
-              onClick={() => setHebrewYear(hebrew_year + 1)}
-              className='px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-r-md text-gray-700 dark:text-gray-300'
-            >
-              +
-            </button>
-          </div>
-        </div>
-        <div>
-          <label
-            htmlFor='hebrew_month'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            {t('Month')}
-          </label>
-          <select
-            id='hebrew_month'
-            value={hebrew_month_num}
-            onChange={(e) => setHebrewMonthNum(parseInt(e.target.value))}
-            className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
-          >
-            {yearMonths.map((month) => (
-              <option key={month.num} value={month.num}>
-                {month.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label
-            htmlFor='hebrew_day'
-            className='block text-sm font-medium text-gray-700 dark:text-gray-300'
-          >
-            {t('Day')}
-          </label>
-          <select
-            id='hebrew_day'
-            value={hebrew_day}
-            onChange={(e) => setHebrewDay(parseInt(e.target.value))}
-            className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
-          >
-            {Array.from({ length: monthDays }, (_, i) => i + 1).map((d) => (
-              <option key={d} value={d}>
-                {i18n.language === 'he' ? gematriya(d) : d}
-              </option>
-            ))}
-          </select>
+
+              const hdate = new HDate(selectedDate);
+              const dayStr =
+                i18n.language === 'he'
+                  ? gematriya(hdate.getDate())
+                  : hdate.getDate().toString();
+              const monthNameEn = hdate.getMonthName();
+              const monthNameHe = Locale.gettext(monthNameEn, 'he');
+              const monthStr =
+                i18n.language === 'he' ? monthNameHe : monthNameEn;
+              const yearStr =
+                i18n.language === 'he'
+                  ? gematriya(hdate.getFullYear())
+                  : hdate.getFullYear().toString();
+
+              return i18n.language === 'he'
+                ? `${dayStr} ${monthStr}, ${yearStr}`
+                : `${dayStr} ${monthStr}, ${yearStr}`;
+            })()}
+          </span>
+          {selectedDate && (
+            <div className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
+              {(() => {
+                moment.locale(i18n.language);
+                return moment(selectedDate).format('Do MMMM, YYYY');
+              })()}
+            </div>
+          )}
         </div>
       </div>
       <div>

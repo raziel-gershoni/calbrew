@@ -39,7 +39,7 @@ export default function CalendarView() {
 
   const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<EventOccurrence | null>(
     null,
   );
