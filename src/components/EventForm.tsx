@@ -157,6 +157,8 @@ export default function EventForm({
           )}
         </div>
       </div>
+      {/* Recurrence dropdown hidden for now - functionality not implemented */}
+      {/*
       <div>
         <label
           htmlFor='recurrence_rule'
@@ -175,6 +177,7 @@ export default function EventForm({
           <option value='weekly'>{t('Weekly')}</option>
         </select>
       </div>
+      */}
       <button
         type='submit'
         disabled={isCreating}
