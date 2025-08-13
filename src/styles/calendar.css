@@ -315,3 +315,181 @@
     padding-right: 0.125rem !important;
   }
 }
+
+/* Desktop hover plus button for adding events */
+.rbc-day-bg {
+  position: relative;
+}
+
+.desktop-add-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  background-color: #6b7280;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease,
+    transform 0.2s ease,
+    background-color 0.2s ease;
+  transform: scale(0.9);
+  z-index: 30;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.desktop-add-btn:hover {
+  background-color: #2563eb;
+  transform: scale(1.1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.desktop-add-btn:active {
+  transform: scale(0.9) !important;
+}
+
+/* Make sure the entire date cell is the hover target */
+.rbc-date-cell {
+  position: relative;
+}
+
+/* Individual cell hover detection */
+/* Show button only when specific cell is hovered */
+.cell-hovered .desktop-add-btn {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: scale(1) !important;
+  pointer-events: auto !important;
+  z-index: 25 !important;
+}
+
+/* Also show button when hovering date cell or day background parts directly */
+.rbc-date-cell.cell-hovered .desktop-add-btn,
+.rbc-day-bg.cell-hovered .desktop-add-btn {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: scale(1) !important;
+  pointer-events: auto !important;
+  z-index: 25 !important;
+}
+
+/* Fallback: Also show button when hovering the day background directly (CSS only) */
+.rbc-day-bg:hover .desktop-add-btn {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: scale(1) !important;
+  pointer-events: auto !important;
+  z-index: 25 !important;
+}
+
+/* Ensure all calendar cell parts can trigger hover detection */
+.rbc-date-cell,
+.rbc-day-bg,
+.rbc-date-cell > div {
+  pointer-events: auto !important;
+}
+
+/* Make sure events still remain clickable above hover detection */
+.rbc-event {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 5;
+}
+
+/* RTL support */
+[dir='rtl'] .desktop-add-btn {
+  right: auto;
+  left: 4px;
+}
+
+/* Dark mode support */
+.dark .desktop-add-btn {
+  background-color: #4f46e5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.dark .desktop-add-btn:hover {
+  background-color: #4338ca;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Ensure today's cell has proper hover behavior */
+.rbc-today .rbc-day-bg {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Make sure today's date header doesn't block hover on the lower part of the cell */
+.rbc-today .rbc-date-cell {
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* Ensure all child elements in today's cell allow hover to bubble up */
+.rbc-today * {
+  pointer-events: auto;
+}
+
+/* Ensure proper hover detection in cells with events */
+.rbc-row-segment {
+  pointer-events: none;
+  position: relative;
+}
+
+/* Events should be clickable but not block hover detection on their containers */
+.rbc-event {
+  pointer-events: auto;
+  position: relative;
+  z-index: 3;
+}
+
+/* Ensure event containers don't block hover on day backgrounds */
+.rbc-row-content {
+  pointer-events: none;
+  position: relative;
+}
+
+/* Allow hover to pass through to day backgrounds even with events present */
+.rbc-month-row .rbc-row {
+  pointer-events: none;
+}
+
+.rbc-month-row .rbc-row .rbc-row-content {
+  pointer-events: none;
+}
+
+/* Ensure day backgrounds remain interactive even with events */
+.rbc-day-bg {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Date cells should also remain fully interactive */
+.rbc-date-cell {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 2;
+}
+
+/* Event wrappers should not interfere with hover */
+.rbc-event-content {
+  pointer-events: auto;
+  position: relative;
+  z-index: 4;
+}

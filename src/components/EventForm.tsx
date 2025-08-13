@@ -25,7 +25,7 @@ export default function EventForm({
     new HDate().getMonth(),
   );
   const [hebrew_day, setHebrewDay] = useState(new HDate().getDate());
-  const [recurrence_rule, setRecurrenceRule] = useState('yearly');
+  const [recurrence_rule, _setRecurrenceRule] = useState('yearly');
 
   useEffect(() => {
     if (selectedDate) {

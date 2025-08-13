@@ -179,6 +179,414 @@ export default function CalendarView() {
     }
   }, [isLoading, masterEvents.length]);
 
+  // Add hover plus buttons to calendar day cells (desktop only)
+  useEffect(() => {
+    // Only add buttons on desktop (non-touch devices)
+    if (isTouchDevice) {
+      return;
+    }
+
+    let isUpdatingButtons = false;
+
+    const addPlusButtons = () => {
+      if (isUpdatingButtons) {
+        return;
+      }
+
+      isUpdatingButtons = true;
+
+      // Temporarily disconnect observer to prevent infinite loops
+      observer.disconnect();
+
+      // First, clean up any existing button setup
+      const existingButtons = document.querySelectorAll('.desktop-add-btn');
+      existingButtons.forEach((btn) => btn.remove());
+
+      document.querySelectorAll('[data-row-id]').forEach((row) => {
+        // Remove old event listeners by removing data attributes
+        row.removeAttribute('data-row-id');
+        row.removeAttribute('data-has-mousemove');
+      });
+
+      // Now add fresh buttons and event listeners
+      const monthRows = document.querySelectorAll('.rbc-month-row');
+      if (!monthRows.length) {
+        return;
+      }
+
+      // Set up each row with full cell hover detection
+      monthRows.forEach((monthRow, rowIndex) => {
+        const rowElement = monthRow as HTMLElement;
+        const rowId = `row-${rowIndex}`;
+        rowElement.setAttribute('data-row-id', rowId);
+
+        // Get all day cells in this row (the complete calendar cells)
+        const dayCells = monthRow.querySelectorAll('.rbc-date-cell');
+        const dayBgs = monthRow.querySelectorAll('.rbc-day-bg');
+        const buttonsInRow: {
+          button: HTMLButtonElement;
+          dayBg: HTMLElement;
+          dateCell: HTMLElement;
+        }[] = [];
+
+        // Add a plus button to each day background, but listen to entire cell
+        dayCells.forEach((dateCell, colIndex) => {
+          const dateCellElement = dateCell as HTMLElement;
+          const dayBgElement = dayBgs[colIndex] as HTMLElement;
+
+          if (!dayBgElement) {
+            return; // Skip if no corresponding day background
+          }
+
+          // Make sure the day background has relative positioning for the button
+          if (
+            dayBgElement.style.position !== 'relative' &&
+            dayBgElement.style.position !== 'absolute'
+          ) {
+            dayBgElement.style.position = 'relative';
+          }
+
+          // Create plus button and add to day background
+          const button = document.createElement('button');
+          button.className = 'desktop-add-btn';
+          button.innerHTML = '+';
+          button.title = t('Add event');
+          button.type = 'button';
+
+          // Style the button properly (hidden by default, shown on hover)
+          button.style.position = 'fixed';
+          button.style.width = '20px';
+          button.style.height = '20px';
+          button.style.opacity = '0';
+          button.style.visibility = 'hidden';
+          button.style.transform = 'scale(0.8)';
+          button.style.pointerEvents = 'auto';
+          button.style.backgroundColor = '#3b82f6';
+          button.style.color = 'white';
+          button.style.border = 'none';
+          button.style.borderRadius = '50%';
+          button.style.cursor = 'pointer';
+          button.style.fontSize = '14px';
+          button.style.fontWeight = 'bold';
+          button.style.display = 'flex';
+          button.style.alignItems = 'center';
+          button.style.justifyContent = 'center';
+          button.style.transition = 'all 0.2s ease';
+          button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+
+          // Add hover effects
+          button.addEventListener('mouseenter', () => {
+            button.style.backgroundColor = '#2563eb';
+            button.style.transform = 'scale(1)';
+          });
+
+          button.addEventListener('mouseleave', () => {
+            button.style.backgroundColor = '#3b82f6';
+            button.style.transform = 'scale(0.8)';
+          });
+
+          // Calculate global index for finding date
+          const _globalIndex = rowIndex * 7 + colIndex;
+
+          // Add click handler to open modal with correct date
+          button.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // More robust date extraction - look specifically in the date header area
+            let dayNum: number | null = null;
+
+            // Method 1: Look for date in the dateCell's direct children (date header)
+            const dateHeaderElements =
+              dateCellElement.querySelectorAll('div > span, span');
+            for (const element of dateHeaderElements) {
+              const text = element.textContent?.trim();
+              const match = text?.match(/^(\d{1,2})/);
+              if (match && !isNaN(parseInt(match[1]))) {
+                dayNum = parseInt(match[1]);
+                break;
+              }
+            }
+
+            // Method 2: If that fails, try the broader text content approach but be more selective
+            if (dayNum === null) {
+              const allText = dateCellElement.textContent || '';
+              // Look for 1-2 digits at the start, ignoring event text
+              const match = allText.match(/^\s*(\d{1,2})/);
+              if (match && !isNaN(parseInt(match[1]))) {
+                dayNum = parseInt(match[1]);
+              }
+            }
+
+            // Method 3: Calculate from position if extraction fails
+            if (dayNum === null) {
+              // Calculate day number from grid position
+              const startOfMonth = new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                1,
+              );
+              const firstDayOfWeek = startOfMonth.getDay();
+              const estimatedDay = rowIndex * 7 + colIndex - firstDayOfWeek + 1;
+
+              // Validate the estimated day is within the month
+              const daysInMonth = new Date(
+                date.getFullYear(),
+                date.getMonth() + 1,
+                0,
+              ).getDate();
+              if (estimatedDay >= 1 && estimatedDay <= daysInMonth) {
+                dayNum = estimatedDay;
+              }
+            }
+
+            if (dayNum !== null && dayNum >= 1 && dayNum <= 31) {
+              const cellDate = new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                dayNum,
+              );
+              setSelectedDate(cellDate);
+              setSelectedEvent(null);
+              setIsModalOpen(true);
+            } else {
+              // Fallback to current date if all methods fail
+              console.warn(
+                'Could not extract day number, using current date as fallback',
+              );
+              setSelectedDate(new Date());
+              setSelectedEvent(null);
+              setIsModalOpen(true);
+            }
+          });
+
+          // Instead of adding to dayBg, add to document body with absolute positioning
+          // This bypasses any CSS blocking issues within the calendar
+          document.body.appendChild(button);
+
+          // Position the button over the cell using getBoundingClientRect
+          const updateButtonPosition = () => {
+            const rect = dayBgElement.getBoundingClientRect();
+            button.style.position = 'fixed'; // Use fixed instead of absolute
+            button.style.left = `${rect.right - 28}px`; // 4px margin from right edge
+            button.style.top = `${rect.top + 4}px`; // 4px margin from top edge
+            button.style.zIndex = '999999'; // Extremely high z-index
+          };
+
+          // Position initially
+          updateButtonPosition();
+
+          // Update position on scroll/resize
+          window.addEventListener('scroll', updateButtonPosition);
+          window.addEventListener('resize', updateButtonPosition);
+          buttonsInRow.push({
+            button,
+            dayBg: dayBgElement,
+            dateCell: dateCellElement,
+          });
+        });
+
+        // Store button info for later use in global event detection
+        (
+          rowElement as HTMLElement & { __buttonsInRow: typeof buttonsInRow }
+        ).__buttonsInRow = buttonsInRow;
+      });
+
+      // SOLUTION: Use global event detection on the entire month view
+      // Events are positioned absolutely and not inside date cells
+      const monthView = document.querySelector('.rbc-month-view');
+      if (monthView) {
+        const handleGlobalMouseOver = (e: MouseEvent) => {
+          // Get the mouse position
+          const mouseEvent = e;
+          const x = mouseEvent.clientX;
+          const y = mouseEvent.clientY;
+
+          // Find which day cell this position corresponds to
+          monthRows.forEach((monthRow) => {
+            const buttonsInRow = (
+              monthRow as HTMLElement & {
+                __buttonsInRow?: {
+                  button: HTMLButtonElement;
+                  dayBg: HTMLElement;
+                }[];
+              }
+            ).__buttonsInRow;
+            if (!buttonsInRow) {
+              return;
+            }
+
+            buttonsInRow.forEach(
+              ({
+                button,
+                dayBg,
+              }: {
+                button: HTMLButtonElement;
+                dayBg: HTMLElement;
+              }) => {
+                const rect = dayBg.getBoundingClientRect();
+
+                // Check if mouse is within this day cell's bounds
+                if (
+                  x >= rect.left &&
+                  x <= rect.right &&
+                  y >= rect.top &&
+                  y <= rect.bottom
+                ) {
+                  button.style.opacity = '1';
+                  button.style.visibility = 'visible';
+                  button.style.transform = 'scale(1)';
+                }
+              },
+            );
+          });
+        };
+
+        const handleGlobalMouseOut = (e: MouseEvent) => {
+          const mouseEvent = e;
+          const relatedTarget = mouseEvent.relatedTarget as HTMLElement;
+
+          // Don't hide if moving to a button
+          if (
+            relatedTarget &&
+            relatedTarget.classList.contains('desktop-add-btn')
+          ) {
+            return;
+          }
+
+          // Hide all buttons that the mouse is not over
+          monthRows.forEach((monthRow) => {
+            const buttonsInRow = (
+              monthRow as HTMLElement & {
+                __buttonsInRow?: {
+                  button: HTMLButtonElement;
+                  dayBg: HTMLElement;
+                }[];
+              }
+            ).__buttonsInRow;
+            if (!buttonsInRow) {
+              return;
+            }
+
+            buttonsInRow.forEach(
+              ({
+                button,
+                dayBg,
+              }: {
+                button: HTMLButtonElement;
+                dayBg: HTMLElement;
+              }) => {
+                const rect = dayBg.getBoundingClientRect();
+                const x = mouseEvent.clientX;
+                const y = mouseEvent.clientY;
+
+                // Hide button if mouse is not within this day cell's bounds
+                if (
+                  !(
+                    x >= rect.left &&
+                    x <= rect.right &&
+                    y >= rect.top &&
+                    y <= rect.bottom
+                  )
+                ) {
+                  button.style.opacity = '0';
+                  button.style.visibility = 'hidden';
+                  button.style.transform = 'scale(0.8)';
+                }
+              },
+            );
+          });
+        };
+
+        // Listen to the entire month view for mouse events
+        monthView.addEventListener(
+          'mouseover',
+          handleGlobalMouseOver as EventListener,
+        );
+        monthView.addEventListener(
+          'mouseout',
+          handleGlobalMouseOut as EventListener,
+        );
+
+        // Also keep button hover behavior
+        monthRows.forEach((monthRow) => {
+          const buttonsInRow = (
+            monthRow as HTMLElement & {
+              __buttonsInRow?: { button: HTMLButtonElement }[];
+            }
+          ).__buttonsInRow;
+          if (!buttonsInRow) {
+            return;
+          }
+
+          buttonsInRow.forEach(({ button }) => {
+            button.addEventListener('mouseenter', () => {
+              button.style.opacity = '1';
+              button.style.visibility = 'visible';
+              button.style.transform = 'scale(1)';
+            });
+            button.addEventListener('mouseleave', () => {
+              button.style.opacity = '0';
+              button.style.visibility = 'hidden';
+              button.style.transform = 'scale(0.8)';
+            });
+          });
+        });
+      }
+
+      // Re-enable mutation observer after button setup is complete
+      setTimeout(() => {
+        isUpdatingButtons = false;
+
+        // Reconnect the observer
+        const calendarElement = document.querySelector('.rbc-calendar');
+        if (calendarElement) {
+          observer.observe(calendarElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'data-date'],
+          });
+        }
+      }, 100);
+    };
+
+    // Add buttons after a short delay to ensure calendar is rendered
+    const timer = setTimeout(addPlusButtons, 500);
+
+    // Debounced button re-adding to prevent flickering
+    let debounceTimer: NodeJS.Timeout;
+    const _debouncedAddButtons = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(addPlusButtons, 300);
+    };
+
+    // TEMPORARILY DISABLED: Re-add buttons when calendar re-renders (month changes, etc.)
+    // The MutationObserver is causing continuous button recreation - disabling for testing
+    const observer = new MutationObserver(() => {
+      // Completely disabled for now
+    });
+
+    // Don't observe anything for now
+    // const calendarElement = document.querySelector('.rbc-calendar');
+    // if (calendarElement) {
+    //   observer.observe(calendarElement, {
+    //     childList: true,
+    //     subtree: true,
+    //     attributes: true,
+    //     attributeFilter: ['class', 'data-date'] // Only watch relevant attributes
+    //   });
+    // }
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+      // Clean up existing buttons
+      const existingButtons = document.querySelectorAll('.desktop-add-btn');
+      existingButtons.forEach((btn) => btn.remove());
+    };
+  }, [isTouchDevice, date, t, calendarKey]); // Re-run when these change
+
   // Set moment locale when language changes
   useEffect(() => {
     moment.locale(
@@ -358,8 +766,8 @@ export default function CalendarView() {
                         display: 'flex',
                         padding: isVerySmallCalendar ? '1px 2px' : '4px',
                         touchAction: 'manipulation',
-                        // On desktop, let day background handle clicks
-                        pointerEvents: isTouchDevice ? 'auto' : 'none',
+                        // On desktop, allow hover for plus buttons
+                        pointerEvents: 'auto',
                       }}
                       onClick={handleTouchClick}
                       onTouchEnd={handleTouchClick}
@@ -511,8 +919,8 @@ export default function CalendarView() {
                         display: 'flex',
                         padding: isVerySmallCalendar ? '1px 2px' : '4px',
                         touchAction: 'manipulation',
-                        // On desktop, let day background handle clicks
-                        pointerEvents: isTouchDevice ? 'auto' : 'none',
+                        // Allow hover events for desktop plus buttons
+                        pointerEvents: 'auto',
                       }}
                       onClick={handleTouchClick}
                       onTouchEnd={handleTouchClick}
