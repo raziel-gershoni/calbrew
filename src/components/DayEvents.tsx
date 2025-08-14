@@ -50,36 +50,60 @@ export default function DayEvents({
 
   return (
     <div
-      className='bg-white dark:bg-gray-700 shadow-lg rounded-lg p-4'
+      className='h-full flex flex-col bg-white dark:bg-gray-700 shadow-lg rounded-lg'
       dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
     >
-      <div className='flex justify-between items-center mb-4'>
-        <div className='text-start'>
-          <h2 className='text-xl font-bold'>{t('Events')}</h2>
-          {selectedDate && (
-            <p className='text-sm text-gray-500 dark:text-gray-400'>
-              {dateStr}
-            </p>
-          )}
-        </div>
-        <button
-          onClick={onAddEventClick}
-          className='bg-blue-500 text-white p-2 rounded-md'
-        >
-          {t('Add Event')}
-        </button>
-      </div>
-      <ul className='text-start'>
-        {events.map((event) => (
-          <li
-            key={event.id}
-            onClick={() => onEventClick(event)}
-            className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-2 rounded-md'
+      <div className='flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-600'>
+        <div className='flex justify-between items-center'>
+          <div className='text-start'>
+            <h2 className='text-xl font-bold'>{t('Events')}</h2>
+            {selectedDate && (
+              <p className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
+                {dateStr}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onAddEventClick}
+            className='bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition-colors'
           >
-            {event.title}
-          </li>
-        ))}
-      </ul>
+            {t('Add Event')}
+          </button>
+        </div>
+      </div>
+      <div className='flex-1 overflow-y-auto p-4'>
+        {events.length > 0 ? (
+          <ul className='text-start space-y-2'>
+            {events.map((event) => (
+              <li
+                key={event.id}
+                onClick={() => onEventClick(event)}
+                className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-3 rounded-md border border-gray-200 dark:border-gray-600 transition-colors'
+              >
+                <div className='font-medium text-gray-900 dark:text-gray-100'>
+                  {event.title}
+                </div>
+                {event.description && (
+                  <div className='text-sm text-gray-500 dark:text-gray-400 mt-1 truncate'>
+                    {event.description}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className='flex items-center justify-center h-full'>
+            <div className='text-center text-gray-500 dark:text-gray-400'>
+              <p className='text-lg mb-2'>📅</p>
+              <p className='text-sm'>
+                {selectedDate
+                  ? t('No events for this date')
+                  : t('Select a date to view events')}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

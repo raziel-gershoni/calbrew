@@ -36,11 +36,9 @@ export default function Home() {
   }
 
   return (
-    <div className='min-h-screen bg-gray-50 dark:bg-gray-800'>
-      <main>
-        <div className='max-w-7xl mx-auto px-2 sm:px-6 lg:px-8'>
-          <CalendarView />
-        </div>
+    <div className='h-screen bg-gray-50 dark:bg-gray-800 flex flex-col'>
+      <main className='flex-1 flex flex-col'>
+        <CalendarView />
       </main>
     </div>
   );

@@ -1,0 +1,248 @@
+/* Responsive Calendar Cell Content Based on Computed Dimensions */
+
+/* Base calendar cell styles */
+.calendar-cell {
+  @apply h-full w-full relative;
+  container-type: size;
+}
+
+/* Content layout strategies based on cell dimensions */
+.calendar-cell-content {
+  @apply h-full flex flex-col p-1;
+}
+
+/* Default styles for all cell elements */
+.calendar-cell-primary-date {
+  @apply text-sm font-bold;
+}
+
+.calendar-cell-secondary-date {
+  @apply text-xs opacity-60;
+}
+
+.calendar-cell-secondary-month {
+  @apply text-xs opacity-60 hidden;
+}
+
+.calendar-cell-events {
+  @apply flex flex-col gap-0.5 mt-1 flex-1;
+}
+
+.calendar-cell-event {
+  @apply text-xs bg-blue-100 text-blue-800 p-0.5 mb-0.5 rounded truncate cursor-pointer hover:bg-blue-200;
+}
+
+.calendar-cell-event-indicator {
+  @apply w-1.5 h-1.5 bg-blue-500 rounded-full block;
+}
+
+.calendar-cell-event-count {
+  @apply text-xs opacity-60;
+}
+
+/* Very small cells (< 40px height) - minimal inline layout */
+@container (max-height: 40px) {
+  .calendar-cell-content {
+    @apply flex-row items-center justify-between p-0.5;
+  }
+  
+  .calendar-cell-primary-date {
+    @apply text-xs font-bold;
+  }
+  
+  .calendar-cell-secondary-date {
+    @apply text-xs;
+  }
+  
+  .calendar-cell-events {
+    @apply flex-row items-center gap-1 mt-0;
+  }
+  
+  .calendar-cell-event {
+    @apply hidden;
+  }
+  
+  .calendar-cell-event-indicator {
+    @apply w-1 h-1;
+  }
+}
+
+/* Small cells (40-60px height) - stacked minimal */
+@container (min-height: 40px) and (max-height: 60px) {
+  .calendar-cell-content {
+    @apply flex-col items-center justify-between;
+  }
+  
+  .calendar-cell-primary-date {
+    @apply text-sm font-bold;
+  }
+  
+  .calendar-cell-secondary-date {
+    @apply text-xs;
+  }
+  
+  .calendar-cell-events {
+    @apply flex-row items-center justify-center gap-1;
+  }
+  
+  .calendar-cell-event {
+    @apply hidden;
+  }
+  
+  .calendar-cell-event-indicator {
+    @apply w-1.5 h-1.5;
+  }
+}
+
+/* Medium cells (60-80px height) - show event indicators */
+@container (min-height: 60px) and (max-height: 80px) {
+  .calendar-cell-content {
+    @apply flex-col;
+  }
+  
+  .calendar-cell-primary-date {
+    @apply text-base font-bold;
+  }
+  
+  .calendar-cell-secondary-date {
+    @apply text-xs;
+  }
+  
+  .calendar-cell-events {
+    @apply flex flex-col gap-0.5 mt-1;
+  }
+  
+  .calendar-cell-event {
+    @apply hidden;
+  }
+  
+  .calendar-cell-event-indicator {
+    @apply w-2 h-2;
+  }
+}
+
+/* Large cells (80-100px height) - show some event titles */
+@container (min-height: 80px) and (max-height: 100px) {
+  .calendar-cell-content {
+    @apply flex-col;
+  }
+  
+  .calendar-cell-primary-date {
+    @apply text-lg font-bold;
+  }
+  
+  .calendar-cell-secondary-date {
+    @apply text-sm;
+  }
+  
+  .calendar-cell-events {
+    @apply flex flex-col gap-0.5 mt-1 flex-1;
+  }
+  
+  .calendar-cell-event {
+    @apply block text-xs bg-blue-100 text-blue-800 p-0.5 rounded truncate;
+  }
+  
+  /* Show only first event */
+  .calendar-cell-event:nth-child(n+2) {
+    @apply hidden;
+  }
+  
+  .calendar-cell-event-indicator {
+    @apply hidden;
+  }
+}
+
+/* Very large cells (> 100px height) - show multiple events */
+@container (min-height: 100px) {
+  .calendar-cell-content {
+    @apply flex-col;
+  }
+  
+  .calendar-cell-primary-date {
+    @apply text-xl font-bold;
+  }
+  
+  .calendar-cell-secondary-date {
+    @apply text-sm;
+  }
+  
+  .calendar-cell-secondary-month {
+    @apply block;
+  }
+  
+  .calendar-cell-events {
+    @apply flex flex-col gap-1 mt-2 flex-1;
+  }
+  
+  .calendar-cell-event {
+    @apply block text-sm bg-blue-100 text-blue-800 p-1 rounded truncate;
+  }
+  
+  /* Show up to 3 events */
+  .calendar-cell-event:nth-child(n+4) {
+    @apply hidden;
+  }
+  
+  .calendar-cell-event-indicator {
+    @apply hidden;
+  }
+}
+
+/* Width-based adjustments */
+
+/* Very narrow cells (< 60px width) */
+@container (max-width: 60px) {
+  .calendar-cell-secondary-month {
+    @apply hidden;
+  }
+  
+  .calendar-cell-event {
+    @apply text-xs p-0.5;
+  }
+}
+
+/* Narrow cells (60-80px width) */
+@container (min-width: 60px) and (max-width: 80px) {
+  .calendar-cell-secondary-month {
+    @apply hidden;
+  }
+  
+  .calendar-cell-event {
+    @apply text-xs;
+  }
+}
+
+/* Medium width cells (80-100px width) */
+@container (min-width: 80px) and (max-width: 100px) {
+  .calendar-cell-secondary-month {
+    @apply hidden;
+  }
+}
+
+/* Wide cells (> 100px width) - show everything */
+@container (min-width: 100px) {
+  .calendar-cell-secondary-month {
+    @apply block;
+  }
+}
+
+/* Overlapping month styling */
+.calendar-cell.not-current-month {
+  @apply opacity-50;
+}
+
+.calendar-cell.not-current-month .calendar-cell-primary-date,
+.calendar-cell.not-current-month .calendar-cell-secondary-date {
+  @apply text-gray-400 dark:text-gray-500;
+}
+
+/* Selected cell styling */
+.calendar-cell.selected {
+  @apply ring-2 ring-blue-500;
+}
+
+/* Hover effects */
+.calendar-cell:hover {
+  @apply bg-blue-50 dark:bg-blue-900;
+}
