@@ -144,8 +144,8 @@ export default function CalendarView() {
     return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
-  // Get current month date range for event filtering
-  const currentMonthRange = useMemo(() => {
+  // Get calendar view date range for event filtering (includes overlapping days)
+  const calendarViewRange = useMemo(() => {
     if (actualCalendarMode === 'hebrew') {
       // Get first and last day of Hebrew month - FIXED: correct constructor order (day, month, year)
       const firstDay = new HDate(1, hebrewMonth, hebrewYear);
@@ -160,12 +160,53 @@ export default function CalendarView() {
       } catch {
         lastDay = new HDate(29, hebrewMonth, hebrewYear).greg();
       }
-      return { start: firstDay.greg(), end: lastDay };
+
+      // Extend range to include overlapping days from previous/next months
+      const firstDayGregorian = firstDay.greg();
+      const firstWeekday = firstDayGregorian.getDay();
+
+      // Start from the beginning of the calendar grid (including previous month overlapping days)
+      const gridStart = new Date(firstDayGregorian);
+      gridStart.setDate(gridStart.getDate() - firstWeekday);
+
+      // End at the end of the calendar grid (including next month overlapping days)
+      const gridEnd = new Date(lastDay);
+      const totalDaysInCurrentMonth =
+        Math.ceil(
+          (lastDay.getTime() - firstDayGregorian.getTime()) /
+            (24 * 60 * 60 * 1000),
+        ) + 1;
+      const totalCells =
+        Math.ceil((firstWeekday + totalDaysInCurrentMonth) / 7) * 7;
+      const remainingCells =
+        totalCells - firstWeekday - totalDaysInCurrentMonth;
+      gridEnd.setDate(gridEnd.getDate() + remainingCells);
+
+      return { start: gridStart, end: gridEnd };
     } else {
-      // Gregorian month range
-      const start = new Date(gregorianYear, gregorianMonth, 1);
-      const end = new Date(gregorianYear, gregorianMonth + 1, 0);
-      return { start, end };
+      // For Gregorian calendar, also include overlapping days
+      const firstDay = new Date(gregorianYear, gregorianMonth, 1);
+      const lastDay = new Date(gregorianYear, gregorianMonth + 1, 0);
+      const firstWeekday = firstDay.getDay();
+
+      // Start from the beginning of the calendar grid
+      const gridStart = new Date(
+        gregorianYear,
+        gregorianMonth,
+        1 - firstWeekday,
+      );
+
+      // End at the end of the calendar grid
+      const daysInMonth = lastDay.getDate();
+      const totalCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
+      const remainingCells = totalCells - firstWeekday - daysInMonth;
+      const gridEnd = new Date(
+        gregorianYear,
+        gregorianMonth + 1,
+        remainingCells,
+      );
+
+      return { start: gridStart, end: gridEnd };
     }
   }, [
     actualCalendarMode,
@@ -175,15 +216,15 @@ export default function CalendarView() {
     gregorianMonth,
   ]);
 
-  // Generate event occurrences for current month
+  // Generate event occurrences for entire calendar view (including overlapping days)
   useEffect(() => {
     const newOccurrences = generateEventOccurrences(
       masterEvents,
-      currentMonthRange.start,
-      currentMonthRange.end,
+      calendarViewRange.start,
+      calendarViewRange.end,
     );
     setOccurrences(newOccurrences);
-  }, [masterEvents, currentMonthRange]);
+  }, [masterEvents, calendarViewRange]);
 
   // Generate Hebrew month view with overlapping days
   const hebrewCalendarGrid = useMemo(() => {
