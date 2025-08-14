@@ -1,5 +1,4 @@
 import { HDate } from '@hebcal/core';
-import moment from 'moment';
 
 export interface HebrewDateRange {
   startYear: number;
@@ -14,8 +13,7 @@ export interface EventOccurrence {
   hebrew_month: number;
   hebrew_day: number;
   recurrence_rule: string;
-  start: Date;
-  end: Date;
+  date: Date;
   anniversary?: number;
 }
 
@@ -51,7 +49,7 @@ export function isDateInRange(
   startDate: Date,
   endDate: Date,
 ): boolean {
-  return moment(date).isBetween(startDate, endDate, undefined, '[]');
+  return date >= startDate && date <= endDate;
 }
 
 /**
@@ -104,8 +102,7 @@ export function generateEventOccurrences(
 
         occurrences.push({
           ...event,
-          start: gregorianDate,
-          end: gregorianDate,
+          date: gregorianDate,
           title: formatEventTitle(event.title, anniversary),
           anniversary,
         });

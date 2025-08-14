@@ -102,6 +102,17 @@ db.serialize(() => {
     }
   });
 
+  // Add calendar_mode column to existing users table if it doesn't exist
+  db.run(
+    `ALTER TABLE users ADD COLUMN calendar_mode TEXT DEFAULT 'hebrew'`,
+    (err) => {
+      // Ignore error if column already exists
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding calendar_mode column:', err.message);
+      }
+    },
+  );
+
   // Create indexes for better performance
   db.run(`CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id)`);
   db.run(

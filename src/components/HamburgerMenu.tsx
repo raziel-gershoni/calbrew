@@ -4,6 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { signOut } from 'next-auth/react';
 import { useLanguage } from '@/hooks/useLanguage';
+import {
+  useCalendarMode,
+  type CalendarMode,
+} from '@/contexts/CalendarModeContext';
 
 interface HamburgerMenuProps {
   onOpenProfile?: () => void;
@@ -16,6 +20,11 @@ export default function HamburgerMenu({
 }: HamburgerMenuProps) {
   const { t, i18n } = useTranslation();
   const { changeLanguage, isLoading: isLanguageLoading } = useLanguage();
+  const {
+    calendarMode,
+    setCalendarMode,
+    isLoading: isCalendarModeLoading,
+  } = useCalendarMode();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -47,6 +56,11 @@ export default function HamburgerMenu({
 
   const handleSignOut = () => {
     signOut();
+    setIsOpen(false);
+  };
+
+  const handleCalendarModeChange = (mode: CalendarMode) => {
+    setCalendarMode(mode);
     setIsOpen(false);
   };
 
@@ -201,6 +215,62 @@ export default function HamburgerMenu({
               )}
               עברית
             </button>
+
+            {/* Divider */}
+            <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
+
+            {/* Calendar Mode Section */}
+            <div className='px-4 py-2'>
+              <div className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2'>
+                {i18n.language === 'he' ? 'תצוגת לוח שנה' : 'Calendar View'}
+              </div>
+              <div className='flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1'>
+                <button
+                  onClick={() => handleCalendarModeChange('hebrew')}
+                  disabled={isCalendarModeLoading}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    calendarMode === 'hebrew'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                  }`}
+                >
+                  <svg
+                    className='w-3 h-3 mx-auto mb-1'
+                    fill='none'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth='2'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                  >
+                    <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
+                  </svg>
+                  {i18n.language === 'he' ? 'עברי' : 'Hebrew'}
+                </button>
+                <button
+                  onClick={() => handleCalendarModeChange('gregorian')}
+                  disabled={isCalendarModeLoading}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    calendarMode === 'gregorian'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                  }`}
+                >
+                  <svg
+                    className='w-3 h-3 mx-auto mb-1'
+                    fill='none'
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth='2'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                  >
+                    <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
+                  </svg>
+                  {i18n.language === 'he' ? 'גרגוריאני' : 'Gregorian'}
+                </button>
+              </div>
+            </div>
 
             {/* Divider */}
             <div className='border-t border-gray-200 dark:border-gray-700 my-1' />

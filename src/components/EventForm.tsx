@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
-import moment from 'moment';
 
 interface EventFormProps {
   onAddEvent: (event: Omit<Event, 'id'>) => void;
@@ -149,10 +148,14 @@ export default function EventForm({
           </span>
           {selectedDate && (
             <div className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-              {(() => {
-                moment.locale(i18n.language);
-                return moment(selectedDate).format('Do MMMM, YYYY');
-              })()}
+              {selectedDate.toLocaleDateString(
+                i18n.language === 'he' ? 'he-IL' : 'en-US',
+                {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                },
+              )}
             </div>
           )}
         </div>

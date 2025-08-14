@@ -1,7 +1,12 @@
 'use client';
 
 import { SessionProvider } from 'next-auth/react';
+import { CalendarModeProvider } from '@/contexts/CalendarModeContext';
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return (
+    <SessionProvider>
+      <CalendarModeProvider>{children}</CalendarModeProvider>
+    </SessionProvider>
+  );
 }

@@ -460,6 +460,60 @@ export async function updateUserLanguage(
   }, 'Update user language');
 }
 
+// Calendar mode preference operations
+export async function getUserCalendarMode(userId: string): Promise<string> {
+  return withDatabaseRetry(async () => {
+    const stmt = getPreparedStatement(
+      'getUserCalendarMode',
+      'SELECT calendar_mode FROM users WHERE id = ?',
+    );
+    return new Promise<string>((resolve, reject) => {
+      stmt.get(
+        [userId],
+        (err: Error | null, row?: { calendar_mode: string }) => {
+          if (err) {
+            reject(
+              createDatabaseError('Failed to get user calendar mode', err),
+            );
+          } else {
+            resolve(row?.calendar_mode || 'hebrew');
+          }
+        },
+      );
+    });
+  }, 'Get user calendar mode');
+}
+
+export async function updateUserCalendarMode(
+  userId: string,
+  calendarMode: string,
+): Promise<void> {
+  return withDatabaseRetry(async () => {
+    const stmt = getPreparedStatement(
+      'updateUserCalendarMode',
+      'UPDATE users SET calendar_mode = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+    );
+    return new Promise<void>((resolve, reject) => {
+      stmt.run(
+        [calendarMode, userId],
+        function (this: { changes: number }, err: Error | null) {
+          if (err) {
+            reject(
+              createDatabaseError('Failed to update user calendar mode', err),
+            );
+          } else if (this.changes === 0) {
+            reject(
+              createDatabaseError('User not found when updating calendar mode'),
+            );
+          } else {
+            resolve();
+          }
+        },
+      );
+    });
+  }, 'Update user calendar mode');
+}
+
 // Performance monitoring
 export function logPreparedStatementStats() {
   console.log(`Prepared statements cache size: ${preparedStatements.size}`);

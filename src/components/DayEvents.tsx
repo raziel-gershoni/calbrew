@@ -1,26 +1,20 @@
 'use client';
 
-import { Event } from '@/types/event';
 import { HDate, gematriya, Locale } from '@hebcal/core';
-import moment from 'moment';
 import { useTranslation } from 'react-i18next';
-
-interface CalendarDisplayEvent extends Event {
-  start: Date;
-  end: Date;
-}
+import { EventOccurrence } from '@/utils/hebrewDateUtils';
 
 interface DayEventsProps {
-  events: CalendarDisplayEvent[];
-  onSelectEvent: (event: CalendarDisplayEvent) => void;
-  onAddEvent: () => void;
+  events: EventOccurrence[];
+  onEventClick: (event: EventOccurrence) => void;
+  onAddEventClick: () => void;
   selectedDate: Date | null;
 }
 
 export default function DayEvents({
   events,
-  onSelectEvent,
-  onAddEvent,
+  onEventClick,
+  onAddEventClick,
   selectedDate,
 }: DayEventsProps) {
   const { t, i18n } = useTranslation();
@@ -29,7 +23,6 @@ export default function DayEvents({
   let gregorianDateStr = '';
 
   if (selectedDate) {
-    moment.locale(i18n.language);
     const hdate = new HDate(selectedDate);
     if (i18n.language === 'he') {
       const day = gematriya(hdate.getDate());
@@ -39,7 +32,14 @@ export default function DayEvents({
     } else {
       hebrewDateStr = hdate.render();
     }
-    gregorianDateStr = moment(selectedDate).format('Do MMMM, YYYY');
+    gregorianDateStr = selectedDate.toLocaleDateString(
+      i18n.language === 'he' ? 'he-IL' : 'en-US',
+      {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      },
+    );
   }
 
   const dateStr = selectedDate
@@ -63,7 +63,7 @@ export default function DayEvents({
           )}
         </div>
         <button
-          onClick={onAddEvent}
+          onClick={onAddEventClick}
           className='bg-blue-500 text-white p-2 rounded-md'
         >
           {t('Add Event')}
@@ -73,7 +73,7 @@ export default function DayEvents({
         {events.map((event) => (
           <li
             key={event.id}
-            onClick={() => onSelectEvent(event)}
+            onClick={() => onEventClick(event)}
             className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-2 rounded-md'
           >
             {event.title}

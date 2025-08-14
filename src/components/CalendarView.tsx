@@ -1,20 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Calendar, momentLocalizer, ToolbarProps } from 'react-big-calendar';
-import moment from 'moment';
-import 'moment/locale/he';
-import 'moment/locale/es';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import '@/styles/calendar.css';
-import CustomToolbar from './CustomToolbar';
-import { HDate, gematriya } from '@hebcal/core';
+import { useState, useEffect, useMemo } from 'react';
+import { HDate, gematriya, Locale } from '@hebcal/core';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { useCalendarMode } from '@/contexts/CalendarModeContext';
 import EventForm from './EventForm';
 import DayEvents from './DayEvents';
 import EventDetails from './EventDetails';
-import CalendarHeader from './CalendarHeader';
 import LoadingSpinner from './LoadingSpinner';
-import { Event } from '@/types/event';
+import CalendarHeader from './CalendarHeader';
 import { useTranslation } from 'react-i18next';
 import { useEvents } from '@/hooks/useEvents';
 import {
@@ -22,10 +16,65 @@ import {
   EventOccurrence,
 } from '@/utils/hebrewDateUtils';
 
-const localizer = momentLocalizer(moment);
+// Types
+interface HebrewDay {
+  hebrewDay: number;
+  hebrewMonth: string;
+  hebrewYear: number;
+  gregorianDate: Date;
+  weekday: number;
+  hebrewDateString: string;
+  isCurrentMonth?: boolean; // Added for overlapping days styling
+}
+
+interface GregorianDay {
+  gregorianDay: number;
+  gregorianMonth: number;
+  gregorianYear: number;
+  date: Date;
+  weekday: number;
+  isCurrentMonth: boolean;
+}
+
+// Gregorian month names in Hebrew
+const GREGORIAN_MONTHS_HE = [
+  'ינואר',
+  'פברואר',
+  'מרץ',
+  'אפריל',
+  'מאי',
+  'יוני',
+  'יולי',
+  'אוגוסט',
+  'ספטמבר',
+  'אוקטובר',
+  'נובמבר',
+  'דצמבר',
+];
+
+// Gregorian month names in English
+const GREGORIAN_MONTHS_EN = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+];
 
 export default function CalendarView() {
   const { t, i18n } = useTranslation();
+  const { calendarMode } = useCalendarMode();
+
+  // Use the actual calendar mode from the hook
+  const actualCalendarMode = calendarMode;
+
   const {
     events: masterEvents,
     isLoading,
@@ -37,1037 +86,652 @@ export default function CalendarView() {
     deleteEvent,
   } = useEvents();
 
+  // Get localized weekday names
+  const weekdays = useMemo(() => {
+    const baseDate = new Date(2024, 0, 7); // Sunday, Jan 7, 2024
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(baseDate);
+      date.setDate(baseDate.getDate() + i);
+      if (i18n.language === 'he') {
+        return date
+          .toLocaleDateString('he-IL', { weekday: 'short' })
+          .replace('יום ', '');
+      } else {
+        return date.toLocaleDateString(i18n.language, { weekday: 'short' });
+      }
+    });
+  }, [i18n.language]);
+
+  // Calendar state
+  const [hebrewYear, setHebrewYear] = useState(5785);
+  const [hebrewMonth, setHebrewMonth] = useState('Tishrei');
+  const [gregorianYear, setGregorianYear] = useState(2024);
+  const [gregorianMonth, setGregorianMonth] = useState(8); // September (0-indexed)
+
+  // Event display state
   const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<EventOccurrence | null>(
     null,
   );
-  const [date, setDate] = useState(new Date());
-  const [calendarKey, setCalendarKey] = useState(0);
-  // Separate touch detection from layout preferences
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-  const [isSmallScreen, setIsSmallScreen] = useState(false);
-  const [isLandscapePhone, setIsLandscapePhone] = useState(false);
-  const [calendarHeight, setCalendarHeight] = useState(500);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileEventModalOpen, setIsMobileEventModalOpen] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
 
-  // Detect device capabilities and screen size
+  // Initialize calendar to current Hebrew month
+  useEffect(() => {
+    const now = new Date();
+    const hebrewDate = new HDate(now);
+    setHebrewYear(hebrewDate.getFullYear());
+    setHebrewMonth(hebrewDate.getMonthName());
+    setGregorianYear(now.getFullYear());
+    setGregorianMonth(now.getMonth());
+  }, []);
+
+  // Device detection
   useEffect(() => {
     const checkDevice = () => {
-      // Detect touch capability (for day clicking)
-      const hasTouchSupport =
-        'ontouchstart' in window ||
-        navigator.maxTouchPoints > 0 ||
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (navigator as any).msMaxTouchPoints > 0;
-
-      // Smart layout detection using multiple factors
       const width = window.innerWidth;
       const height = window.innerHeight;
 
-      // Use modal layout when:
-      // 1. Very small screens (phones) - width < 640px
-      // 2. Limited height regardless of width - height < 600px (landscape phones/tablets)
-      // 3. Small total area (small devices) - area < 400,000 pixels
-      const isVerySmallWidth = width < 640;
-      const isLimitedHeight = height < 600;
-      const isSmallArea = width * height < 400000; // ~632x632 equivalent
-
       const newIsSmallScreen =
-        isVerySmallWidth || isLimitedHeight || isSmallArea;
-
-      // Detect landscape phone layout (phones in landscape orientation)
-      const newIsLandscapePhone =
-        width > height && width < 1024 && width >= 640;
-
-      // Dynamic calendar height based on screen size and available space
-      let newCalendarHeight = 500; // Default height for tablets/desktop
-
-      if (newIsLandscapePhone) {
-        // Landscape phones - be more aggressive with height usage
-        // Account for: app header (~40px compact), calendar toolbar (~30px compact), margins (~20px)
-        // Leave minimal space for events list, maximize calendar
-        const reservedSpace = isVerySmallWidth && height <= 375 ? 70 : 90; // iPhone SE vs larger phones
-        newCalendarHeight = Math.max(280, height - reservedSpace);
-      } else if (width <= 375 && height <= 667) {
-        // iPhone SE and similar very small devices (375x667)
-        newCalendarHeight = 300;
-      } else if (width <= 390 && height >= 800 && height < 900) {
-        // iPhone 14, iPhone 13 mini, etc. (390x844, etc.)
-        newCalendarHeight = 480;
-      } else if (width <= 428 && height >= 900) {
-        // iPhone 14 Pro Max, iPhone 15 Pro Max, etc. (430x932, 428x926) - utilize the huge screen
-        newCalendarHeight = 550;
-      } else if (width <= 414 && height >= 850) {
-        // iPhone 13 Pro Max, iPhone 12 Pro Max, etc. (414x896)
-        newCalendarHeight = 520;
-      } else if (width < 640) {
-        // Other phones (iPhone 12, iPhone 13, etc.)
-        newCalendarHeight = 450;
-      }
-
-      const touchChanged = hasTouchSupport !== isTouchDevice;
-      const screenChanged = newIsSmallScreen !== isSmallScreen;
-      const landscapeChanged = newIsLandscapePhone !== isLandscapePhone;
-      const heightChanged = newCalendarHeight !== calendarHeight;
-
-      if (touchChanged || screenChanged || landscapeChanged || heightChanged) {
-        setIsTouchDevice(hasTouchSupport);
-        setIsSmallScreen(newIsSmallScreen);
-        setIsLandscapePhone(newIsLandscapePhone);
-        setCalendarHeight(newCalendarHeight);
-
-        // Force calendar re-render if touch detection changed
-        if (touchChanged) {
-          setCalendarKey((prev) => prev + 1);
-        }
-
-        // Debug log for development (remove in production)
-        if (
-          process.env.NODE_ENV === 'development' &&
-          (screenChanged || heightChanged)
-        ) {
-          console.log('Layout decision:', {
-            width,
-            height,
-            area: width * height,
-            isVerySmallWidth,
-            isLimitedHeight,
-            isSmallArea,
-            useModal: newIsSmallScreen,
-            calendarHeight: newCalendarHeight,
-          });
-        }
-      }
+        width < 640 || height < 600 || width * height < 400000;
+      setIsSmallScreen(newIsSmallScreen);
     };
 
-    // Check initial device
     checkDevice();
-
-    // Listen for viewport changes
     window.addEventListener('resize', checkDevice);
-
-    return () => {
-      window.removeEventListener('resize', checkDevice);
-    };
-  }, [isTouchDevice, isSmallScreen, isLandscapePhone, calendarHeight]);
-
-  // Generate event occurrences when events or date changes
-  useEffect(() => {
-    const startOfMonth = moment(date).startOf('month').toDate();
-    const endOfMonth = moment(date).endOf('month').toDate();
-
-    const newOccurrences = generateEventOccurrences(
-      masterEvents,
-      startOfMonth,
-      endOfMonth,
-    );
-
-    setOccurrences(newOccurrences);
-  }, [masterEvents, date]);
-
-  // Force calendar re-initialization after initial load to ensure mobile works
-  useEffect(() => {
-    if (!isLoading && masterEvents.length >= 0) {
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
-        setCalendarKey((prev) => prev + 1);
-      }, 100);
-
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading, masterEvents.length]);
-
-  // Add hover plus buttons to calendar day cells (desktop only)
-  useEffect(() => {
-    // Only add buttons on desktop (non-touch devices)
-    if (isTouchDevice) {
-      return;
-    }
-
-    let isUpdatingButtons = false;
-
-    const addPlusButtons = () => {
-      if (isUpdatingButtons) {
-        return;
-      }
-
-      isUpdatingButtons = true;
-
-      // Temporarily disconnect observer to prevent infinite loops
-      observer.disconnect();
-
-      // First, clean up any existing button setup
-      const existingButtons = document.querySelectorAll('.desktop-add-btn');
-      existingButtons.forEach((btn) => btn.remove());
-
-      document.querySelectorAll('[data-row-id]').forEach((row) => {
-        // Remove old event listeners by removing data attributes
-        row.removeAttribute('data-row-id');
-        row.removeAttribute('data-has-mousemove');
-      });
-
-      // Now add fresh buttons and event listeners
-      const monthRows = document.querySelectorAll('.rbc-month-row');
-      if (!monthRows.length) {
-        return;
-      }
-
-      // Set up each row with full cell hover detection
-      monthRows.forEach((monthRow, rowIndex) => {
-        const rowElement = monthRow as HTMLElement;
-        const rowId = `row-${rowIndex}`;
-        rowElement.setAttribute('data-row-id', rowId);
-
-        // Get all day cells in this row (the complete calendar cells)
-        const dayCells = monthRow.querySelectorAll('.rbc-date-cell');
-        const dayBgs = monthRow.querySelectorAll('.rbc-day-bg');
-        const buttonsInRow: {
-          button: HTMLButtonElement;
-          dayBg: HTMLElement;
-          dateCell: HTMLElement;
-        }[] = [];
-
-        // Add a plus button to each day background, but listen to entire cell
-        dayCells.forEach((dateCell, colIndex) => {
-          const dateCellElement = dateCell as HTMLElement;
-          const dayBgElement = dayBgs[colIndex] as HTMLElement;
-
-          if (!dayBgElement) {
-            return; // Skip if no corresponding day background
-          }
-
-          // Make sure the day background has relative positioning for the button
-          if (
-            dayBgElement.style.position !== 'relative' &&
-            dayBgElement.style.position !== 'absolute'
-          ) {
-            dayBgElement.style.position = 'relative';
-          }
-
-          // Create plus button and add to day background
-          const button = document.createElement('button');
-          button.className = 'desktop-add-btn';
-          button.innerHTML = '+';
-          button.title = t('Add event');
-          button.type = 'button';
-
-          // Style the button properly (hidden by default, shown on hover)
-          button.style.position = 'fixed';
-          button.style.width = '20px';
-          button.style.height = '20px';
-          button.style.opacity = '0';
-          button.style.visibility = 'hidden';
-          button.style.transform = 'scale(0.8)';
-          button.style.pointerEvents = 'auto';
-          button.style.backgroundColor = '#3b82f6';
-          button.style.color = 'white';
-          button.style.border = 'none';
-          button.style.borderRadius = '50%';
-          button.style.cursor = 'pointer';
-          button.style.fontSize = '14px';
-          button.style.fontWeight = 'bold';
-          button.style.display = 'flex';
-          button.style.alignItems = 'center';
-          button.style.justifyContent = 'center';
-          button.style.transition = 'all 0.2s ease';
-          button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
-
-          // Add hover effects
-          button.addEventListener('mouseenter', () => {
-            button.style.backgroundColor = '#2563eb';
-            button.style.transform = 'scale(1)';
-          });
-
-          button.addEventListener('mouseleave', () => {
-            button.style.backgroundColor = '#3b82f6';
-            button.style.transform = 'scale(0.8)';
-          });
-
-          // Calculate global index for finding date
-          const _globalIndex = rowIndex * 7 + colIndex;
-
-          // Add click handler to open modal with correct date
-          button.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-
-            // More robust date extraction - look specifically in the date header area
-            let dayNum: number | null = null;
-
-            // Method 1: Look for date in the dateCell's direct children (date header)
-            const dateHeaderElements =
-              dateCellElement.querySelectorAll('div > span, span');
-            for (const element of dateHeaderElements) {
-              const text = element.textContent?.trim();
-              const match = text?.match(/^(\d{1,2})/);
-              if (match && !isNaN(parseInt(match[1]))) {
-                dayNum = parseInt(match[1]);
-                break;
-              }
-            }
-
-            // Method 2: If that fails, try the broader text content approach but be more selective
-            if (dayNum === null) {
-              const allText = dateCellElement.textContent || '';
-              // Look for 1-2 digits at the start, ignoring event text
-              const match = allText.match(/^\s*(\d{1,2})/);
-              if (match && !isNaN(parseInt(match[1]))) {
-                dayNum = parseInt(match[1]);
-              }
-            }
-
-            // Method 3: Calculate from position if extraction fails
-            if (dayNum === null) {
-              // Calculate day number from grid position
-              const startOfMonth = new Date(
-                date.getFullYear(),
-                date.getMonth(),
-                1,
-              );
-              const firstDayOfWeek = startOfMonth.getDay();
-              const estimatedDay = rowIndex * 7 + colIndex - firstDayOfWeek + 1;
-
-              // Validate the estimated day is within the month
-              const daysInMonth = new Date(
-                date.getFullYear(),
-                date.getMonth() + 1,
-                0,
-              ).getDate();
-              if (estimatedDay >= 1 && estimatedDay <= daysInMonth) {
-                dayNum = estimatedDay;
-              }
-            }
-
-            if (dayNum !== null && dayNum >= 1 && dayNum <= 31) {
-              const cellDate = new Date(
-                date.getFullYear(),
-                date.getMonth(),
-                dayNum,
-              );
-              setSelectedDate(cellDate);
-              setSelectedEvent(null);
-              setIsModalOpen(true);
-            } else {
-              // Fallback to current date if all methods fail
-              console.warn(
-                'Could not extract day number, using current date as fallback',
-              );
-              setSelectedDate(new Date());
-              setSelectedEvent(null);
-              setIsModalOpen(true);
-            }
-          });
-
-          // Instead of adding to dayBg, add to document body with absolute positioning
-          // This bypasses any CSS blocking issues within the calendar
-          document.body.appendChild(button);
-
-          // Position the button over the cell using getBoundingClientRect
-          const updateButtonPosition = () => {
-            const rect = dayBgElement.getBoundingClientRect();
-            button.style.position = 'fixed'; // Use fixed instead of absolute
-            button.style.left = `${rect.right - 28}px`; // 4px margin from right edge
-            button.style.top = `${rect.top + 4}px`; // 4px margin from top edge
-            button.style.zIndex = '999999'; // Extremely high z-index
-          };
-
-          // Position initially
-          updateButtonPosition();
-
-          // Update position on scroll/resize
-          window.addEventListener('scroll', updateButtonPosition);
-          window.addEventListener('resize', updateButtonPosition);
-          buttonsInRow.push({
-            button,
-            dayBg: dayBgElement,
-            dateCell: dateCellElement,
-          });
-        });
-
-        // Store button info for later use in global event detection
-        (
-          rowElement as HTMLElement & { __buttonsInRow: typeof buttonsInRow }
-        ).__buttonsInRow = buttonsInRow;
-      });
-
-      // SOLUTION: Use global event detection on the entire month view
-      // Events are positioned absolutely and not inside date cells
-      const monthView = document.querySelector('.rbc-month-view');
-      if (monthView) {
-        const handleGlobalMouseOver = (e: MouseEvent) => {
-          // Get the mouse position
-          const mouseEvent = e;
-          const x = mouseEvent.clientX;
-          const y = mouseEvent.clientY;
-
-          // Find which day cell this position corresponds to
-          monthRows.forEach((monthRow) => {
-            const buttonsInRow = (
-              monthRow as HTMLElement & {
-                __buttonsInRow?: {
-                  button: HTMLButtonElement;
-                  dayBg: HTMLElement;
-                }[];
-              }
-            ).__buttonsInRow;
-            if (!buttonsInRow) {
-              return;
-            }
-
-            buttonsInRow.forEach(
-              ({
-                button,
-                dayBg,
-              }: {
-                button: HTMLButtonElement;
-                dayBg: HTMLElement;
-              }) => {
-                const rect = dayBg.getBoundingClientRect();
-
-                // Check if mouse is within this day cell's bounds
-                if (
-                  x >= rect.left &&
-                  x <= rect.right &&
-                  y >= rect.top &&
-                  y <= rect.bottom
-                ) {
-                  button.style.opacity = '1';
-                  button.style.visibility = 'visible';
-                  button.style.transform = 'scale(1)';
-                }
-              },
-            );
-          });
-        };
-
-        const handleGlobalMouseOut = (e: MouseEvent) => {
-          const mouseEvent = e;
-          const relatedTarget = mouseEvent.relatedTarget as HTMLElement;
-
-          // Don't hide if moving to a button
-          if (
-            relatedTarget &&
-            relatedTarget.classList.contains('desktop-add-btn')
-          ) {
-            return;
-          }
-
-          // Hide all buttons that the mouse is not over
-          monthRows.forEach((monthRow) => {
-            const buttonsInRow = (
-              monthRow as HTMLElement & {
-                __buttonsInRow?: {
-                  button: HTMLButtonElement;
-                  dayBg: HTMLElement;
-                }[];
-              }
-            ).__buttonsInRow;
-            if (!buttonsInRow) {
-              return;
-            }
-
-            buttonsInRow.forEach(
-              ({
-                button,
-                dayBg,
-              }: {
-                button: HTMLButtonElement;
-                dayBg: HTMLElement;
-              }) => {
-                const rect = dayBg.getBoundingClientRect();
-                const x = mouseEvent.clientX;
-                const y = mouseEvent.clientY;
-
-                // Hide button if mouse is not within this day cell's bounds
-                if (
-                  !(
-                    x >= rect.left &&
-                    x <= rect.right &&
-                    y >= rect.top &&
-                    y <= rect.bottom
-                  )
-                ) {
-                  button.style.opacity = '0';
-                  button.style.visibility = 'hidden';
-                  button.style.transform = 'scale(0.8)';
-                }
-              },
-            );
-          });
-        };
-
-        // Listen to the entire month view for mouse events
-        monthView.addEventListener(
-          'mouseover',
-          handleGlobalMouseOver as EventListener,
-        );
-        monthView.addEventListener(
-          'mouseout',
-          handleGlobalMouseOut as EventListener,
-        );
-
-        // Also keep button hover behavior
-        monthRows.forEach((monthRow) => {
-          const buttonsInRow = (
-            monthRow as HTMLElement & {
-              __buttonsInRow?: { button: HTMLButtonElement }[];
-            }
-          ).__buttonsInRow;
-          if (!buttonsInRow) {
-            return;
-          }
-
-          buttonsInRow.forEach(({ button }) => {
-            button.addEventListener('mouseenter', () => {
-              button.style.opacity = '1';
-              button.style.visibility = 'visible';
-              button.style.transform = 'scale(1)';
-            });
-            button.addEventListener('mouseleave', () => {
-              button.style.opacity = '0';
-              button.style.visibility = 'hidden';
-              button.style.transform = 'scale(0.8)';
-            });
-          });
-        });
-      }
-
-      // Re-enable mutation observer after button setup is complete
-      setTimeout(() => {
-        isUpdatingButtons = false;
-
-        // Reconnect the observer
-        const calendarElement = document.querySelector('.rbc-calendar');
-        if (calendarElement) {
-          observer.observe(calendarElement, {
-            childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['class', 'data-date'],
-          });
-        }
-      }, 100);
-    };
-
-    // Add buttons after a short delay to ensure calendar is rendered
-    const timer = setTimeout(addPlusButtons, 500);
-
-    // Debounced button re-adding to prevent flickering
-    let debounceTimer: NodeJS.Timeout;
-    const _debouncedAddButtons = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(addPlusButtons, 300);
-    };
-
-    // TEMPORARILY DISABLED: Re-add buttons when calendar re-renders (month changes, etc.)
-    // The MutationObserver is causing continuous button recreation - disabling for testing
-    const observer = new MutationObserver(() => {
-      // Completely disabled for now
-    });
-
-    // Don't observe anything for now
-    // const calendarElement = document.querySelector('.rbc-calendar');
-    // if (calendarElement) {
-    //   observer.observe(calendarElement, {
-    //     childList: true,
-    //     subtree: true,
-    //     attributes: true,
-    //     attributeFilter: ['class', 'data-date'] // Only watch relevant attributes
-    //   });
-    // }
-
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-      // Clean up existing buttons
-      const existingButtons = document.querySelectorAll('.desktop-add-btn');
-      existingButtons.forEach((btn) => btn.remove());
-    };
-  }, [isTouchDevice, date, t, calendarKey]); // Re-run when these change
-
-  // Set moment locale when language changes
-  useEffect(() => {
-    moment.locale(
-      i18n.language === 'he' ? 'he' : i18n.language === 'es' ? 'es' : 'en',
-    );
-  }, [i18n.language]);
-
-  const handleSelectSlot = (slotInfo: { start: Date }) => {
-    setSelectedDate(slotInfo.start);
-    setSelectedEvent(null);
-  };
-
-  // Fallback day selection handler for mobile
-  const handleDaySelect = useCallback((date: Date) => {
-    setSelectedDate(date);
-    setSelectedEvent(null);
+    return () => window.removeEventListener('resize', checkDevice);
   }, []);
 
-  const handleAddEvent = async (event: Omit<Event, 'id'>) => {
-    const success = await createEvent(event);
-    if (success) {
-      setIsModalOpen(false);
+  // Get current month date range for event filtering
+  const currentMonthRange = useMemo(() => {
+    if (actualCalendarMode === 'hebrew') {
+      // Get first and last day of Hebrew month - FIXED: correct constructor order (day, month, year)
+      const firstDay = new HDate(1, hebrewMonth, hebrewYear);
+      let lastDay: Date;
+      try {
+        const testDate = new HDate(30, hebrewMonth, hebrewYear);
+        if (testDate.getMonth() === firstDay.getMonth()) {
+          lastDay = testDate.greg();
+        } else {
+          lastDay = new HDate(29, hebrewMonth, hebrewYear).greg();
+        }
+      } catch {
+        lastDay = new HDate(29, hebrewMonth, hebrewYear).greg();
+      }
+      return { start: firstDay.greg(), end: lastDay };
+    } else {
+      // Gregorian month range
+      const start = new Date(gregorianYear, gregorianMonth, 1);
+      const end = new Date(gregorianYear, gregorianMonth + 1, 0);
+      return { start, end };
     }
+  }, [
+    actualCalendarMode,
+    hebrewYear,
+    hebrewMonth,
+    gregorianYear,
+    gregorianMonth,
+  ]);
+
+  // Generate event occurrences for current month
+  useEffect(() => {
+    const newOccurrences = generateEventOccurrences(
+      masterEvents,
+      currentMonthRange.start,
+      currentMonthRange.end,
+    );
+    setOccurrences(newOccurrences);
+  }, [masterEvents, currentMonthRange]);
+
+  // Generate Hebrew month view with overlapping days
+  const hebrewCalendarGrid = useMemo(() => {
+    if (actualCalendarMode !== 'hebrew') {
+      return null;
+    }
+
+    const days: (HebrewDay | null)[][] = [];
+
+    // Get month length (29 or 30 days) - FIXED: correct constructor order (day, month, year)
+    let dayCount = 29;
+    try {
+      const testDate = new HDate(30, hebrewMonth, hebrewYear);
+      const firstOfMonth = new HDate(1, hebrewMonth, hebrewYear);
+      if (testDate.getMonth() === firstOfMonth.getMonth()) {
+        dayCount = 30;
+      }
+    } catch {
+      // Month has 29 days
+    }
+
+    // Generate current month days
+    const monthDays: HebrewDay[] = [];
+    for (let day = 1; day <= dayCount; day++) {
+      const hebrewDate = new HDate(day, hebrewMonth, hebrewYear);
+      const gregorianDate = hebrewDate.greg();
+
+      monthDays.push({
+        hebrewDay: day,
+        hebrewMonth: hebrewMonth,
+        hebrewYear: hebrewYear,
+        gregorianDate: gregorianDate,
+        weekday: gregorianDate.getDay(),
+        hebrewDateString: hebrewDate.toString(),
+      });
+    }
+
+    // Get first day of current month for alignment
+    const firstWeekday = monthDays[0].weekday;
+
+    // Create overlapping days for previous month
+    const overlappingDays: (HebrewDay | null)[] = [];
+    for (let i = firstWeekday - 1; i >= 0; i--) {
+      const gregorianDate = new Date(monthDays[0].gregorianDate);
+      gregorianDate.setDate(gregorianDate.getDate() - (i + 1));
+      // Convert Gregorian date back to Hebrew date for overlapping days
+      const overlappingHebrewDate = new HDate(gregorianDate);
+      overlappingDays.push({
+        hebrewDay: overlappingHebrewDate.getDate(),
+        hebrewMonth: overlappingHebrewDate.getMonthName(),
+        hebrewYear: overlappingHebrewDate.getFullYear(),
+        gregorianDate: gregorianDate,
+        weekday: gregorianDate.getDay(),
+        hebrewDateString: overlappingHebrewDate.toString(),
+      });
+    }
+
+    // Combine overlapping days with current month days
+    const allDays = [...overlappingDays, ...monthDays];
+
+    // Add next month overlapping days to complete the grid
+    const totalCells = Math.ceil(allDays.length / 7) * 7;
+    const lastDay = monthDays[monthDays.length - 1];
+    let nextDayOffset = 1;
+
+    while (allDays.length < totalCells) {
+      const gregorianDate = new Date(lastDay.gregorianDate);
+      gregorianDate.setDate(gregorianDate.getDate() + nextDayOffset);
+      // Convert Gregorian date back to Hebrew date for overlapping days
+      const overlappingHebrewDate = new HDate(gregorianDate);
+      allDays.push({
+        hebrewDay: overlappingHebrewDate.getDate(),
+        hebrewMonth: overlappingHebrewDate.getMonthName(),
+        hebrewYear: overlappingHebrewDate.getFullYear(),
+        gregorianDate: gregorianDate,
+        weekday: gregorianDate.getDay(),
+        hebrewDateString: overlappingHebrewDate.toString(),
+      });
+      nextDayOffset++;
+    }
+
+    // Create grid - mark overlapping days by checking if they belong to current month
+    for (let i = 0; i < allDays.length; i += 7) {
+      const week = allDays.slice(i, i + 7).map((day) => {
+        if (!day) {
+          return null;
+        }
+        // Mark as current month only if it matches our target month and year
+        const isCurrentMonth =
+          day.hebrewMonth === hebrewMonth && day.hebrewYear === hebrewYear;
+        return { ...day, isCurrentMonth };
+      });
+      days.push(week as (HebrewDay | null)[]);
+    }
+
+    return { weeks: days, totalDays: dayCount };
+  }, [actualCalendarMode, hebrewYear, hebrewMonth]);
+
+  // Generate Gregorian month view with proper overlapping days
+  const gregorianCalendarGrid = useMemo(() => {
+    if (actualCalendarMode !== 'gregorian') {
+      return null;
+    }
+
+    const days: (GregorianDay | null)[][] = [];
+    let currentWeek: (GregorianDay | null)[] = [];
+
+    // Get first and last day of month
+    const firstDay = new Date(gregorianYear, gregorianMonth, 1);
+    const lastDay = new Date(gregorianYear, gregorianMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const firstWeekday = firstDay.getDay();
+
+    // Add previous month days to fill first week
+    for (let i = firstWeekday - 1; i >= 0; i--) {
+      const date = new Date(gregorianYear, gregorianMonth, -i); // This goes backward from the 1st
+      currentWeek.push({
+        gregorianDay: date.getDate(),
+        gregorianMonth: date.getMonth(),
+        gregorianYear: date.getFullYear(),
+        date: date,
+        weekday: date.getDay(),
+        isCurrentMonth: false,
+      });
+    }
+
+    // Add current month days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(gregorianYear, gregorianMonth, day);
+      currentWeek.push({
+        gregorianDay: day,
+        gregorianMonth: gregorianMonth,
+        gregorianYear: gregorianYear,
+        date: date,
+        weekday: date.getDay(),
+        isCurrentMonth: true,
+      });
+
+      if (currentWeek.length === 7) {
+        days.push([...currentWeek]);
+        currentWeek = [];
+      }
+    }
+
+    // Fill remaining slots with next month days
+    let nextMonthDay = 1;
+    while (currentWeek.length > 0 && currentWeek.length < 7) {
+      const date = new Date(gregorianYear, gregorianMonth + 1, nextMonthDay);
+      currentWeek.push({
+        gregorianDay: nextMonthDay,
+        gregorianMonth: gregorianMonth + 1,
+        gregorianYear: date.getFullYear(), // Use date.getFullYear() to handle year rollover
+        date: date,
+        weekday: date.getDay(),
+        isCurrentMonth: false,
+      });
+      nextMonthDay++;
+    }
+    if (currentWeek.length > 0) {
+      days.push(currentWeek);
+    }
+
+    return { weeks: days, totalDays: daysInMonth };
+  }, [actualCalendarMode, gregorianYear, gregorianMonth]);
+
+  // Navigation functions using proper Hebrew month arithmetic
+  const navigateHebrewMonth = (direction: 'prev' | 'next') => {
+    // FIXED: Correct HDate constructor order is (day, month, year)
+    const currentDate = new HDate(1, hebrewMonth, hebrewYear);
+    const currentMonth = currentDate.getMonth(); // Get numeric month (1-13)
+    const currentYear = currentDate.getFullYear();
+
+    let newMonth: number;
+    let newYear: number;
+
+    if (direction === 'next') {
+      // Check if current year is a leap year to handle month count properly
+      const monthsInCurrentYear = currentDate.isLeapYear() ? 13 : 12;
+
+      if (currentMonth < monthsInCurrentYear) {
+        newMonth = currentMonth + 1;
+        newYear = currentYear;
+      } else {
+        newMonth = 1; // Tishrei (start of new year)
+        newYear = currentYear + 1;
+      }
+    } else {
+      if (currentMonth > 1) {
+        newMonth = currentMonth - 1;
+        newYear = currentYear;
+      } else {
+        // Going to previous year's last month
+        newYear = currentYear - 1;
+        const prevYearDate = new HDate(1, 1, newYear);
+        newMonth = prevYearDate.isLeapYear() ? 13 : 12;
+      }
+    }
+
+    // Create new date and get its month name
+    const targetDate = new HDate(1, newMonth, newYear);
+    setHebrewYear(newYear);
+    setHebrewMonth(targetDate.getMonthName());
   };
 
-  const handleSelectEvent = (event: EventOccurrence) => {
-    setSelectedEvent(event);
-    setSelectedDate(event.start);
-
-    // Only use modal on small screens (phones), not tablets
-    if (isSmallScreen) {
-      setIsMobileEventModalOpen(true);
-    }
-  };
-
-  const handleDeleteEvent = async (id: string) => {
-    const success = await deleteEvent(id);
-    if (success) {
-      setSelectedEvent(null);
-      // Close modal if open on small screens
-      if (isSmallScreen) {
-        setIsMobileEventModalOpen(false);
+  const navigateGregorianMonth = (direction: 'prev' | 'next') => {
+    if (direction === 'next') {
+      if (gregorianMonth === 11) {
+        setGregorianMonth(0);
+        setGregorianYear(gregorianYear + 1);
+      } else {
+        setGregorianMonth(gregorianMonth + 1);
+      }
+    } else {
+      if (gregorianMonth === 0) {
+        setGregorianMonth(11);
+        setGregorianYear(gregorianYear - 1);
+      } else {
+        setGregorianMonth(gregorianMonth - 1);
       }
     }
   };
 
-  const handleSaveEvent = async (event: Event) => {
-    const success = await updateEvent(event);
-    if (success && selectedEvent) {
-      setSelectedEvent({ ...selectedEvent, ...event });
-      // Close modal if open on small screens
-      if (isSmallScreen) {
-        setIsMobileEventModalOpen(false);
+  // Get current month display name with secondary calendar info
+  const getCurrentMonthName = () => {
+    if (actualCalendarMode === 'hebrew') {
+      // Primary: Hebrew month and year
+      const hebrewMonthName =
+        i18n.language === 'he'
+          ? Locale.gettext(hebrewMonth, 'he') || hebrewMonth
+          : hebrewMonth;
+      const yearDisplay =
+        i18n.language === 'he' ? gematriya(hebrewYear) : hebrewYear;
+
+      // Secondary: Calculate corresponding Gregorian months for this Hebrew month
+      const firstDayHebrew = new HDate(1, hebrewMonth, hebrewYear);
+      const lastDayHebrew = new HDate(
+        hebrewCalendarGrid?.totalDays || 29,
+        hebrewMonth,
+        hebrewYear,
+      );
+
+      const firstGregorianDate = firstDayHebrew.greg();
+      const lastGregorianDate = lastDayHebrew.greg();
+
+      const firstGregMonth = firstGregorianDate.getMonth();
+      const lastGregMonth = lastGregorianDate.getMonth();
+      const firstGregYear = firstGregorianDate.getFullYear();
+      const lastGregYear = lastGregorianDate.getFullYear();
+
+      let gregorianInfo = '';
+      if (firstGregMonth === lastGregMonth && firstGregYear === lastGregYear) {
+        // Same month and year
+        const monthName =
+          i18n.language === 'he'
+            ? GREGORIAN_MONTHS_HE[firstGregMonth]
+            : GREGORIAN_MONTHS_EN[firstGregMonth];
+        gregorianInfo = `${monthName} ${firstGregYear}`;
+      } else if (firstGregYear === lastGregYear) {
+        // Same year, different months
+        const firstMonthName =
+          i18n.language === 'he'
+            ? GREGORIAN_MONTHS_HE[firstGregMonth]
+            : GREGORIAN_MONTHS_EN[firstGregMonth];
+        const lastMonthName =
+          i18n.language === 'he'
+            ? GREGORIAN_MONTHS_HE[lastGregMonth]
+            : GREGORIAN_MONTHS_EN[lastGregMonth];
+        gregorianInfo = `${firstMonthName}-${lastMonthName} ${firstGregYear}`;
+      } else {
+        // Different years
+        const firstMonthName =
+          i18n.language === 'he'
+            ? GREGORIAN_MONTHS_HE[firstGregMonth]
+            : GREGORIAN_MONTHS_EN[firstGregMonth];
+        const lastMonthName =
+          i18n.language === 'he'
+            ? GREGORIAN_MONTHS_HE[lastGregMonth]
+            : GREGORIAN_MONTHS_EN[lastGregMonth];
+        gregorianInfo = `${firstMonthName} ${firstGregYear}-${lastMonthName} ${lastGregYear}`;
       }
+
+      return `${hebrewMonthName} ${yearDisplay} (${gregorianInfo})`;
+    } else {
+      // Primary: Gregorian month and year
+      const gregorianMonthName =
+        i18n.language === 'he'
+          ? GREGORIAN_MONTHS_HE[gregorianMonth]
+          : GREGORIAN_MONTHS_EN[gregorianMonth];
+
+      // Secondary: Calculate corresponding Hebrew months for this Gregorian month
+      const firstDayGregorian = new Date(gregorianYear, gregorianMonth, 1);
+      const lastDayGregorian = new Date(gregorianYear, gregorianMonth + 1, 0);
+
+      const firstHebrewDate = new HDate(firstDayGregorian);
+      const lastHebrewDate = new HDate(lastDayGregorian);
+
+      const firstHebMonth = firstHebrewDate.getMonthName();
+      const lastHebMonth = lastHebrewDate.getMonthName();
+      const firstHebYear = firstHebrewDate.getFullYear();
+      const lastHebYear = lastHebrewDate.getFullYear();
+
+      let hebrewInfo = '';
+      if (firstHebMonth === lastHebMonth && firstHebYear === lastHebYear) {
+        // Same month and year
+        const monthName =
+          i18n.language === 'he'
+            ? Locale.gettext(firstHebMonth, 'he') || firstHebMonth
+            : firstHebMonth;
+        const yearDisplay =
+          i18n.language === 'he' ? gematriya(firstHebYear) : firstHebYear;
+        hebrewInfo = `${monthName} ${yearDisplay}`;
+      } else if (firstHebYear === lastHebYear) {
+        // Same year, different months
+        const firstMonthName =
+          i18n.language === 'he'
+            ? Locale.gettext(firstHebMonth, 'he') || firstHebMonth
+            : firstHebMonth;
+        const lastMonthName =
+          i18n.language === 'he'
+            ? Locale.gettext(lastHebMonth, 'he') || lastHebMonth
+            : lastHebMonth;
+        const yearDisplay =
+          i18n.language === 'he' ? gematriya(firstHebYear) : firstHebYear;
+        hebrewInfo = `${firstMonthName}-${lastMonthName} ${yearDisplay}`;
+      } else {
+        // Different years
+        const firstMonthName =
+          i18n.language === 'he'
+            ? Locale.gettext(firstHebMonth, 'he') || firstHebMonth
+            : firstHebMonth;
+        const lastMonthName =
+          i18n.language === 'he'
+            ? Locale.gettext(lastHebMonth, 'he') || lastHebMonth
+            : lastHebMonth;
+        const firstYearDisplay =
+          i18n.language === 'he' ? gematriya(firstHebYear) : firstHebYear;
+        const lastYearDisplay =
+          i18n.language === 'he' ? gematriya(lastHebYear) : lastHebYear;
+        hebrewInfo = `${firstMonthName} ${firstYearDisplay}-${lastMonthName} ${lastYearDisplay}`;
+      }
+
+      return `${gregorianMonthName} ${gregorianYear} (${hebrewInfo})`;
     }
   };
 
-  const handleCloseMobileEventModal = () => {
-    setIsMobileEventModalOpen(false);
-  };
+  // Get Hebrew date for Gregorian day
+  const getHebrewDate = (gregorianDate: Date) => {
+    const hdate = new HDate(gregorianDate);
+    const monthName = hdate.getMonthName();
 
-  const handleNavigate = (newDate: Date) => {
-    setDate(newDate);
-  };
-
-  const dayPropGetter = (date: Date) => {
-    if (selectedDate && moment(date).isSame(selectedDate, 'day')) {
+    if (i18n.language === 'he') {
+      const hebrewMonthName = Locale.gettext(monthName, 'he') || monthName;
       return {
-        style: {
-          backgroundColor: '#3b82f6',
-          color: 'white',
-        },
+        day: gematriya(hdate.getDate()),
+        month: hebrewMonthName, // Full Hebrew month name
+      };
+    } else {
+      return {
+        day: hdate.getDate().toString(),
+        month: monthName, // Full English month name
       };
     }
-    return {};
   };
 
-  // Memoize expensive calculations
-  const dayEvents = useMemo(
-    () =>
-      occurrences.filter((event) =>
-        moment(event.start).isSame(selectedDate, 'day'),
-      ),
-    [occurrences, selectedDate],
-  );
+  // Get Gregorian date for Hebrew day
+  const getGregorianDate = (hebrewDay: HebrewDay) => {
+    const monthNames =
+      i18n.language === 'he' ? GREGORIAN_MONTHS_HE : GREGORIAN_MONTHS_EN;
+    return {
+      day: hebrewDay.gregorianDate.getDate(),
+      month: monthNames[hebrewDay.gregorianDate.getMonth()].slice(0, 3),
+    };
+  };
 
-  // Memoize calendar messages to avoid recreation on every render
-  const calendarMessages = useMemo(
-    () => ({
-      previous: '→',
-      next: '←',
-      today: t('Today'),
-      month: t('Month'),
-      week: t('Week'),
-      day: t('Day'),
-      agenda: t('Agenda'),
-      date: t('Date'),
-      time: t('Time'),
-      event: t('Event'),
-      showMore: (total: number) => `+${total} ${t('more')}`,
-    }),
-    [t],
-  );
+  // Get events for a specific date
+  const getEventsForDate = (date: Date) => {
+    const dateStr = date.toDateString();
+    return occurrences.filter((event) => event.date.toDateString() === dateStr);
+  };
 
-  // Show loading spinner while initial data loads
+  // Handle day click
+  const handleDayClick = (date: Date) => {
+    setSelectedDate(date);
+    const eventsForDay = getEventsForDate(date);
+
+    if (eventsForDay.length === 0) {
+      // No events, open create modal
+      setIsModalOpen(true);
+    } else if (isSmallScreen) {
+      // Small screen with events, show mobile modal
+      setIsMobileEventModalOpen(true);
+    }
+    // On larger screens with events, the day events panel will update automatically
+  };
+
+  // Handle event click
+  const handleEventClick = (event: EventOccurrence) => {
+    setSelectedEvent(event);
+    setSelectedDate(event.date);
+  };
+
+  // Navigate to today
+  const navigateToToday = () => {
+    const now = new Date();
+    const hebrewDate = new HDate(now);
+
+    setHebrewYear(hebrewDate.getFullYear());
+    setHebrewMonth(hebrewDate.getMonthName());
+    setGregorianYear(now.getFullYear());
+    setGregorianMonth(now.getMonth());
+    setSelectedDate(now);
+  };
+
   if (isLoading) {
-    return <LoadingSpinner fullScreen />;
+    return <LoadingSpinner />;
   }
 
+  const eventsForSelectedDate = selectedDate
+    ? getEventsForDate(selectedDate)
+    : [];
+
   return (
-    <div dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
-      <CalendarHeader
-        isLandscapePhone={isLandscapePhone}
-        isSmallScreen={isSmallScreen}
-        calendarHeight={calendarHeight}
-      />
-      {isLandscapePhone ? (
-        /* Landscape phone layout - calendar and events side by side with automatic RTL */
-        <div className='grid grid-cols-2 gap-2 mt-2'>
-          <Calendar
-            key={calendarKey}
-            localizer={localizer}
-            events={occurrences}
-            startAccessor='start'
-            endAccessor='end'
-            style={{ height: calendarHeight }}
-            rtl={i18n.language === 'he'}
-            selectable={true}
-            date={date}
-            onNavigate={handleNavigate}
-            onSelectSlot={handleSelectSlot}
-            onSelectEvent={handleSelectEvent}
-            messages={calendarMessages}
-            dayPropGetter={dayPropGetter}
-            components={{
-              toolbar: (props: ToolbarProps<EventOccurrence>) => (
-                <CustomToolbar
-                  {...props}
-                  isLandscapePhone={isLandscapePhone}
-                  isSmallScreen={isSmallScreen}
-                  calendarHeight={calendarHeight}
-                />
-              ),
-              month: {
-                dateHeader: ({ date, label }) => {
-                  const hdate = new HDate(date);
-                  const isSelected =
-                    selectedDate && moment(date).isSame(selectedDate, 'day');
+    <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
+      {/* Calendar Header */}
+      <CalendarHeader isSmallScreen={isSmallScreen} />
 
-                  // Count events for this day
-                  const dayEventCount = occurrences.filter((event) =>
-                    moment(event.start).isSame(date, 'day'),
-                  ).length;
-
-                  // Adapt layout based on calendar height
-                  const isVerySmallCalendar = calendarHeight <= 300;
-
-                  // Touch device click handler
-                  const handleTouchClick = (
-                    e: React.MouseEvent | React.TouchEvent,
-                  ) => {
-                    // Handle clicks on all touch devices (phones, tablets, etc.)
-                    if (isTouchDevice) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDaySelect(date);
-                    }
-                  };
-
-                  return (
-                    <div
-                      className={`flex ${isVerySmallCalendar ? 'flex-col justify-center items-center' : 'flex-col items-center'} w-full h-full ${
-                        isTouchDevice ? 'cursor-pointer' : ''
-                      }`}
-                      style={{
-                        minHeight: isVerySmallCalendar ? '32px' : '40px',
-                        display: 'flex',
-                        padding: isVerySmallCalendar ? '1px 2px' : '4px',
-                        touchAction: 'manipulation',
-                        // On desktop, allow hover for plus buttons
-                        pointerEvents: 'auto',
-                      }}
-                      onClick={handleTouchClick}
-                      onTouchEnd={handleTouchClick}
-                    >
-                      {isVerySmallCalendar ? (
-                        // Ultra-compact layout for very small screens - everything in one line
-                        <div className='flex items-center justify-center w-full h-full space-x-1'>
-                          <span
-                            className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}
-                          >
-                            {label}
-                          </span>
-                          {dayEventCount > 0 && (
-                            <span
-                              className={`inline-flex items-center justify-center w-3 h-3 text-xs rounded-full ${
-                                isSelected
-                                  ? 'bg-white text-blue-600'
-                                  : 'bg-blue-600 text-white'
-                              }`}
-                              style={{ fontSize: '9px', lineHeight: '1' }}
-                            >
-                              {dayEventCount > 9 ? '9' : dayEventCount}
-                            </span>
-                          )}
-                          <span
-                            className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
-                            style={{ fontSize: '10px' }}
-                          >
-                            {gematriya(hdate.getDate())}
-                          </span>
-                        </div>
-                      ) : (
-                        // Standard vertical layout for larger screens
-                        <>
-                          <div className='flex items-center space-x-1'>
-                            <span
-                              className={
-                                isSelected
-                                  ? 'text-white'
-                                  : 'text-gray-900 dark:text-gray-100'
-                              }
-                            >
-                              {label}
-                            </span>
-                            {dayEventCount > 0 && (
-                              <span
-                                className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full ${
-                                  isSelected
-                                    ? 'bg-white text-blue-600'
-                                    : 'bg-blue-600 text-white'
-                                }`}
-                              >
-                                {dayEventCount > 9 ? '9+' : dayEventCount}
-                              </span>
-                            )}
-                          </div>
-                          <span
-                            className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
-                          >
-                            {gematriya(hdate.getDate())}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  );
-                },
-                event: ({ event }) => {
-                  // Custom event component that doesn't interfere with day selection
-                  return (
-                    <div
-                      className='rbc-event-content'
-                      title={event.title}
-                      style={{ position: 'relative', zIndex: 2 }}
-                    >
-                      {event.title}
-                    </div>
-                  );
-                },
-              },
-            }}
-          />
-          <DayEvents
-            events={dayEvents}
-            onSelectEvent={handleSelectEvent}
-            onAddEvent={() => setIsModalOpen(true)}
-            selectedDate={selectedDate}
-          />
-        </div>
-      ) : (
-        /* Portrait phones and tablets - normal layout */
-        <>
-          <Calendar
-            key={calendarKey}
-            localizer={localizer}
-            events={occurrences}
-            startAccessor='start'
-            endAccessor='end'
-            style={{ height: calendarHeight }}
-            rtl={i18n.language === 'he'}
-            selectable={true}
-            date={date}
-            onNavigate={handleNavigate}
-            onSelectSlot={handleSelectSlot}
-            onSelectEvent={handleSelectEvent}
-            messages={calendarMessages}
-            dayPropGetter={dayPropGetter}
-            components={{
-              toolbar: (props: ToolbarProps<EventOccurrence>) => (
-                <CustomToolbar
-                  {...props}
-                  isLandscapePhone={isLandscapePhone}
-                  isSmallScreen={isSmallScreen}
-                  calendarHeight={calendarHeight}
-                />
-              ),
-              month: {
-                dateHeader: ({ date, label }) => {
-                  const hdate = new HDate(date);
-                  const isSelected =
-                    selectedDate && moment(date).isSame(selectedDate, 'day');
-
-                  // Count events for this day
-                  const dayEventCount = occurrences.filter((event) =>
-                    moment(event.start).isSame(date, 'day'),
-                  ).length;
-
-                  // Adapt layout based on calendar height
-                  const isVerySmallCalendar = calendarHeight <= 300;
-
-                  // Touch device click handler
-                  const handleTouchClick = (
-                    e: React.MouseEvent | React.TouchEvent,
-                  ) => {
-                    // Handle clicks on all touch devices (phones, tablets, etc.)
-                    if (isTouchDevice) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleDaySelect(date);
-                    }
-                  };
-
-                  return (
-                    <div
-                      className={`flex ${isVerySmallCalendar ? 'flex-col justify-center items-center' : 'flex-col items-center'} w-full h-full ${
-                        isTouchDevice ? 'cursor-pointer' : ''
-                      }`}
-                      style={{
-                        minHeight: isVerySmallCalendar ? '32px' : '40px',
-                        display: 'flex',
-                        padding: isVerySmallCalendar ? '1px 2px' : '4px',
-                        touchAction: 'manipulation',
-                        // Allow hover events for desktop plus buttons
-                        pointerEvents: 'auto',
-                      }}
-                      onClick={handleTouchClick}
-                      onTouchEnd={handleTouchClick}
-                    >
-                      {isVerySmallCalendar ? (
-                        // Ultra-compact layout for very small screens - everything in one line
-                        <div className='flex items-center justify-center w-full h-full space-x-1'>
-                          <span
-                            className={`text-sm font-medium ${isSelected ? 'text-white' : 'text-gray-900 dark:text-gray-100'}`}
-                          >
-                            {label}
-                          </span>
-                          {dayEventCount > 0 && (
-                            <span
-                              className={`inline-flex items-center justify-center w-3 h-3 text-xs rounded-full ${
-                                isSelected
-                                  ? 'bg-white text-blue-600'
-                                  : 'bg-blue-600 text-white'
-                              }`}
-                              style={{ fontSize: '9px', lineHeight: '1' }}
-                            >
-                              {dayEventCount > 9 ? '9' : dayEventCount}
-                            </span>
-                          )}
-                          <span
-                            className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
-                            style={{ fontSize: '10px' }}
-                          >
-                            {gematriya(hdate.getDate())}
-                          </span>
-                        </div>
-                      ) : (
-                        // Standard vertical layout for larger screens
-                        <>
-                          <div className='flex items-center space-x-1'>
-                            <span
-                              className={
-                                isSelected
-                                  ? 'text-white'
-                                  : 'text-gray-900 dark:text-gray-100'
-                              }
-                            >
-                              {label}
-                            </span>
-                            {dayEventCount > 0 && (
-                              <span
-                                className={`inline-flex items-center justify-center w-5 h-5 text-xs rounded-full ${
-                                  isSelected
-                                    ? 'bg-white text-blue-600'
-                                    : 'bg-blue-600 text-white'
-                                }`}
-                              >
-                                {dayEventCount > 9 ? '9+' : dayEventCount}
-                              </span>
-                            )}
-                          </div>
-                          <span
-                            className={`text-xs ${isSelected ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}
-                          >
-                            {gematriya(hdate.getDate())}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  );
-                },
-                event: ({ event }) => {
-                  // Custom event component that doesn't interfere with day selection
-                  return (
-                    <div
-                      className='rbc-event-content'
-                      title={event.title}
-                      style={{ position: 'relative', zIndex: 2 }}
-                    >
-                      {event.title}
-                    </div>
-                  );
-                },
-              },
-            }}
-          />
-          <div
-            className={`${isSmallScreen ? 'mt-4' : 'grid grid-cols-1 md:grid-cols-2 gap-4 mt-4'} ${i18n.language === 'he' ? 'md:grid-flow-col-dense' : ''}`}
-          >
+      {/* Mobile Modal for Event Display */}
+      {isMobileEventModalOpen && selectedDate && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
+          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-sm w-full max-h-[80vh] overflow-y-auto'>
+            <div className='p-4 border-b border-gray-200 dark:border-gray-700'>
+              <div className='flex justify-between items-center'>
+                <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+                  {selectedDate.toLocaleDateString(
+                    i18n.language === 'he' ? 'he-IL' : 'en-US',
+                  )}
+                </h2>
+                <button
+                  onClick={() => setIsMobileEventModalOpen(false)}
+                  className='text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
             <DayEvents
-              events={dayEvents}
-              onSelectEvent={handleSelectEvent}
-              onAddEvent={() => setIsModalOpen(true)}
               selectedDate={selectedDate}
+              events={eventsForSelectedDate}
+              onEventClick={handleEventClick}
+              onAddEventClick={() => {
+                setIsMobileEventModalOpen(false);
+                setIsModalOpen(true);
+              }}
             />
-            {/* Hide EventDetails only on small screens (phones) - tablets get two-panel view */}
-            {!isSmallScreen && (
-              <EventDetails
-                event={selectedEvent}
-                onDelete={handleDeleteEvent}
-                onSave={handleSaveEvent}
-                isSaving={isSaving}
-                isDeleting={isDeleting}
-              />
-            )}
-          </div>
-        </>
-      )}
-      {/* Event creation modal */}
-      {isModalOpen && (
-        <div className='fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 z-50 flex justify-center items-center'>
-          <div className='bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-600'>
-            <EventForm
-              onAddEvent={handleAddEvent}
-              isCreating={isCreating}
-              selectedDate={selectedDate}
-            />
-            <button
-              onClick={() => setIsModalOpen(false)}
-              className='mt-4 w-full bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white py-2 px-4 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200'
-            >
-              {t('Close')}
-            </button>
           </div>
         </div>
       )}
 
-      {/* Small screen event details modal (phones only) */}
-      {isMobileEventModalOpen && selectedEvent && (
-        <div className='fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80 z-50 flex justify-center items-center p-4'>
-          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-hidden border border-gray-200 dark:border-gray-600'>
-            <div className='flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700'>
-              <h2
-                className={`text-lg font-semibold text-gray-900 dark:text-gray-100 ${
-                  i18n.language === 'he' ? 'text-right' : 'text-left'
-                }`}
-              >
-                {t('Event Details')}
-              </h2>
-              <button
-                onClick={handleCloseMobileEventModal}
-                className='text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 dark:focus:ring-gray-400'
-                aria-label={t('Close')}
-              >
-                ×
-              </button>
+      {/* Event Creation/Edit Modal */}
+      {isModalOpen && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
+          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto'>
+            <div className='p-4 border-b border-gray-200 dark:border-gray-700'>
+              <div className='flex justify-between items-center'>
+                <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+                  {selectedEvent ? t('Edit Event') : t('Create New Event')}
+                </h2>
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setSelectedEvent(null);
+                  }}
+                  className='text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-            <div className='p-4 overflow-y-auto bg-white dark:bg-gray-800'>
+            <div className='p-4'>
+              <EventForm
+                selectedDate={selectedDate}
+                onAddEvent={async (eventData) => {
+                  try {
+                    if (selectedEvent) {
+                      // Convert EventOccurrence back to Event for updating
+                      const updateData = {
+                        id: selectedEvent.id,
+                        title: eventData.title,
+                        description: eventData.description,
+                        hebrew_year: eventData.hebrew_year,
+                        hebrew_month: eventData.hebrew_month,
+                        hebrew_day: eventData.hebrew_day,
+                        recurrence_rule: eventData.recurrence_rule,
+                      };
+                      await updateEvent(updateData);
+                    } else {
+                      await createEvent(eventData);
+                    }
+                    setIsModalOpen(false);
+                    setSelectedEvent(null);
+                  } catch (error) {
+                    console.error('Error saving event:', error);
+                  }
+                }}
+                isCreating={isCreating || isSaving}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Event Details Modal */}
+      {selectedEvent && !isModalOpen && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
+          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto'>
+            <div className='p-4 border-b border-gray-200 dark:border-gray-700'>
+              <div className='flex justify-between items-center'>
+                <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
+                  {t('Event Details')}
+                </h2>
+                <button
+                  onClick={() => setSelectedEvent(null)}
+                  className='text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className='p-4'>
               <EventDetails
                 event={selectedEvent}
-                onDelete={handleDeleteEvent}
-                onSave={handleSaveEvent}
+                onDelete={async (id: string) => {
+                  try {
+                    await deleteEvent(id);
+                    setSelectedEvent(null);
+                  } catch (error) {
+                    console.error('Error deleting event:', error);
+                  }
+                }}
+                onSave={async (event) => {
+                  try {
+                    // Pass the full event object to updateEvent
+                    await updateEvent(event);
+                    setSelectedEvent(null);
+                  } catch (error) {
+                    console.error('Error updating event:', error);
+                  }
+                }}
                 isSaving={isSaving}
                 isDeleting={isDeleting}
               />
@@ -1075,6 +739,399 @@ export default function CalendarView() {
           </div>
         </div>
       )}
+
+      {/* Main Content */}
+      <div className='max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4'>
+        {isSmallScreen ? (
+          // Mobile Layout - Just Calendar
+          <div
+            className='bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4'
+            dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+          >
+            {/* Header */}
+            <div className='flex items-center justify-between mb-4'>
+              <div className='flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5'>
+                <button
+                  onClick={() =>
+                    actualCalendarMode === 'hebrew'
+                      ? navigateHebrewMonth('prev')
+                      : navigateGregorianMonth('prev')
+                  }
+                  className='p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
+                >
+                  {i18n.language === 'he' ? (
+                    <ChevronRightIcon className='w-4 h-4' />
+                  ) : (
+                    <ChevronLeftIcon className='w-4 h-4' />
+                  )}
+                </button>
+                <button
+                  onClick={navigateToToday}
+                  className='px-2 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors'
+                >
+                  {t('Today')}
+                </button>
+                <button
+                  onClick={() =>
+                    actualCalendarMode === 'hebrew'
+                      ? navigateHebrewMonth('next')
+                      : navigateGregorianMonth('next')
+                  }
+                  className='p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
+                >
+                  {i18n.language === 'he' ? (
+                    <ChevronLeftIcon className='w-4 h-4' />
+                  ) : (
+                    <ChevronRightIcon className='w-4 h-4' />
+                  )}
+                </button>
+              </div>
+              <h2 className='text-lg font-bold text-gray-900 dark:text-gray-100'>
+                {getCurrentMonthName()}
+              </h2>
+              <div className='w-24'></div> {/* Spacer for balance */}
+            </div>
+
+            {/* Weekday Headers */}
+            <div className='grid grid-cols-7 gap-1 mb-2'>
+              {weekdays.map((day) => (
+                <div
+                  key={day}
+                  className='p-1 text-center text-xs font-medium text-gray-500'
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar Grid */}
+            <div
+              className='grid grid-cols-7 gap-1'
+              key={`mobile-calendar-${actualCalendarMode}`}
+            >
+              {actualCalendarMode === 'hebrew' && hebrewCalendarGrid
+                ? hebrewCalendarGrid.weeks.flat().map((day, index) => (
+                    <div
+                      key={index}
+                      onClick={() => day && handleDayClick(day.gregorianDate)}
+                      className={`
+                      min-h-[50px] p-1 border rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors
+                      ${
+                        day?.isCurrentMonth !== false
+                          ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                          : 'bg-gray-50 dark:bg-gray-800 border-transparent text-gray-400 dark:text-gray-500'
+                      }
+                      ${day && selectedDate?.toDateString() === day.gregorianDate.toDateString() ? 'ring-2 ring-blue-500' : ''}
+                    `}
+                    >
+                      {day && (
+                        <div className='h-full flex flex-col'>
+                          <div
+                            className={`text-sm font-bold mb-0.5 ${
+                              day.isCurrentMonth !== false
+                                ? 'text-gray-900 dark:text-gray-100'
+                                : 'text-gray-400 dark:text-gray-500'
+                            }`}
+                          >
+                            {i18n.language === 'he'
+                              ? gematriya(day.hebrewDay)
+                              : day.hebrewDay}
+                          </div>
+                          <div className='text-xs text-gray-500 dark:text-gray-400'>
+                            {getGregorianDate(day).day}
+                          </div>
+                          <div className='flex-1 mt-1'>
+                            {getEventsForDate(day.gregorianDate)
+                              .slice(0, 2)
+                              .map((event, idx) => (
+                                <div
+                                  key={idx}
+                                  className='text-xs bg-blue-100 text-blue-800 p-1 mb-1 rounded truncate'
+                                >
+                                  {event.title}
+                                </div>
+                              ))}
+                            {getEventsForDate(day.gregorianDate).length > 2 && (
+                              <div className='text-xs text-gray-500'>
+                                +
+                                {getEventsForDate(day.gregorianDate).length - 2}{' '}
+                                more
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                : gregorianCalendarGrid
+                  ? gregorianCalendarGrid.weeks.flat().map((day, index) => (
+                      <div
+                        key={index}
+                        onClick={() => day && handleDayClick(day.date)}
+                        className={`
+                      min-h-[50px] p-1 border rounded cursor-pointer hover:bg-blue-50 transition-colors
+                      ${
+                        day?.isCurrentMonth
+                          ? 'bg-white border-gray-200'
+                          : 'bg-gray-50 border-transparent text-gray-400'
+                      }
+                      ${day && selectedDate?.toDateString() === day.date.toDateString() ? 'ring-2 ring-blue-500' : ''}
+                    `}
+                      >
+                        {day && (
+                          <div className='h-full flex flex-col'>
+                            <div
+                              className={`text-sm font-bold mb-0.5 ${
+                                day.isCurrentMonth
+                                  ? 'text-gray-900'
+                                  : 'text-gray-400'
+                              }`}
+                            >
+                              {day.gregorianDay}
+                            </div>
+                            <div className='text-xs text-gray-500 dark:text-gray-400'>
+                              {getHebrewDate(day.date).day}
+                            </div>
+                            <div className='flex-1 mt-1'>
+                              {getEventsForDate(day.date)
+                                .slice(0, 2)
+                                .map((event, idx) => (
+                                  <div
+                                    key={idx}
+                                    className='text-xs bg-blue-100 text-blue-800 p-1 mb-1 rounded truncate'
+                                  >
+                                    {event.title}
+                                  </div>
+                                ))}
+                              {getEventsForDate(day.date).length > 2 && (
+                                <div className='text-xs text-gray-500'>
+                                  +{getEventsForDate(day.date).length - 2} more
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  : null}
+            </div>
+          </div>
+        ) : (
+          // Desktop Layout - Calendar + Events Panel
+          <div
+            className='flex gap-6'
+            dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+          >
+            {/* Calendar */}
+            <div
+              className='flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6'
+              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+            >
+              {/* Header */}
+              <div className='flex items-center justify-between mb-6'>
+                <div className='flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5'>
+                  <button
+                    onClick={() =>
+                      actualCalendarMode === 'hebrew'
+                        ? navigateHebrewMonth('prev')
+                        : navigateGregorianMonth('prev')
+                    }
+                    className='p-2 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
+                  >
+                    {i18n.language === 'he' ? (
+                      <ChevronRightIcon className='w-5 h-5' />
+                    ) : (
+                      <ChevronLeftIcon className='w-5 h-5' />
+                    )}
+                  </button>
+                  <button
+                    onClick={navigateToToday}
+                    className='px-3 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors'
+                  >
+                    {t('Today')}
+                  </button>
+                  <button
+                    onClick={() =>
+                      actualCalendarMode === 'hebrew'
+                        ? navigateHebrewMonth('next')
+                        : navigateGregorianMonth('next')
+                    }
+                    className='p-2 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
+                  >
+                    {i18n.language === 'he' ? (
+                      <ChevronLeftIcon className='w-5 h-5' />
+                    ) : (
+                      <ChevronRightIcon className='w-5 h-5' />
+                    )}
+                  </button>
+                </div>
+                <h2 className='text-xl font-bold text-gray-900 dark:text-gray-100'>
+                  {getCurrentMonthName()}
+                </h2>
+                <div className='w-32'></div> {/* Spacer for balance */}
+              </div>
+
+              {/* Weekday Headers */}
+              <div className='grid grid-cols-7 gap-1 mb-2'>
+                {weekdays.map((day) => (
+                  <div
+                    key={day}
+                    className='p-2 text-center text-sm font-medium text-gray-500 dark:text-gray-400'
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Grid */}
+              <div
+                className='grid grid-cols-7 gap-1'
+                key={`desktop-calendar-${actualCalendarMode}`}
+              >
+                {actualCalendarMode === 'hebrew' && hebrewCalendarGrid
+                  ? hebrewCalendarGrid.weeks.flat().map((day, index) => (
+                      <div
+                        key={index}
+                        onClick={() => day && handleDayClick(day.gregorianDate)}
+                        className={`
+                        min-h-[80px] p-2 border rounded-lg cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors
+                        ${
+                          day?.isCurrentMonth !== false
+                            ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                            : 'bg-gray-50 dark:bg-gray-800 border-transparent text-gray-400 dark:text-gray-500'
+                        }
+                        ${day && selectedDate?.toDateString() === day.gregorianDate.toDateString() ? 'ring-2 ring-blue-500' : ''}
+                      `}
+                      >
+                        {day && (
+                          <div className='h-full flex flex-col'>
+                            <div
+                              className={`text-lg font-bold mb-1 ${
+                                day.isCurrentMonth !== false
+                                  ? 'text-gray-900 dark:text-gray-100'
+                                  : 'text-gray-400 dark:text-gray-500'
+                              }`}
+                            >
+                              {i18n.language === 'he'
+                                ? gematriya(day.hebrewDay)
+                                : day.hebrewDay}
+                            </div>
+                            <div className='text-xs text-gray-500 dark:text-gray-400'>
+                              {getGregorianDate(day).day}{' '}
+                              {getGregorianDate(day).month}
+                            </div>
+                            <div className='flex-1 mt-1'>
+                              {getEventsForDate(day.gregorianDate)
+                                .slice(0, 3)
+                                .map((event, idx) => (
+                                  <div
+                                    key={idx}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEventClick(event);
+                                    }}
+                                    className='text-xs bg-blue-100 text-blue-800 p-1 mb-1 rounded cursor-pointer hover:bg-blue-200 truncate'
+                                  >
+                                    {event.title}
+                                  </div>
+                                ))}
+                              {getEventsForDate(day.gregorianDate).length >
+                                3 && (
+                                <div className='text-xs text-gray-500'>
+                                  +
+                                  {getEventsForDate(day.gregorianDate).length -
+                                    3}{' '}
+                                  more
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  : gregorianCalendarGrid
+                    ? gregorianCalendarGrid.weeks.flat().map((day, index) => (
+                        <div
+                          key={index}
+                          onClick={() => day && handleDayClick(day.date)}
+                          className={`
+                        min-h-[80px] p-2 border rounded-lg cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors
+                        ${
+                          day?.isCurrentMonth
+                            ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                            : 'bg-gray-50 dark:bg-gray-800 border-transparent text-gray-400 dark:text-gray-500'
+                        }
+                        ${day && selectedDate?.toDateString() === day.date.toDateString() ? 'ring-2 ring-blue-500' : ''}
+                      `}
+                        >
+                          {day && (
+                            <div className='h-full flex flex-col'>
+                              <div
+                                className={`text-lg font-bold mb-1 ${
+                                  day.isCurrentMonth
+                                    ? 'text-gray-900 dark:text-gray-100'
+                                    : 'text-gray-400 dark:text-gray-500'
+                                }`}
+                              >
+                                {day.gregorianDay}
+                              </div>
+                              <div className='text-xs text-gray-500 dark:text-gray-400'>
+                                {getHebrewDate(day.date).day}{' '}
+                                {getHebrewDate(day.date).month}
+                              </div>
+                              <div className='flex-1 mt-1'>
+                                {getEventsForDate(day.date)
+                                  .slice(0, 3)
+                                  .map((event, idx) => (
+                                    <div
+                                      key={idx}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEventClick(event);
+                                      }}
+                                      className='text-xs bg-blue-100 text-blue-800 p-1 mb-1 rounded cursor-pointer hover:bg-blue-200 truncate'
+                                    >
+                                      {event.title}
+                                    </div>
+                                  ))}
+                                {getEventsForDate(day.date).length > 3 && (
+                                  <div className='text-xs text-gray-500'>
+                                    +{getEventsForDate(day.date).length - 3}{' '}
+                                    more
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    : null}
+              </div>
+
+              {/* Legend */}
+              <div className='mt-4 text-xs text-gray-500 dark:text-gray-400 text-center'>
+                {actualCalendarMode === 'hebrew'
+                  ? i18n.language === 'he'
+                    ? `מציג חודשים עבריים • התאריכים הגרגוריאניים מוצגים בקטן`
+                    : `Showing Hebrew months • Gregorian dates shown small`
+                  : i18n.language === 'he'
+                    ? `מציג חודשים גרגוריאניים • התאריכים העבריים מוצגים בקטן`
+                    : `Showing Gregorian months • Hebrew dates shown small`}
+              </div>
+            </div>
+
+            {/* Events Panel */}
+            <div className='w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg'>
+              <DayEvents
+                selectedDate={selectedDate}
+                events={eventsForSelectedDate}
+                onEventClick={handleEventClick}
+                onAddEventClick={() => setIsModalOpen(true)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
