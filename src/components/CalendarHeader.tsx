@@ -39,9 +39,11 @@ export default function CalendarHeader({
     'flex items-center',
     isVerySmallDevice
       ? 'mb-1 p-1'
-      : isCompactPhone || isLandscapeMode
-        ? 'mb-2 p-1'
-        : 'mb-4 p-2',
+      : isLandscapeMode
+        ? 'mb-0 p-1'  // No margin bottom for landscape phones
+        : isCompactPhone
+          ? 'mb-2 p-1'
+          : 'mb-4 p-2',
     className,
   ].join(' ');
 
