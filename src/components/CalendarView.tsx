@@ -45,7 +45,6 @@ const isGregorianDay = (day: HebrewDay | GregorianDay): day is GregorianDay => {
   return 'gregorianDay' in day && 'date' in day;
 };
 
-
 // Gregorian month names in Hebrew
 const GREGORIAN_MONTHS_HE = [
   'ינואר',
@@ -80,11 +79,11 @@ const GREGORIAN_MONTHS_EN = [
 
 // Layout types for responsive design
 enum LayoutType {
-  DESKTOP = 'desktop',           // ≥1200px: side-by-side with full events panel
+  DESKTOP = 'desktop', // ≥1200px: side-by-side with full events panel
   LARGE_TABLET = 'large_tablet', // 768-1199px: side-by-side with adapted panel
-  LANDSCAPE_PHONE = 'landscape_phone', // landscape phones: horizontal split  
-  PORTRAIT_PHONE = 'portrait_phone',   // portrait phones: vertical stack
-  TINY_MOBILE = 'tiny_mobile'    // very small: modal-based
+  LANDSCAPE_PHONE = 'landscape_phone', // landscape phones: horizontal split
+  PORTRAIT_PHONE = 'portrait_phone', // portrait phones: vertical stack
+  TINY_MOBILE = 'tiny_mobile', // very small: modal-based
 }
 
 export default function CalendarView() {
@@ -165,8 +164,7 @@ export default function CalendarView() {
       const isLimitedHeight = height < 600;
       const isSmallArea = width * height < 400000; // ~632x632 equivalent
 
-      let newIsSmallScreen =
-        isVerySmallWidth || isLimitedHeight || isSmallArea;
+      let newIsSmallScreen = isVerySmallWidth || isLimitedHeight || isSmallArea;
 
       // Detect landscape phone layout (phones in landscape orientation)
       const newIsLandscapePhone =
@@ -199,7 +197,7 @@ export default function CalendarView() {
       }
 
       const isLandscape = width > height;
-      
+
       let newLayoutType: LayoutType;
       if (newIsLandscapePhone) {
         // Landscape phones with sufficient width - HIGHEST PRIORITY
@@ -209,10 +207,14 @@ export default function CalendarView() {
         newLayoutType = LayoutType.DESKTOP;
       } else if (width >= 1024) {
         // Large tablets - use side-by-side in landscape, stacked in portrait
-        newLayoutType = isLandscape ? LayoutType.LARGE_TABLET : LayoutType.PORTRAIT_PHONE;
+        newLayoutType = isLandscape
+          ? LayoutType.LARGE_TABLET
+          : LayoutType.PORTRAIT_PHONE;
       } else if (width >= 768) {
         // Medium tablets - use side-by-side in landscape, stacked in portrait
-        newLayoutType = isLandscape ? LayoutType.LARGE_TABLET : LayoutType.PORTRAIT_PHONE;
+        newLayoutType = isLandscape
+          ? LayoutType.LARGE_TABLET
+          : LayoutType.PORTRAIT_PHONE;
       } else if (width < 375 || (width < 640 && height < 500)) {
         // Very small devices use modal layout - only very tiny screens
         newLayoutType = LayoutType.TINY_MOBILE;
@@ -235,7 +237,10 @@ export default function CalendarView() {
         setLayoutType(newLayoutType);
 
         // Debug log for development
-        if (process.env.NODE_ENV === 'development' && (screenChanged || layoutChanged)) {
+        if (
+          process.env.NODE_ENV === 'development' &&
+          (screenChanged || layoutChanged)
+        ) {
           console.log('Layout decision:', {
             width,
             height,
@@ -717,120 +722,7 @@ export default function CalendarView() {
     return occurrences.filter((event) => event.date.toDateString() === dateStr);
   };
 
-  // Calculate cell width for content strategy (only width matters for responsive content)
-  const getCellWidth = () => {
-    const width = window.innerWidth;
-    
-    if (layoutType === LayoutType.LANDSCAPE_PHONE) {
-      // In landscape, subtract events panel width and margins
-      return Math.floor((width - 192 - 12) / 7); // Panel is 192px (w-48) + gap
-    } else if (layoutType === LayoutType.PORTRAIT_PHONE) {
-      return Math.floor((width - 32) / 7); // Side margins
-    } else if (layoutType === LayoutType.TINY_MOBILE) {
-      return Math.floor((width - 24) / 7); // Smaller margins
-    } else {
-      // Desktop/tablet
-      const availableWidth = Math.min(width - 320 - 48, 800); // Events panel + margins, max 800px
-      return Math.floor(availableWidth / 7);
-    }
-  };
-
-  // Determine cell content strategy based on dimensions
-  const getCellContentStrategy = (cellWidth: number, cellHeight: number) => {
-    // Define breakpoints
-    const isWide = cellWidth >= 100;
-    const isMediumWidth = cellWidth >= 80;
-    const isTall = cellHeight >= 80;
-    const isMediumHeight = cellHeight >= 60;
-    const isShort = cellHeight < 40;
-    
-    if (isTall && isWide) {
-      // Large cells: show everything (desktop)
-      return {
-        showSecondaryDate: true,
-        showSecondaryMonth: true,
-        showEventTitles: true,
-        maxEventTitles: 3,
-        showEventCount: true,
-        layout: 'full',
-        primaryDateSize: 'text-lg',
-        secondaryDateSize: 'text-xs'
-      };
-    }
-    
-    if (isTall && isMediumWidth) {
-      // Tall but medium width: multiple lines, no month names
-      return {
-        showSecondaryDate: true,
-        showSecondaryMonth: false,
-        showEventTitles: true,
-        maxEventTitles: 2,
-        showEventCount: true,
-        layout: 'tall-medium',
-        primaryDateSize: 'text-base',
-        secondaryDateSize: 'text-xs'
-      };
-    }
-    
-    if (isMediumHeight && isWide) {
-      // Medium height but wide: show month names, no event titles
-      return {
-        showSecondaryDate: true,
-        showSecondaryMonth: true,
-        showEventTitles: false,
-        maxEventTitles: 0,
-        showEventCount: true,
-        layout: 'wide-medium',
-        primaryDateSize: 'text-base',
-        secondaryDateSize: 'text-xs'
-      };
-    }
-    
-    if (isMediumHeight && isMediumWidth) {
-      // Medium cells: no month names, no event titles, just indicators
-      return {
-        showSecondaryDate: true,
-        showSecondaryMonth: false,
-        showEventTitles: false,
-        maxEventTitles: 0,
-        showEventCount: true,
-        layout: 'medium',
-        primaryDateSize: 'text-sm',
-        secondaryDateSize: 'text-xs'
-      };
-    }
-    
-    if (isShort) {
-      // Super short cells: inline dates, event indicator only
-      return {
-        showSecondaryDate: true,
-        showSecondaryMonth: false,
-        showEventTitles: false,
-        maxEventTitles: 0,
-        showEventCount: true,
-        layout: 'compact-inline',
-        primaryDateSize: 'text-sm',
-        secondaryDateSize: 'text-xs'
-      };
-    }
-    
-    // Default: minimal layout
-    return {
-      showSecondaryDate: false,
-      showSecondaryMonth: false,
-      showEventTitles: false,
-      maxEventTitles: 0,
-      showEventCount: true,
-      layout: 'minimal',
-      primaryDateSize: 'text-sm',
-      secondaryDateSize: 'text-xs'
-    };
-  };
-
-  // Get the current cell width for content strategy
-  const currentCellWidth = getCellWidth();
-  // Cell content strategy based on width only - height will be determined by CSS
-  const cellContentStrategy = getCellContentStrategy(currentCellWidth, 50); // Use a standard height for strategy
+  // Cell content strategy is handled by CSS container queries
 
   // Handle day click
   const handleDayClick = (date: Date) => {
@@ -876,8 +768,8 @@ export default function CalendarView() {
   return (
     <div className='h-full bg-gray-50 dark:bg-gray-900 flex flex-col'>
       {/* Calendar Header */}
-      <CalendarHeader 
-        isSmallScreen={isSmallScreen} 
+      <CalendarHeader
+        isSmallScreen={isSmallScreen}
         isLandscapePhone={isLandscapePhone}
         calendarHeight={calendarHeight}
       />
@@ -1013,10 +905,15 @@ export default function CalendarView() {
       )}
 
       {/* Main Content */}
-      <div className={`flex-1 w-full ${
-        layoutType === LayoutType.LANDSCAPE_PHONE ? 'px-1' :
-        layoutType === LayoutType.TINY_MOBILE ? 'px-2' : 'px-2 sm:px-6 lg:px-8'
-      }`}>
+      <div
+        className={`flex-1 w-full ${
+          layoutType === LayoutType.LANDSCAPE_PHONE
+            ? 'px-1'
+            : layoutType === LayoutType.TINY_MOBILE
+              ? 'px-2'
+              : 'px-2 sm:px-6 lg:px-8'
+        }`}
+      >
         {layoutType === LayoutType.TINY_MOBILE ? (
           // Tiny Mobile Layout - Calendar only with modals
           <div
@@ -1091,11 +988,13 @@ export default function CalendarView() {
                     if (!day) {
                       return;
                     }
-                    const date = actualCalendarMode === 'hebrew' && isHebrewDay(day)
-                      ? day.gregorianDate
-                      : isGregorianDay(day) && actualCalendarMode === 'gregorian'
-                      ? day.date
-                      : new Date(); // fallback
+                    const date =
+                      actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                        ? day.gregorianDate
+                        : isGregorianDay(day) &&
+                            actualCalendarMode === 'gregorian'
+                          ? day.date
+                          : new Date(); // fallback
                     handleDayClick(date);
                   }}
                   className={`
@@ -1105,10 +1004,20 @@ export default function CalendarView() {
                       ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                       : 'bg-gray-50 dark:bg-gray-800 border-transparent text-gray-400 dark:text-gray-500'
                   }
-                  ${day && selectedDate && (
-                    (actualCalendarMode === 'hebrew' && isHebrewDay(day) && selectedDate.toDateString() === day.gregorianDate.toDateString()) ||
-                    (actualCalendarMode === 'gregorian' && isGregorianDay(day) && selectedDate.toDateString() === day.date.toDateString())
-                  ) ? 'ring-1 ring-blue-500' : ''}
+                  ${
+                    day &&
+                    selectedDate &&
+                    ((actualCalendarMode === 'hebrew' &&
+                      isHebrewDay(day) &&
+                      selectedDate.toDateString() ===
+                        day.gregorianDate.toDateString()) ||
+                      (actualCalendarMode === 'gregorian' &&
+                        isGregorianDay(day) &&
+                        selectedDate.toDateString() ===
+                          day.date.toDateString()))
+                      ? 'ring-1 ring-blue-500'
+                      : ''
+                  }
                 `}
                 >
                   {day && (
@@ -1125,14 +1034,20 @@ export default function CalendarView() {
                             ? gematriya(day.hebrewDay)
                             : day.hebrewDay
                           : isGregorianDay(day)
-                          ? day.gregorianDay
-                          : 0}
+                            ? day.gregorianDay
+                            : 0}
                       </div>
-                      {(function() {
+                      {(function () {
                         let dateToCheck: Date;
-                        if (actualCalendarMode === 'hebrew' && isHebrewDay(day)) {
+                        if (
+                          actualCalendarMode === 'hebrew' &&
+                          isHebrewDay(day)
+                        ) {
                           dateToCheck = day.gregorianDate;
-                        } else if (actualCalendarMode === 'gregorian' && isGregorianDay(day)) {
+                        } else if (
+                          actualCalendarMode === 'gregorian' &&
+                          isGregorianDay(day)
+                        ) {
                           dateToCheck = day.date;
                         } else {
                           dateToCheck = new Date(); // fallback
@@ -1149,7 +1064,10 @@ export default function CalendarView() {
           </div>
         ) : layoutType === LayoutType.PORTRAIT_PHONE ? (
           // Portrait Phone Layout - Stacked vertical layout with events at bottom
-          <div className='flex flex-col gap-4 h-full' dir={i18n.language === 'he' ? 'rtl' : 'ltr'}>
+          <div
+            className='flex flex-col gap-4 h-full'
+            dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+          >
             {/* Calendar Section */}
             <div className='flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 flex flex-col'>
               {/* Header */}
@@ -1208,7 +1126,10 @@ export default function CalendarView() {
               </div>
 
               {/* Calendar Grid */}
-              <div className='flex-1 grid grid-cols-7 gap-1' style={{ gridTemplateRows: 'repeat(6, 1fr)' }}>
+              <div
+                className='flex-1 grid grid-cols-7 gap-1'
+                style={{ gridTemplateRows: 'repeat(6, 1fr)' }}
+              >
                 {(actualCalendarMode === 'hebrew'
                   ? hebrewCalendarGrid?.weeks.flat()
                   : gregorianCalendarGrid?.weeks.flat()
@@ -1220,9 +1141,10 @@ export default function CalendarView() {
                       handleDayClick(
                         actualCalendarMode === 'hebrew' && isHebrewDay(day)
                           ? day.gregorianDate
-                          : isGregorianDay(day) && actualCalendarMode === 'gregorian'
-                          ? day.date
-                          : new Date(), // fallback
+                          : isGregorianDay(day) &&
+                              actualCalendarMode === 'gregorian'
+                            ? day.date
+                            : new Date(), // fallback
                       )
                     }
                     className={`
@@ -1232,10 +1154,20 @@ export default function CalendarView() {
                         ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                         : 'bg-gray-50 dark:bg-gray-800 border-transparent text-gray-400 dark:text-gray-500'
                     }
-                    ${day && selectedDate && (
-                      (actualCalendarMode === 'hebrew' && isHebrewDay(day) && selectedDate.toDateString() === day.gregorianDate.toDateString()) ||
-                      (actualCalendarMode === 'gregorian' && isGregorianDay(day) && selectedDate.toDateString() === day.date.toDateString())
-                    ) ? 'ring-2 ring-blue-500' : ''}
+                    ${
+                      day &&
+                      selectedDate &&
+                      ((actualCalendarMode === 'hebrew' &&
+                        isHebrewDay(day) &&
+                        selectedDate.toDateString() ===
+                          day.gregorianDate.toDateString()) ||
+                        (actualCalendarMode === 'gregorian' &&
+                          isGregorianDay(day) &&
+                          selectedDate.toDateString() ===
+                            day.date.toDateString()))
+                        ? 'ring-2 ring-blue-500'
+                        : ''
+                    }
                   `}
                   >
                     {day && (
@@ -1252,22 +1184,29 @@ export default function CalendarView() {
                               ? gematriya(day.hebrewDay)
                               : day.hebrewDay
                             : isGregorianDay(day)
-                            ? day.gregorianDay
-                            : 0}
+                              ? day.gregorianDay
+                              : 0}
                         </div>
                         <div className='text-xs text-gray-500 dark:text-gray-400'>
                           {actualCalendarMode === 'hebrew' && isHebrewDay(day)
                             ? getGregorianDate(day).day
-                            : actualCalendarMode === 'gregorian' && isGregorianDay(day)
-                            ? getHebrewDate(day.date).day
-                            : ''}
+                            : actualCalendarMode === 'gregorian' &&
+                                isGregorianDay(day)
+                              ? getHebrewDate(day.date).day
+                              : ''}
                         </div>
                         <div className='flex-1 mt-1'>
-                          {(function() {
+                          {(function () {
                             let dateToCheck: Date;
-                            if (actualCalendarMode === 'hebrew' && isHebrewDay(day)) {
+                            if (
+                              actualCalendarMode === 'hebrew' &&
+                              isHebrewDay(day)
+                            ) {
                               dateToCheck = day.gregorianDate;
-                            } else if (actualCalendarMode === 'gregorian' && isGregorianDay(day)) {
+                            } else if (
+                              actualCalendarMode === 'gregorian' &&
+                              isGregorianDay(day)
+                            ) {
                               dateToCheck = day.date;
                             } else {
                               return null; // fallback
@@ -1275,16 +1214,14 @@ export default function CalendarView() {
                             const dayEvents = getEventsForDate(dateToCheck);
                             return (
                               <>
-                                {dayEvents
-                                  .slice(0, 1)
-                                  .map((event, idx) => (
-                                    <div
-                                      key={idx}
-                                      className='text-xs bg-blue-100 text-blue-800 p-1 rounded truncate'
-                                    >
-                                      {event.title}
-                                    </div>
-                                  ))}
+                                {dayEvents.slice(0, 1).map((event, idx) => (
+                                  <div
+                                    key={idx}
+                                    className='text-xs bg-blue-100 text-blue-800 p-1 rounded truncate'
+                                  >
+                                    {event.title}
+                                  </div>
+                                ))}
                                 {dayEvents.length > 1 && (
                                   <div className='text-xs text-gray-500 text-center'>
                                     +{dayEvents.length - 1}
@@ -1375,7 +1312,10 @@ export default function CalendarView() {
               </div>
 
               {/* Calendar Grid - Takes all remaining space, equal height cells */}
-              <div className='flex-1 grid grid-cols-7 gap-0.5 p-1' style={{ gridTemplateRows: 'repeat(6, 1fr)' }}>
+              <div
+                className='flex-1 grid grid-cols-7 gap-0.5 p-1'
+                style={{ gridTemplateRows: 'repeat(6, 1fr)' }}
+              >
                 {(actualCalendarMode === 'hebrew'
                   ? hebrewCalendarGrid?.weeks.flat()
                   : gregorianCalendarGrid?.weeks.flat()
@@ -1383,19 +1323,29 @@ export default function CalendarView() {
                   // Get events for this day
                   let dateToCheck: Date;
                   let dayEvents: EventOccurrence[] = [];
-                  
-                  if (actualCalendarMode === 'hebrew' && isHebrewDay(day)) {
+
+                  if (
+                    actualCalendarMode === 'hebrew' &&
+                    day &&
+                    isHebrewDay(day)
+                  ) {
                     dateToCheck = day.gregorianDate;
                     dayEvents = getEventsForDate(dateToCheck);
-                  } else if (actualCalendarMode === 'gregorian' && isGregorianDay(day)) {
+                  } else if (
+                    actualCalendarMode === 'gregorian' &&
+                    day &&
+                    isGregorianDay(day)
+                  ) {
                     dateToCheck = day.date;
                     dayEvents = getEventsForDate(dateToCheck);
                   }
-                  
+
                   return (
                     <div
                       key={index}
-                      onClick={() => day && handleDayClick(dateToCheck || new Date())}
+                      onClick={() =>
+                        day && handleDayClick(dateToCheck || new Date())
+                      }
                       className={`
                         calendar-cell border rounded cursor-pointer transition-colors
                         ${
@@ -1403,33 +1353,51 @@ export default function CalendarView() {
                             ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
                             : 'bg-gray-50 dark:bg-gray-800 border-transparent not-current-month'
                         }
-                        ${day && selectedDate && (
-                          (actualCalendarMode === 'hebrew' && isHebrewDay(day) && selectedDate.toDateString() === day.gregorianDate.toDateString()) ||
-                          (actualCalendarMode === 'gregorian' && isGregorianDay(day) && selectedDate.toDateString() === day.date.toDateString())
-                        ) ? 'selected' : ''}
+                        ${
+                          day &&
+                          selectedDate &&
+                          ((actualCalendarMode === 'hebrew' &&
+                            isHebrewDay(day) &&
+                            selectedDate.toDateString() ===
+                              day.gregorianDate.toDateString()) ||
+                            (actualCalendarMode === 'gregorian' &&
+                              isGregorianDay(day) &&
+                              selectedDate.toDateString() ===
+                                day.date.toDateString()))
+                            ? 'selected'
+                            : ''
+                        }
                       `}
                     >
                       {day && (
                         <div className='calendar-cell-content'>
                           <div className='calendar-cell-primary-date text-gray-900 dark:text-gray-100'>
                             {actualCalendarMode === 'hebrew' && isHebrewDay(day)
-                              ? i18n.language === 'he' ? gematriya(day.hebrewDay) : day.hebrewDay
-                              : isGregorianDay(day) ? day.gregorianDay : ''}
+                              ? i18n.language === 'he'
+                                ? gematriya(day.hebrewDay)
+                                : day.hebrewDay
+                              : isGregorianDay(day)
+                                ? day.gregorianDay
+                                : ''}
                           </div>
                           <div className='calendar-cell-secondary-date text-gray-500 dark:text-gray-400'>
                             {actualCalendarMode === 'hebrew' && isHebrewDay(day)
                               ? getGregorianDate(day).day
-                              : isGregorianDay(day) ? getHebrewDate(day.date).day : ''}
+                              : isGregorianDay(day)
+                                ? getHebrewDate(day.date).day
+                                : ''}
                           </div>
                           <div className='calendar-cell-secondary-month text-gray-500 dark:text-gray-400 hidden'>
                             {actualCalendarMode === 'hebrew' && isHebrewDay(day)
                               ? getGregorianDate(day).month
-                              : isGregorianDay(day) ? getHebrewDate(day.date).month.slice(0, 3) : ''}
+                              : isGregorianDay(day)
+                                ? getHebrewDate(day.date).month.slice(0, 3)
+                                : ''}
                           </div>
                           <div className='calendar-cell-events'>
                             {dayEvents.map((event, idx) => (
-                              <div 
-                                key={idx} 
+                              <div
+                                key={idx}
                                 className='calendar-cell-event bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -1443,7 +1411,9 @@ export default function CalendarView() {
                               <>
                                 <div className='calendar-cell-event-indicator'></div>
                                 {dayEvents.length > 1 && (
-                                  <div className='calendar-cell-event-count'>+{dayEvents.length - 1}</div>
+                                  <div className='calendar-cell-event-count'>
+                                    +{dayEvents.length - 1}
+                                  </div>
                                 )}
                               </>
                             )}
@@ -1534,7 +1504,10 @@ export default function CalendarView() {
               </div>
 
               {/* Calendar Grid */}
-              <div className='flex-1 grid grid-cols-7 gap-1' style={{ gridTemplateRows: 'repeat(6, 1fr)' }}>
+              <div
+                className='flex-1 grid grid-cols-7 gap-1'
+                style={{ gridTemplateRows: 'repeat(6, 1fr)' }}
+              >
                 {actualCalendarMode === 'hebrew' && hebrewCalendarGrid
                   ? hebrewCalendarGrid.weeks.flat().map((day, index) => (
                       <div
