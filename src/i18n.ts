@@ -72,6 +72,9 @@ const resources = {
       Spanish: 'Spanish',
       Hebrew: 'Hebrew',
       Language: 'Language',
+      // Additional event list translations
+      'No events for this date': 'No events for this date',
+      'Select a date to view events': 'Select a date to view events',
     },
   },
   he: {
@@ -143,6 +146,9 @@ const resources = {
       Spanish: 'ספרדית',
       Hebrew: 'עברית',
       Language: 'שפה',
+      // Additional event list translations
+      'No events for this date': 'אין אירועים לתאריך זה',
+      'Select a date to view events': 'בחר תאריך לצפייה באירועים',
     },
   },
   es: {
@@ -215,6 +221,9 @@ const resources = {
       Spanish: 'Español',
       Hebrew: 'Hebreo',
       Language: 'Idioma',
+      // Additional event list translations
+      'No events for this date': 'No hay eventos para esta fecha',
+      'Select a date to view events': 'Selecciona una fecha para ver eventos',
     },
   },
 };

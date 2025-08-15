@@ -40,7 +40,7 @@ export default function CalendarHeader({
     isVerySmallDevice
       ? 'mb-1 p-1'
       : isLandscapeMode
-        ? 'mb-0 p-1'  // No margin bottom for landscape phones
+        ? 'mb-0 p-1' // No margin bottom for landscape phones
         : isCompactPhone
           ? 'mb-2 p-1'
           : 'mb-4 p-2',

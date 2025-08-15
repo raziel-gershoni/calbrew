@@ -45,23 +45,23 @@
   .calendar-cell-content {
     @apply flex-row items-center justify-between p-0.5;
   }
-  
+
   .calendar-cell-primary-date {
     @apply text-xs font-bold;
   }
-  
+
   .calendar-cell-secondary-date {
     @apply text-xs;
   }
-  
+
   .calendar-cell-events {
     @apply flex-row items-center gap-1 mt-0;
   }
-  
+
   .calendar-cell-event {
     @apply hidden;
   }
-  
+
   .calendar-cell-event-indicator {
     @apply w-1 h-1;
   }
@@ -72,23 +72,23 @@
   .calendar-cell-content {
     @apply flex-col items-center justify-between;
   }
-  
+
   .calendar-cell-primary-date {
     @apply text-sm font-bold;
   }
-  
+
   .calendar-cell-secondary-date {
     @apply text-xs;
   }
-  
+
   .calendar-cell-events {
     @apply flex-row items-center justify-center gap-1;
   }
-  
+
   .calendar-cell-event {
     @apply hidden;
   }
-  
+
   .calendar-cell-event-indicator {
     @apply w-1.5 h-1.5;
   }
@@ -99,23 +99,23 @@
   .calendar-cell-content {
     @apply flex-col;
   }
-  
+
   .calendar-cell-primary-date {
     @apply text-base font-bold;
   }
-  
+
   .calendar-cell-secondary-date {
     @apply text-xs;
   }
-  
+
   .calendar-cell-events {
     @apply flex flex-col gap-0.5 mt-1;
   }
-  
+
   .calendar-cell-event {
     @apply hidden;
   }
-  
+
   .calendar-cell-event-indicator {
     @apply w-2 h-2;
   }
@@ -126,28 +126,28 @@
   .calendar-cell-content {
     @apply flex-col;
   }
-  
+
   .calendar-cell-primary-date {
     @apply text-lg font-bold;
   }
-  
+
   .calendar-cell-secondary-date {
     @apply text-sm;
   }
-  
+
   .calendar-cell-events {
     @apply flex flex-col gap-0.5 mt-1 flex-1;
   }
-  
+
   .calendar-cell-event {
     @apply block text-xs bg-blue-100 text-blue-800 p-0.5 rounded truncate;
   }
-  
+
   /* Show only first event */
-  .calendar-cell-event:nth-child(n+2) {
+  .calendar-cell-event:nth-child(n + 2) {
     @apply hidden;
   }
-  
+
   .calendar-cell-event-indicator {
     @apply hidden;
   }
@@ -158,32 +158,32 @@
   .calendar-cell-content {
     @apply flex-col;
   }
-  
+
   .calendar-cell-primary-date {
     @apply text-xl font-bold;
   }
-  
+
   .calendar-cell-secondary-date {
     @apply text-sm;
   }
-  
+
   .calendar-cell-secondary-month {
     @apply block;
   }
-  
+
   .calendar-cell-events {
     @apply flex flex-col gap-1 mt-2 flex-1;
   }
-  
+
   .calendar-cell-event {
     @apply block text-sm bg-blue-100 text-blue-800 p-1 rounded truncate;
   }
-  
+
   /* Show up to 3 events */
-  .calendar-cell-event:nth-child(n+4) {
+  .calendar-cell-event:nth-child(n + 4) {
     @apply hidden;
   }
-  
+
   .calendar-cell-event-indicator {
     @apply hidden;
   }
@@ -196,7 +196,7 @@
   .calendar-cell-secondary-month {
     @apply hidden;
   }
-  
+
   .calendar-cell-event {
     @apply text-xs p-0.5;
   }
@@ -207,7 +207,7 @@
   .calendar-cell-secondary-month {
     @apply hidden;
   }
-  
+
   .calendar-cell-event {
     @apply text-xs;
   }

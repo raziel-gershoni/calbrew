@@ -3,6 +3,7 @@
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { useTranslation } from 'react-i18next';
 import { EventOccurrence } from '@/utils/hebrewDateUtils';
+import { useCalendarMode } from '@/contexts/CalendarModeContext';
 
 interface DayEventsProps {
   events: EventOccurrence[];
@@ -22,8 +23,25 @@ export default function DayEvents({
   let hebrewDateStr = '';
   let gregorianDateStr = '';
 
+  // Get appropriate locale for Gregorian date formatting
+  const getGregorianLocale = () => {
+    switch (i18n.language) {
+      case 'he':
+        return 'he-IL';
+      case 'es':
+        return 'es-ES';
+      default:
+        return 'en-US';
+    }
+  };
+
+  // Access the calendar mode
+  const { calendarMode } = useCalendarMode();
+
   if (selectedDate) {
     const hdate = new HDate(selectedDate);
+
+    // Format Hebrew date based on language
     if (i18n.language === 'he') {
       const day = gematriya(hdate.getDate());
       const month = Locale.gettext(hdate.getMonthName(), 'he');
@@ -32,18 +50,18 @@ export default function DayEvents({
     } else {
       hebrewDateStr = hdate.render();
     }
-    gregorianDateStr = selectedDate.toLocaleDateString(
-      i18n.language === 'he' ? 'he-IL' : 'en-US',
-      {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      },
-    );
+
+    // Format Gregorian date based on language, not calendar mode
+    gregorianDateStr = selectedDate.toLocaleDateString(getGregorianLocale(), {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
   }
 
+  // Display date string based on calendar mode instead of language
   const dateStr = selectedDate
-    ? i18n.language === 'he'
+    ? calendarMode === 'hebrew'
       ? `${hebrewDateStr} (${gregorianDateStr})`
       : `${gregorianDateStr} (${hebrewDateStr})`
     : '';
