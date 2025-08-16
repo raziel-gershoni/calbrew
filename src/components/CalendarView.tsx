@@ -80,9 +80,9 @@ const GREGORIAN_MONTHS_EN = [
 // Layout types for responsive design
 enum LayoutType {
   DESKTOP = 'desktop', // ≥1200px: side-by-side with full events panel
-  LARGE_TABLET = 'large_tablet', // 768-1199px: side-by-side with adapted panel
-  LANDSCAPE_PHONE = 'landscape_phone', // landscape phones: horizontal split
-  PORTRAIT_PHONE = 'portrait_phone', // portrait phones: vertical stack
+  TABLET = 'tablet', // 768-1199px: side-by-side with adapted panel
+  MOBILE_LANDSCAPE = 'mobile_landscape', // mobile landscape: horizontal 2:1 split
+  MOBILE_PORTRAIT = 'mobile_portrait', // mobile portrait: vertical 2:1 stack
   TINY_MOBILE = 'tiny_mobile', // very small: modal-based
 }
 
@@ -137,7 +137,7 @@ export default function CalendarView() {
   const [layoutType, setLayoutType] = useState<LayoutType>(LayoutType.DESKTOP);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [isLandscapePhone, setIsLandscapePhone] = useState(false);
-  const [calendarHeight, setCalendarHeight] = useState(500);
+  const [screenHeight, setScreenHeight] = useState(600);
 
   // Initialize calendar to current Hebrew month
   useEffect(() => {
@@ -170,70 +170,64 @@ export default function CalendarView() {
       const newIsLandscapePhone =
         width > height && width < 1024 && width >= 640;
 
-      // Dynamic calendar height based on screen size and available space
-      let newCalendarHeight = 500; // Default height for tablets/desktop
-
-      if (newIsLandscapePhone) {
-        // Landscape phones - be more aggressive with height usage
-        // Account for: app header (~40px compact), calendar toolbar (~30px compact), margins (~20px)
-        // Leave minimal space for events list, maximize calendar
-        const reservedSpace = isVerySmallWidth && height <= 375 ? 70 : 90; // iPhone SE vs larger phones
-        newCalendarHeight = Math.max(280, height - reservedSpace);
-      } else if (width <= 375 && height <= 667) {
-        // iPhone SE and similar very small devices (375x667)
-        newCalendarHeight = 300;
-      } else if (width <= 390 && height >= 800 && height < 900) {
-        // iPhone 14, iPhone 13 mini, etc. (390x844, etc.)
-        newCalendarHeight = 480;
-      } else if (width <= 428 && height >= 900) {
-        // iPhone 14 Pro Max, iPhone 15 Pro Max, etc. (430x932, 428x926) - utilize the huge screen
-        newCalendarHeight = 550;
-      } else if (width <= 414 && height >= 850) {
-        // iPhone 13 Pro Max, iPhone 12 Pro Max, etc. (414x896)
-        newCalendarHeight = 520;
-      } else if (width < 640) {
-        // Other phones (iPhone 12, iPhone 13, etc.)
-        newCalendarHeight = 450;
-      }
+      // Track screen height for responsive decisions
+      const newScreenHeight = height;
 
       const isLandscape = width > height;
 
       let newLayoutType: LayoutType;
-      if (newIsLandscapePhone) {
-        // Landscape phones with sufficient width - HIGHEST PRIORITY
-        newLayoutType = LayoutType.LANDSCAPE_PHONE;
+
+      // iPhone landscape detection - these devices should NEVER use desktop/tablet layouts
+      const isPhoneLandscape =
+        isLandscape &&
+        // iPhone 12 Pro Max, 13 Pro Max, 14 Pro Max (428x926 -> 926x428 in landscape)
+        ((width <= 926 && height <= 428) ||
+          // iPhone 12 Pro, 13 Pro, 14 Pro (390x844 -> 844x390 in landscape)
+          (width <= 844 && height <= 390) ||
+          // iPhone 12, 13 (390x844 -> 844x390 in landscape)
+          (width <= 844 && height <= 390) ||
+          // iPhone SE (375x667 -> 667x375 in landscape)
+          (width <= 667 && height <= 375) ||
+          // Generic phone landscape detection
+          (width <= 896 && height <= 414) ||
+          // Catch any device with phone-like aspect ratios in landscape
+          (height < 500 && width < 1000));
+
+      if (width < 350 || (width < 640 && height < 480)) {
+        // Very small devices use modal layout - only extremely small screens
+        newLayoutType = LayoutType.TINY_MOBILE;
+        newIsSmallScreen = true;
+      } else if (isPhoneLandscape) {
+        // Phone landscape - horizontal 2:1 split (force this for phones)
+        newLayoutType = LayoutType.MOBILE_LANDSCAPE;
+        // Keep the isSmallScreen value calculated earlier
+      } else if (width < 768 && !isLandscape) {
+        // Mobile portrait - vertical 2:1 stack
+        newLayoutType = LayoutType.MOBILE_PORTRAIT;
+        // Keep the isSmallScreen value calculated earlier
       } else if (width >= 1200) {
         // Desktop - always side-by-side
         newLayoutType = LayoutType.DESKTOP;
-      } else if (width >= 1024) {
-        // Large tablets - use side-by-side in landscape, stacked in portrait
-        newLayoutType = isLandscape
-          ? LayoutType.LARGE_TABLET
-          : LayoutType.PORTRAIT_PHONE;
+        newIsSmallScreen = false; // Desktop is never small screen
       } else if (width >= 768) {
-        // Medium tablets - use side-by-side in landscape, stacked in portrait
-        newLayoutType = isLandscape
-          ? LayoutType.LARGE_TABLET
-          : LayoutType.PORTRAIT_PHONE;
-      } else if (width < 375 || (width < 640 && height < 500)) {
-        // Very small devices use modal layout - only very tiny screens
-        newLayoutType = LayoutType.TINY_MOBILE;
-        newIsSmallScreen = true;
+        // Tablet - side-by-side with adapted panel
+        newLayoutType = LayoutType.TABLET;
+        newIsSmallScreen = false; // Tablet is never small screen
       } else {
-        // Regular phones in portrait - use stacked layout with events at bottom
-        newLayoutType = LayoutType.PORTRAIT_PHONE;
-        newIsSmallScreen = false; // Portrait phones should NOT be considered small screen
+        // Fallback to portrait for any edge cases
+        newLayoutType = LayoutType.MOBILE_PORTRAIT;
+        // Keep the isSmallScreen value calculated earlier
       }
 
       const screenChanged = newIsSmallScreen !== isSmallScreen;
       const landscapeChanged = newIsLandscapePhone !== isLandscapePhone;
-      const heightChanged = newCalendarHeight !== calendarHeight;
+      const heightChanged = newScreenHeight !== screenHeight;
       const layoutChanged = newLayoutType !== layoutType;
 
       if (screenChanged || landscapeChanged || heightChanged || layoutChanged) {
         setIsSmallScreen(newIsSmallScreen);
         setIsLandscapePhone(newIsLandscapePhone);
-        setCalendarHeight(newCalendarHeight);
+        setScreenHeight(newScreenHeight);
         setLayoutType(newLayoutType);
 
         // Debug log for development
@@ -250,7 +244,8 @@ export default function CalendarView() {
             isSmallArea,
             isLandscapePhone: newIsLandscapePhone,
             layoutType: newLayoutType,
-            calendarHeight: newCalendarHeight,
+            screenHeight: newScreenHeight,
+            isSmallScreen: newIsSmallScreen,
           });
         }
       }
@@ -259,7 +254,7 @@ export default function CalendarView() {
     checkDevice();
     window.addEventListener('resize', checkDevice);
     return () => window.removeEventListener('resize', checkDevice);
-  }, [isSmallScreen, isLandscapePhone, calendarHeight, layoutType]);
+  }, [isSmallScreen, isLandscapePhone, screenHeight, layoutType]);
 
   // Get calendar view date range for event filtering (includes overlapping days)
   const calendarViewRange = useMemo(() => {
@@ -771,7 +766,7 @@ export default function CalendarView() {
       <CalendarHeader
         isSmallScreen={isSmallScreen}
         isLandscapePhone={isLandscapePhone}
-        calendarHeight={calendarHeight}
+        screenHeight={screenHeight}
       />
 
       {/* Mobile Modal for Event Display */}
@@ -906,8 +901,8 @@ export default function CalendarView() {
 
       {/* Main Content */}
       <div
-        className={`flex-1 w-full ${
-          layoutType === LayoutType.LANDSCAPE_PHONE
+        className={`flex-1 w-full min-h-0 overflow-hidden ${
+          layoutType === LayoutType.MOBILE_LANDSCAPE
             ? 'px-1'
             : layoutType === LayoutType.TINY_MOBILE
               ? 'px-2'
@@ -1062,16 +1057,26 @@ export default function CalendarView() {
               ))}
             </div>
           </div>
-        ) : layoutType === LayoutType.PORTRAIT_PHONE ? (
-          // Portrait Phone Layout - Stacked vertical layout with events at bottom
+        ) : layoutType === LayoutType.MOBILE_PORTRAIT ? (
+          // Mobile Portrait Layout - Vertical stack with 2:1 ratio (calendar:events)
+          // Hide events list when screen height is very limited (≤300px)
           <div
-            className='flex flex-col gap-4 h-full'
+            className='flex flex-col h-full max-h-full overflow-hidden'
             dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
           >
-            {/* Calendar Section */}
-            <div className='flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 flex flex-col'>
+            {/* Calendar Section - Takes 2/3 of height */}
+            <div
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg flex flex-col mb-2 min-h-0 overflow-hidden ${
+                isSmallScreen ? 'p-2' : 'p-4'
+              }`}
+              style={{ flex: '2' }}
+            >
               {/* Header */}
-              <div className='flex items-center justify-between mb-4'>
+              <div
+                className={`flex items-center justify-between ${
+                  isSmallScreen ? 'mb-2' : 'mb-4'
+                }`}
+              >
                 <div className='flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded-lg p-0.5'>
                   <button
                     onClick={() =>
@@ -1114,11 +1119,17 @@ export default function CalendarView() {
               </div>
 
               {/* Weekday Headers */}
-              <div className='grid grid-cols-7 gap-1 mb-2'>
+              <div
+                className={`grid grid-cols-7 gap-1 flex-shrink-0 ${
+                  isSmallScreen ? 'mb-1' : 'mb-2'
+                }`}
+              >
                 {weekdays.map((day) => (
                   <div
                     key={day}
-                    className='p-1 text-center text-xs font-medium text-gray-500'
+                    className={`text-center text-xs font-medium text-gray-500 ${
+                      isSmallScreen ? 'p-0.5' : 'p-1'
+                    }`}
                   >
                     {day}
                   </div>
@@ -1127,8 +1138,14 @@ export default function CalendarView() {
 
               {/* Calendar Grid */}
               <div
-                className='flex-1 grid grid-cols-7 gap-1'
-                style={{ gridTemplateRows: 'repeat(6, 1fr)' }}
+                className='flex-1 grid grid-cols-7 gap-1 min-h-0 overflow-hidden'
+                style={{
+                  gridTemplateRows: `repeat(${
+                    actualCalendarMode === 'hebrew'
+                      ? hebrewCalendarGrid?.weeks.length || 6
+                      : gregorianCalendarGrid?.weeks.length || 6
+                  }, 1fr)`,
+                }}
               >
                 {(actualCalendarMode === 'hebrew'
                   ? hebrewCalendarGrid?.weeks.flat()
@@ -1148,7 +1165,7 @@ export default function CalendarView() {
                       )
                     }
                     className={`
-                    min-h-[50px] p-1 border rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors
+                    ${isSmallScreen ? 'p-0.5' : 'p-1'} border rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors overflow-hidden min-h-0
                     ${
                       day?.isCurrentMonth !== false
                         ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
@@ -1171,9 +1188,9 @@ export default function CalendarView() {
                   `}
                   >
                     {day && (
-                      <div className='h-full flex flex-col'>
+                      <div className='h-full flex flex-col overflow-hidden min-h-0'>
                         <div
-                          className={`text-sm font-bold mb-0.5 ${
+                          className={`${isSmallScreen ? 'text-xs mb-0.5' : 'text-sm mb-1'} font-bold flex-shrink-0 ${
                             day.isCurrentMonth !== false
                               ? 'text-gray-900 dark:text-gray-100'
                               : 'text-gray-400 dark:text-gray-500'
@@ -1187,15 +1204,19 @@ export default function CalendarView() {
                               ? day.gregorianDay
                               : 0}
                         </div>
-                        <div className='text-xs text-gray-500 dark:text-gray-400'>
-                          {actualCalendarMode === 'hebrew' && isHebrewDay(day)
-                            ? getGregorianDate(day).day
-                            : actualCalendarMode === 'gregorian' &&
-                                isGregorianDay(day)
-                              ? getHebrewDate(day.date).day
-                              : ''}
-                        </div>
-                        <div className='flex-1 mt-1'>
+                        {!isSmallScreen && (
+                          <div className='text-xs text-gray-500 dark:text-gray-400 flex-shrink-0'>
+                            {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                              ? getGregorianDate(day).day
+                              : actualCalendarMode === 'gregorian' &&
+                                  isGregorianDay(day)
+                                ? getHebrewDate(day.date).day
+                                : ''}
+                          </div>
+                        )}
+                        <div
+                          className={`flex-1 min-h-0 overflow-hidden ${isSmallScreen ? 'mt-0.5' : 'mt-1'}`}
+                        >
                           {(function () {
                             let dateToCheck: Date;
                             if (
@@ -1212,23 +1233,11 @@ export default function CalendarView() {
                               return null; // fallback
                             }
                             const dayEvents = getEventsForDate(dateToCheck);
-                            return (
-                              <>
-                                {dayEvents.slice(0, 1).map((event, idx) => (
-                                  <div
-                                    key={idx}
-                                    className='text-xs bg-blue-100 text-blue-800 p-1 rounded truncate'
-                                  >
-                                    {event.title}
-                                  </div>
-                                ))}
-                                {dayEvents.length > 1 && (
-                                  <div className='text-xs text-gray-500 text-center'>
-                                    +{dayEvents.length - 1}
-                                  </div>
-                                )}
-                              </>
-                            );
+                            return dayEvents.length > 0 ? (
+                              <div
+                                className={`${isSmallScreen ? 'w-1 h-1' : 'w-2 h-2'} bg-blue-500 rounded-full mx-auto`}
+                              ></div>
+                            ) : null;
                           })()}
                         </div>
                       </div>
@@ -1238,24 +1247,29 @@ export default function CalendarView() {
               </div>
             </div>
 
-            {/* Events Section - Fixed height at bottom */}
-            <div className='h-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg flex-shrink-0'>
-              <DayEvents
-                selectedDate={selectedDate}
-                events={eventsForSelectedDate}
-                onEventClick={handleEventClick}
-                onAddEventClick={() => setIsModalOpen(true)}
-              />
-            </div>
+            {/* Events Section - Takes 1/3 of height, hidden when screen height is very limited */}
+            {screenHeight > 300 && (
+              <div
+                className='bg-white dark:bg-gray-800 rounded-lg shadow-lg'
+                style={{ flex: '1' }}
+              >
+                <DayEvents
+                  selectedDate={selectedDate}
+                  events={eventsForSelectedDate}
+                  onEventClick={handleEventClick}
+                  onAddEventClick={() => setIsModalOpen(true)}
+                />
+              </div>
+            )}
           </div>
-        ) : layoutType === LayoutType.LANDSCAPE_PHONE ? (
+        ) : layoutType === LayoutType.MOBILE_LANDSCAPE ? (
           // Landscape Phone Layout - Horizontal split: 2/3 calendar, 1/3 events
           <div
-            className='flex gap-2 h-full'
+            className='flex gap-2 h-full max-h-full overflow-hidden'
             dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
           >
             {/* Calendar Container - Takes 2/3 of available width */}
-            <div className='w-2/3 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-lg'>
+            <div className='w-2/3 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-lg min-h-0 overflow-hidden'>
               {/* Calendar Header - Reduced height */}
               <div className='h-10 flex items-center justify-between px-1 flex-shrink-0 border-b border-gray-200 dark:border-gray-700'>
                 <div className='flex items-center gap-0.5 bg-gray-100 dark:bg-gray-700 rounded p-0.5'>
@@ -1314,7 +1328,13 @@ export default function CalendarView() {
               {/* Calendar Grid - Takes all remaining space, equal height cells */}
               <div
                 className='flex-1 grid grid-cols-7 gap-0.5 p-1'
-                style={{ gridTemplateRows: 'repeat(6, 1fr)' }}
+                style={{
+                  gridTemplateRows: `repeat(${
+                    actualCalendarMode === 'hebrew'
+                      ? hebrewCalendarGrid?.weeks.length || 6
+                      : gregorianCalendarGrid?.weeks.length || 6
+                  }, 1fr)`,
+                }}
               >
                 {(actualCalendarMode === 'hebrew'
                   ? hebrewCalendarGrid?.weeks.flat()
@@ -1506,7 +1526,13 @@ export default function CalendarView() {
               {/* Calendar Grid */}
               <div
                 className='flex-1 grid grid-cols-7 gap-1'
-                style={{ gridTemplateRows: 'repeat(6, 1fr)' }}
+                style={{
+                  gridTemplateRows: `repeat(${
+                    actualCalendarMode === 'hebrew'
+                      ? hebrewCalendarGrid?.weeks.length || 6
+                      : gregorianCalendarGrid?.weeks.length || 6
+                  }, 1fr)`,
+                }}
               >
                 {actualCalendarMode === 'hebrew' && hebrewCalendarGrid
                   ? hebrewCalendarGrid.weeks.flat().map((day, index) => (
@@ -1642,7 +1668,7 @@ export default function CalendarView() {
 
             {/* Events Panel - Adaptive width */}
             <div
-              className={`${layoutType === LayoutType.LARGE_TABLET ? 'w-72' : 'w-80'} bg-white dark:bg-gray-800 rounded-lg shadow-lg`}
+              className={`${layoutType === LayoutType.TABLET ? 'w-72' : 'w-80'} bg-white dark:bg-gray-800 rounded-lg shadow-lg`}
             >
               <DayEvents
                 selectedDate={selectedDate}
