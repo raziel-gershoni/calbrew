@@ -54,8 +54,10 @@ async function ensureCalbrewCalendar(
 
     console.log('📅 Attempting to list calendars...');
     const { data: calendars } = await calendar.calendarList.list();
-    console.log(`✅ Successfully listed ${calendars.items?.length || 0} calendars`);
-    
+    console.log(
+      `✅ Successfully listed ${calendars.items?.length || 0} calendars`,
+    );
+
     let calbrewCalendar = calendars.items?.find((c) => c.summary === 'Calbrew');
 
     if (!calbrewCalendar) {
@@ -79,15 +81,17 @@ async function ensureCalbrewCalendar(
       message: error.message,
       status: error.status || error.code,
       statusText: error.statusText,
-      response: error.response?.data
+      response: error.response?.data,
     });
-    
+
     // Log specific error for insufficient scopes
     if (error.code === 403 || error.status === 403) {
       console.error('🚫 This appears to be a permissions/scope issue.');
-      console.error('Required scopes: https://www.googleapis.com/auth/calendar');
+      console.error(
+        'Required scopes: https://www.googleapis.com/auth/calendar',
+      );
     }
-    
+
     return null;
   }
 }
@@ -101,10 +105,10 @@ export const authOptions: NextAuthOptions = {
         params: {
           scope: [
             'openid',
-            'email', 
+            'email',
             'profile',
             'https://www.googleapis.com/auth/calendar',
-            'https://www.googleapis.com/auth/calendar.events'
+            'https://www.googleapis.com/auth/calendar.events',
           ].join(' '),
           access_type: 'offline',
           prompt: 'consent',
@@ -121,7 +125,7 @@ export const authOptions: NextAuthOptions = {
 
       try {
         console.log('🔐 Starting sign-in process for user:', user.id);
-        
+
         // Check if user exists
         const userInDb = await dbGet<User>('SELECT * FROM users WHERE id = ?', [
           user.id,
@@ -154,11 +158,18 @@ export const authOptions: NextAuthOptions = {
               [calendarId, user.id],
             );
           } else {
-            console.warn('⚠️ Calendar setup failed, but continuing with sign-in');
+            console.warn(
+              '⚠️ Calendar setup failed, but continuing with sign-in',
+            );
           }
         } catch (calendarError) {
-          console.warn('⚠️ Calendar setup failed during sign-in:', calendarError);
-          console.warn('📝 User can still sign in - calendar will be set up on first use');
+          console.warn(
+            '⚠️ Calendar setup failed during sign-in:',
+            calendarError,
+          );
+          console.warn(
+            '📝 User can still sign in - calendar will be set up on first use',
+          );
         }
 
         console.log('✅ Sign-in process completed successfully');
@@ -249,7 +260,7 @@ export const authOptions: NextAuthOptions = {
           console.error('Google OAuth Error Details:', {
             error: (error as any).error,
             error_description: (error as any).error_description,
-            userId: token.id
+            userId: token.id,
           });
         }
         // The user will be signed out on the client if the session is invalid

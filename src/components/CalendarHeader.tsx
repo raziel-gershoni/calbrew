@@ -9,14 +9,14 @@ interface CalendarHeaderProps {
   className?: string;
   isLandscapePhone?: boolean;
   isSmallScreen?: boolean;
-  calendarHeight?: number;
+  screenHeight?: number;
 }
 
 export default function CalendarHeader({
   className = '',
   isLandscapePhone = false,
   isSmallScreen = false,
-  calendarHeight = 500,
+  screenHeight = 600,
 }: CalendarHeaderProps) {
   const { data: session } = useSession();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -29,11 +29,10 @@ export default function CalendarHeader({
     setIsProfileModalOpen(false);
   };
 
-  // Determine compact styling based on device characteristics
-  const isVerySmallDevice = calendarHeight <= 300;
-  const isCompactPhone = isSmallScreen && calendarHeight <= 400;
+  // Determine compact styling based on actual screen dimensions
+  const isVerySmallDevice = screenHeight <= 300; // Very limited vertical space
+  const isCompactPhone = isSmallScreen; // Use the properly calculated isSmallScreen
   const isLandscapeMode = isLandscapePhone;
-
   // Dynamic class for responsive padding and margins
   const headerClasses = [
     'flex items-center',
