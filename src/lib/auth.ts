@@ -76,6 +76,7 @@ async function ensureCalbrewCalendar(
 
     return calbrewCalendar?.id || null;
   } catch (error: any) {
+    // eslint-disable-line @typescript-eslint/no-explicit-any
     console.error('❌ Failed to create/find Calbrew calendar:');
     console.error('Error details:', {
       message: error.message,
@@ -258,8 +259,8 @@ export const authOptions: NextAuthOptions = {
         // Add more detailed logging for debugging
         if (error && typeof error === 'object' && 'error' in error) {
           console.error('Google OAuth Error Details:', {
-            error: (error as any).error,
-            error_description: (error as any).error_description,
+            error: (error as any).error, // eslint-disable-line @typescript-eslint/no-explicit-any
+            error_description: (error as any).error_description, // eslint-disable-line @typescript-eslint/no-explicit-any
             userId: token.id,
           });
         }

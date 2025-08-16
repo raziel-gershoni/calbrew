@@ -7,16 +7,10 @@ import UserProfileModal from './UserProfileModal';
 
 interface CalendarHeaderProps {
   className?: string;
-  isLandscapePhone?: boolean;
-  isSmallScreen?: boolean;
-  screenHeight?: number;
 }
 
 export default function CalendarHeader({
   className = '',
-  isLandscapePhone = false,
-  isSmallScreen = false,
-  screenHeight = 600,
 }: CalendarHeaderProps) {
   const { data: session } = useSession();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -29,41 +23,11 @@ export default function CalendarHeader({
     setIsProfileModalOpen(false);
   };
 
-  // Determine compact styling based on actual screen dimensions
-  const isVerySmallDevice = screenHeight <= 300; // Very limited vertical space
-  const isCompactPhone = isSmallScreen; // Use the properly calculated isSmallScreen
-  const isLandscapeMode = isLandscapePhone;
-  // Dynamic class for responsive padding and margins
+  // Use CSS classes for all responsiveness - no JavaScript device detection needed
   const headerClasses = [
-    'flex items-center',
-    isVerySmallDevice
-      ? 'mb-1 p-1'
-      : isLandscapeMode
-        ? 'mb-0 p-1' // No margin bottom for landscape phones
-        : isCompactPhone
-          ? 'mb-2 p-1'
-          : 'mb-4 p-2',
+    'flex items-center p-2 sm:p-3', // Responsive padding via CSS
     className,
   ].join(' ');
-
-  // Dynamic title sizing - keep full size on landscape phones
-  const shouldCompactTitle =
-    isVerySmallDevice || (isCompactPhone && !isLandscapePhone);
-  const titleSizeClass = isVerySmallDevice
-    ? 'text-lg'
-    : shouldCompactTitle
-      ? 'text-xl'
-      : 'text-2xl';
-
-  // Smart logic for showing user image based on horizontal space
-  const shouldShowUserImage =
-    // Always show on desktop/large screens (md and above - 768px+)
-    !isSmallScreen ||
-    // Show on landscape phones (more horizontal space available)
-    isLandscapePhone ||
-    // Show on tablets like iPad mini even in portrait (they have enough width)
-    // This covers devices roughly between 640px - 768px width
-    (isSmallScreen && !isVerySmallDevice && !isCompactPhone);
 
   return (
     <>
@@ -76,11 +40,11 @@ export default function CalendarHeader({
             className='flex items-center mx-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-left'
             aria-label={`Open profile for ${session?.user?.name}`}
           >
-            {session?.user?.image && shouldShowUserImage && (
+            {session?.user?.image && (
               <img
                 src={session.user.image}
                 alt={session.user.name || 'User'}
-                className='w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 me-2'
+                className='w-8 h-8 rounded-full border border-gray-300 dark:border-gray-600 me-2 hidden sm:block'
               />
             )}
             <div>
@@ -95,7 +59,9 @@ export default function CalendarHeader({
 
           {/* App Title - Centered */}
           <div className='flex-1 flex justify-center'>
-            <h1 className={`${titleSizeClass} font-bold`}>Calbrew</h1>
+            <h1 className='text-lg sm:text-xl md:text-2xl font-bold'>
+              Calbrew
+            </h1>
           </div>
 
           {/* Hamburger Menu - Always on the end (right in LTR, left in RTL) */}

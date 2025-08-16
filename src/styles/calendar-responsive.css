@@ -246,3 +246,135 @@
 .calendar-cell:hover {
   @apply bg-blue-50 dark:bg-blue-900;
 }
+
+/* Unified Responsive Layout Structure */
+.calendar-responsive-layout {
+  /* Default: Side-by-side layout for larger screens */
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-areas: 'calendar events';
+  gap: 0.5rem;
+}
+
+.calendar-section {
+  grid-area: calendar;
+}
+
+.events-section {
+  grid-area: events;
+}
+
+/* === RESPONSIVE BREAKPOINTS USING MEDIA QUERIES === */
+
+/* Very small screens: Calendar only - only for extremely narrow screens */
+@media (max-width: 360px) {
+  .calendar-responsive-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: 'calendar';
+    gap: 0;
+  }
+
+  .events-section {
+    display: none;
+  }
+}
+
+/* Small screens in portrait: Stack vertically */
+@media (max-width: 768px) and (max-aspect-ratio: 1) {
+  .calendar-responsive-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 2fr 1fr;
+    grid-template-areas:
+      'calendar'
+      'events';
+    gap: 0.75rem;
+  }
+}
+
+/* Small screens in landscape: Side by side with 2:1 ratio */
+@media (max-width: 1024px) and (min-aspect-ratio: 1) {
+  .calendar-responsive-layout {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: 'calendar events';
+    gap: 0.5rem;
+  }
+}
+
+/* Medium screens in portrait: Stack vertically */
+@media (min-width: 481px) and (max-width: 1024px) and (max-aspect-ratio: 0.8) {
+  .calendar-responsive-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 2fr 1fr;
+    grid-template-areas:
+      'calendar'
+      'events';
+    gap: 1rem;
+  }
+}
+
+/* Large screens: Standard side-by-side */
+@media (min-width: 1024px) {
+  .calendar-responsive-layout {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: 'calendar events';
+    gap: 1.5rem;
+  }
+}
+
+/* Very wide screens: Keep 2:1 ratio */
+@media (min-width: 1400px) {
+  .calendar-responsive-layout {
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+}
+
+/* Specific mobile device targeting */
+/* iPhone portrait */
+@media (max-width: 428px) and (orientation: portrait) {
+  .calendar-responsive-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 2fr 1fr;
+    grid-template-areas:
+      'calendar'
+      'events';
+    gap: 0.5rem;
+  }
+
+  .events-section {
+    display: block; /* Ensure events section is visible */
+  }
+}
+
+/* iPhone landscape */
+@media (max-height: 428px) and (orientation: landscape) {
+  .calendar-responsive-layout {
+    grid-template-columns: 2fr 1fr;
+    grid-template-areas: 'calendar events';
+    gap: 0.5rem;
+  }
+}
+
+/* iPad portrait */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .calendar-responsive-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 2fr 1fr;
+    grid-template-areas:
+      'calendar'
+      'events';
+    gap: 1rem;
+  }
+}
+
+/* iPad landscape */
+@media (min-width: 1024px) and (max-width: 1366px) and (orientation: landscape) {
+  .calendar-responsive-layout {
+    grid-template-columns: 2fr 1fr;
+    grid-template-areas: 'calendar events';
+    gap: 1rem;
+  }
+}
