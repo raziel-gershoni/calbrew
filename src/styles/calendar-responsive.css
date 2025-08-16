@@ -2,7 +2,7 @@
 
 /* Base calendar cell styles */
 .calendar-cell {
-  @apply h-full w-full relative;
+  @apply w-full relative;
   container-type: size;
 }
 
@@ -70,7 +70,7 @@
 /* Small cells (40-60px height) - stacked minimal */
 @container (min-height: 40px) and (max-height: 60px) {
   .calendar-cell-content {
-    @apply flex-col items-center justify-between;
+    @apply flex-col;
   }
 
   .calendar-cell-primary-date {
@@ -101,7 +101,7 @@
   }
 
   .calendar-cell-primary-date {
-    @apply text-base font-bold;
+    @apply text-sm font-bold;
   }
 
   .calendar-cell-secondary-date {
@@ -124,23 +124,23 @@
 /* Large cells (80-100px height) - show some event titles */
 @container (min-height: 80px) and (max-height: 100px) {
   .calendar-cell-content {
-    @apply flex-col;
+    @apply flex-col h-full;
   }
 
   .calendar-cell-primary-date {
-    @apply text-lg font-bold;
+    @apply text-sm font-bold;
   }
 
   .calendar-cell-secondary-date {
-    @apply text-sm;
+    @apply text-xs;
   }
 
   .calendar-cell-events {
-    @apply flex flex-col gap-0.5 mt-1 flex-1;
+    @apply flex flex-col gap-0.5 mt-1 flex-1 overflow-hidden;
   }
 
   .calendar-cell-event {
-    @apply block text-xs bg-blue-100 text-blue-800 p-0.5 rounded truncate;
+    @apply block text-xs bg-blue-100 text-blue-800 p-0.5 rounded truncate max-h-4;
   }
 
   /* Show only first event */
@@ -156,15 +156,15 @@
 /* Very large cells (> 100px height) - show multiple events */
 @container (min-height: 100px) {
   .calendar-cell-content {
-    @apply flex-col;
+    @apply flex-col h-full;
   }
 
   .calendar-cell-primary-date {
-    @apply text-xl font-bold;
+    @apply text-sm font-bold;
   }
 
   .calendar-cell-secondary-date {
-    @apply text-sm;
+    @apply text-xs;
   }
 
   .calendar-cell-secondary-month {
@@ -172,11 +172,11 @@
   }
 
   .calendar-cell-events {
-    @apply flex flex-col gap-1 mt-2 flex-1;
+    @apply flex flex-col gap-1 mt-2 flex-1 overflow-hidden;
   }
 
   .calendar-cell-event {
-    @apply block text-sm bg-blue-100 text-blue-800 p-1 rounded truncate;
+    @apply block text-sm bg-blue-100 text-blue-800 p-1 rounded truncate max-h-5;
   }
 
   /* Show up to 3 events */
@@ -254,14 +254,20 @@
   grid-template-columns: 2fr 1fr;
   grid-template-areas: 'calendar events';
   gap: 0.5rem;
+  height: 100%; /* Force full height usage */
+  min-height: 0; /* Allow shrinking */
 }
 
 .calendar-section {
   grid-area: calendar;
+  min-height: 0; /* Allow content to shrink and scroll */
+  overflow: hidden; /* Prevent expansion */
 }
 
 .events-section {
   grid-area: events;
+  min-height: 0; /* Critical: Allow content to shrink and scroll */
+  overflow: hidden; /* Prevent expansion beyond allocated grid space */
 }
 
 /* === RESPONSIVE BREAKPOINTS USING MEDIA QUERIES === */
@@ -289,6 +295,8 @@
       'calendar'
       'events';
     gap: 0.75rem;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -299,6 +307,8 @@
     grid-template-rows: 1fr;
     grid-template-areas: 'calendar events';
     gap: 0.5rem;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -311,6 +321,8 @@
       'calendar'
       'events';
     gap: 1rem;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -321,6 +333,8 @@
     grid-template-rows: 1fr;
     grid-template-areas: 'calendar events';
     gap: 1.5rem;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -329,6 +343,8 @@
   .calendar-responsive-layout {
     grid-template-columns: 2fr 1fr;
     gap: 2rem;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -342,6 +358,8 @@
       'calendar'
       'events';
     gap: 0.5rem;
+    height: 100%;
+    min-height: 0;
   }
 
   .events-section {
@@ -355,6 +373,8 @@
     grid-template-columns: 2fr 1fr;
     grid-template-areas: 'calendar events';
     gap: 0.5rem;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -367,6 +387,8 @@
       'calendar'
       'events';
     gap: 1rem;
+    height: 100%;
+    min-height: 0;
   }
 }
 
@@ -376,5 +398,7 @@
     grid-template-columns: 2fr 1fr;
     grid-template-areas: 'calendar events';
     gap: 1rem;
+    height: 100%;
+    min-height: 0;
   }
 }

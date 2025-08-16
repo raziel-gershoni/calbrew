@@ -82,6 +82,26 @@ export default function CalendarView() {
   const { calendarMode } = useCalendarMode();
   const actualCalendarMode = calendarMode;
 
+  // Responsive layout state
+  const [isPortrait, setIsPortrait] = useState(false);
+
+  useEffect(() => {
+    const updateLayout = () => {
+      // Use vertical (column) layout if:
+      // - Width is small AND height is greater than width (true portrait)
+      // - Very narrow screens regardless of height
+      const isNarrow = window.innerWidth <= 768;
+      const isTallerThanWide = window.innerHeight > window.innerWidth;
+      const isVeryNarrow = window.innerWidth < 480;
+
+      setIsPortrait(isVeryNarrow || (isNarrow && isTallerThanWide));
+    };
+
+    updateLayout();
+    window.addEventListener('resize', updateLayout);
+    return () => window.removeEventListener('resize', updateLayout);
+  }, []);
+
   const {
     events: masterEvents,
     isLoading,
@@ -510,7 +530,7 @@ export default function CalendarView() {
   }
 
   return (
-    <div className='flex flex-col h-full bg-gray-50 dark:bg-gray-900'>
+    <div className='flex flex-col h-screen bg-gray-50 dark:bg-gray-900'>
       {/* Header */}
       <CalendarHeader />
 
@@ -613,11 +633,15 @@ export default function CalendarView() {
       {/* Main Content - Unified Responsive Layout */}
       <div className='flex-1 min-h-0 overflow-hidden'>
         <div
-          className='h-full grid gap-2 calendar-responsive-layout p-1 sm:p-2 lg:p-3'
+          className='h-full flex gap-2 p-1 sm:p-2 lg:p-3'
+          style={{ flexDirection: isPortrait ? 'column' : 'row' }}
           dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
         >
           {/* Calendar Section */}
-          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg flex flex-col min-h-0 overflow-hidden calendar-section'>
+          <div
+            className='bg-white dark:bg-gray-800 rounded-lg shadow-lg flex flex-col min-h-0 overflow-hidden'
+            style={{ flex: '2', minHeight: '0', minWidth: '0' }}
+          >
             {/* Header - Compact design matching button height */}
             <div className='flex items-center justify-between px-3 py-1.5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900'>
               <div className='flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-0.5'>
@@ -682,7 +706,7 @@ export default function CalendarView() {
                   actualCalendarMode === 'hebrew'
                     ? hebrewCalendarGrid?.weeks.length || 6
                     : gregorianCalendarGrid?.weeks.length || 6
-                }, 1fr)`,
+                }, minmax(0, 1fr))`,
               }}
             >
               {(actualCalendarMode === 'hebrew'
@@ -733,7 +757,7 @@ export default function CalendarView() {
                             isGregorianDay(day) &&
                             selectedDate.toDateString() ===
                               day.date.toDateString()))
-                          ? 'selected'
+                          ? ''
                           : ''
                       }
                     `}
@@ -796,7 +820,7 @@ export default function CalendarView() {
           </div>
 
           {/* Events Section - Responsive sidebar/bottom panel */}
-          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg events-section'>
+          <div style={{ flex: '1', minHeight: '0', minWidth: '0' }}>
             <DayEvents
               selectedDate={selectedDate}
               events={eventsForSelectedDate}
