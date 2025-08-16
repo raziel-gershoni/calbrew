@@ -80,7 +80,9 @@ const GREGORIAN_MONTHS_EN = [
 // Layout types for responsive design
 enum LayoutType {
   DESKTOP = 'desktop', // ≥1200px: side-by-side with full events panel
-  TABLET = 'tablet', // 768-1199px: side-by-side with adapted panel
+  TABLET = 'tablet', // Large tablets in desktop-like mode
+  IPAD_LANDSCAPE = 'ipad_landscape', // iPad landscape: horizontal 2:1 split
+  IPAD_PORTRAIT = 'ipad_portrait', // iPad portrait: vertical 2:1 stack
   MOBILE_LANDSCAPE = 'mobile_landscape', // mobile landscape: horizontal 2:1 split
   MOBILE_PORTRAIT = 'mobile_portrait', // mobile portrait: vertical 2:1 stack
   TINY_MOBILE = 'tiny_mobile', // very small: modal-based
@@ -193,6 +195,35 @@ export default function CalendarView() {
           // Catch any device with phone-like aspect ratios in landscape
           (height < 500 && width < 1000));
 
+      // iPad detection - iPads should get mobile-like responsive layouts
+      const isIPadLandscape =
+        isLandscape &&
+        !isPhoneLandscape && // Not a phone
+        // iPad Pro 12.9" (1024x1366 -> 1366x1024 in landscape)
+        ((width <= 1366 && height <= 1024) ||
+          // iPad Pro 11" (834x1194 -> 1194x834 in landscape)
+          (width <= 1194 && height <= 834) ||
+          // iPad Air/Mini (820x1180 -> 1180x820 in landscape)
+          (width <= 1180 && height <= 820) ||
+          // iPad 10.9" (810x1080 -> 1080x810 in landscape)
+          (width <= 1080 && height <= 810) ||
+          // Generic iPad landscape detection - medium-large tablets in landscape
+          (width >= 1000 && width <= 1400 && height >= 700 && height <= 1100));
+
+      const isIPadPortrait =
+        !isLandscape &&
+        width >= 768 && // Tablets start at 768px
+        // iPad Pro 12.9" (1024x1366 in portrait)
+        ((width <= 1024 && height <= 1366) ||
+          // iPad Pro 11" (834x1194 in portrait)
+          (width <= 834 && height <= 1194) ||
+          // iPad Air/Mini (820x1180 in portrait)
+          (width <= 820 && height <= 1180) ||
+          // iPad 10.9" (810x1080 in portrait)
+          (width <= 810 && height <= 1080) ||
+          // Generic iPad portrait detection - medium-large tablets in portrait
+          (width >= 768 && width <= 1100 && height >= 1000 && height <= 1400));
+
       if (width < 350 || (width < 640 && height < 480)) {
         // Very small devices use modal layout - only extremely small screens
         newLayoutType = LayoutType.TINY_MOBILE;
@@ -201,16 +232,28 @@ export default function CalendarView() {
         // Phone landscape - horizontal 2:1 split (force this for phones)
         newLayoutType = LayoutType.MOBILE_LANDSCAPE;
         // Keep the isSmallScreen value calculated earlier
+      } else if (isIPadLandscape) {
+        // iPad landscape - horizontal 2:1 split like mobile landscape but with larger spacing
+        newLayoutType = LayoutType.IPAD_LANDSCAPE;
+        newIsSmallScreen = false; // iPads are not small screen but use responsive layouts
+      } else if (isIPadPortrait) {
+        // iPad portrait - vertical 2:1 stack like mobile portrait but with larger spacing
+        newLayoutType = LayoutType.IPAD_PORTRAIT;
+        newIsSmallScreen = false; // iPads are not small screen but use responsive layouts
       } else if (width < 768 && !isLandscape) {
         // Mobile portrait - vertical 2:1 stack
         newLayoutType = LayoutType.MOBILE_PORTRAIT;
         // Keep the isSmallScreen value calculated earlier
+      } else if (width >= 1400) {
+        // Large desktop - always side-by-side
+        newLayoutType = LayoutType.DESKTOP;
+        newIsSmallScreen = false; // Desktop is never small screen
       } else if (width >= 1200) {
         // Desktop - always side-by-side
         newLayoutType = LayoutType.DESKTOP;
         newIsSmallScreen = false; // Desktop is never small screen
       } else if (width >= 768) {
-        // Tablet - side-by-side with adapted panel
+        // Other tablets (non-iPad) - side-by-side with adapted panel
         newLayoutType = LayoutType.TABLET;
         newIsSmallScreen = false; // Tablet is never small screen
       } else {
@@ -902,11 +945,14 @@ export default function CalendarView() {
       {/* Main Content */}
       <div
         className={`flex-1 w-full min-h-0 overflow-hidden ${
-          layoutType === LayoutType.MOBILE_LANDSCAPE
+          layoutType === LayoutType.MOBILE_LANDSCAPE ||
+          layoutType === LayoutType.IPAD_LANDSCAPE
             ? 'px-1'
             : layoutType === LayoutType.TINY_MOBILE
               ? 'px-2'
-              : 'px-2 sm:px-6 lg:px-8'
+              : layoutType === LayoutType.IPAD_PORTRAIT
+                ? 'px-4'
+                : 'px-2 sm:px-6 lg:px-8'
         }`}
       >
         {layoutType === LayoutType.TINY_MOBILE ? (
@@ -1261,6 +1307,384 @@ export default function CalendarView() {
                 />
               </div>
             )}
+          </div>
+        ) : layoutType === LayoutType.IPAD_PORTRAIT ? (
+          // iPad Portrait Layout - Vertical stack with 2:1 ratio (like mobile but with larger spacing)
+          <div
+            className='flex flex-col h-full max-h-full overflow-hidden'
+            dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+          >
+            {/* Calendar Section - Takes 2/3 of height */}
+            <div
+              className='bg-white dark:bg-gray-800 rounded-lg shadow-lg flex flex-col mb-4 min-h-0 overflow-hidden p-4'
+              style={{ flex: '2' }}
+            >
+              {/* Header */}
+              <div className='flex items-center justify-between mb-4'>
+                <div className='flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1'>
+                  <button
+                    onClick={() =>
+                      actualCalendarMode === 'hebrew'
+                        ? navigateHebrewMonth('prev')
+                        : navigateGregorianMonth('prev')
+                    }
+                    className='p-2 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
+                  >
+                    {i18n.language === 'he' ? (
+                      <ChevronRightIcon className='w-4 h-4' />
+                    ) : (
+                      <ChevronLeftIcon className='w-4 h-4' />
+                    )}
+                  </button>
+                  <button
+                    onClick={navigateToToday}
+                    className='px-3 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors'
+                  >
+                    {t('Today')}
+                  </button>
+                  <button
+                    onClick={() =>
+                      actualCalendarMode === 'hebrew'
+                        ? navigateHebrewMonth('next')
+                        : navigateGregorianMonth('next')
+                    }
+                    className='p-2 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
+                  >
+                    {i18n.language === 'he' ? (
+                      <ChevronLeftIcon className='w-4 h-4' />
+                    ) : (
+                      <ChevronRightIcon className='w-4 h-4' />
+                    )}
+                  </button>
+                </div>
+                <h2 className='text-lg font-bold text-gray-900 dark:text-gray-100 text-center flex-1 min-w-0'>
+                  <span className='truncate'>{getCurrentMonthName()}</span>
+                </h2>
+              </div>
+
+              {/* Weekday Headers */}
+              <div className='grid grid-cols-7 gap-1 flex-shrink-0 mb-3'>
+                {weekdays.map((day) => (
+                  <div
+                    key={day}
+                    className='text-center text-sm font-medium text-gray-500 p-1'
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Grid */}
+              <div
+                className='flex-1 grid grid-cols-7 gap-1 min-h-0 overflow-hidden'
+                style={{
+                  gridTemplateRows: `repeat(${
+                    actualCalendarMode === 'hebrew'
+                      ? hebrewCalendarGrid?.weeks.length || 6
+                      : gregorianCalendarGrid?.weeks.length || 6
+                  }, 1fr)`,
+                }}
+              >
+                {(actualCalendarMode === 'hebrew'
+                  ? hebrewCalendarGrid?.weeks.flat()
+                  : gregorianCalendarGrid?.weeks.flat()
+                )?.map((day, index) => (
+                  <div
+                    key={index}
+                    onClick={() =>
+                      day &&
+                      handleDayClick(
+                        actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                          ? day.gregorianDate
+                          : isGregorianDay(day) &&
+                              actualCalendarMode === 'gregorian'
+                            ? day.date
+                            : new Date(), // fallback
+                      )
+                    }
+                    className={`
+                    p-1 border rounded cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors overflow-hidden min-h-0
+                    ${
+                      day?.isCurrentMonth !== false
+                        ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                        : 'bg-gray-50 dark:bg-gray-800 border-transparent text-gray-400 dark:text-gray-500'
+                    }
+                    ${
+                      day &&
+                      selectedDate &&
+                      ((actualCalendarMode === 'hebrew' &&
+                        isHebrewDay(day) &&
+                        selectedDate.toDateString() ===
+                          day.gregorianDate.toDateString()) ||
+                        (actualCalendarMode === 'gregorian' &&
+                          isGregorianDay(day) &&
+                          selectedDate.toDateString() ===
+                            day.date.toDateString()))
+                        ? 'ring-2 ring-blue-500'
+                        : ''
+                    }
+                  `}
+                  >
+                    {day && (
+                      <div className='h-full flex flex-col overflow-hidden min-h-0'>
+                        <div
+                          className={`text-sm font-bold mb-1 flex-shrink-0 ${
+                            day.isCurrentMonth !== false
+                              ? 'text-gray-900 dark:text-gray-100'
+                              : 'text-gray-400 dark:text-gray-500'
+                          }`}
+                        >
+                          {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                            ? i18n.language === 'he'
+                              ? gematriya(day.hebrewDay)
+                              : day.hebrewDay
+                            : isGregorianDay(day)
+                              ? day.gregorianDay
+                              : 0}
+                        </div>
+                        <div className='text-xs text-gray-500 dark:text-gray-400 flex-shrink-0'>
+                          {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                            ? getGregorianDate(day).day
+                            : actualCalendarMode === 'gregorian' &&
+                                isGregorianDay(day)
+                              ? getHebrewDate(day.date).day
+                              : ''}
+                        </div>
+                        <div className='flex-1 min-h-0 overflow-hidden mt-1'>
+                          {(function () {
+                            let dateToCheck: Date;
+                            if (
+                              actualCalendarMode === 'hebrew' &&
+                              isHebrewDay(day)
+                            ) {
+                              dateToCheck = day.gregorianDate;
+                            } else if (
+                              actualCalendarMode === 'gregorian' &&
+                              isGregorianDay(day)
+                            ) {
+                              dateToCheck = day.date;
+                            } else {
+                              return null; // fallback
+                            }
+                            const dayEvents = getEventsForDate(dateToCheck);
+                            return dayEvents.length > 0 ? (
+                              <div className='w-2 h-2 bg-blue-500 rounded-full mx-auto'></div>
+                            ) : null;
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Events Section - Takes 1/3 of height */}
+            <div
+              className='bg-white dark:bg-gray-800 rounded-lg shadow-lg'
+              style={{ flex: '1' }}
+            >
+              <DayEvents
+                selectedDate={selectedDate}
+                events={eventsForSelectedDate}
+                onEventClick={handleEventClick}
+                onAddEventClick={() => setIsModalOpen(true)}
+              />
+            </div>
+          </div>
+        ) : layoutType === LayoutType.IPAD_LANDSCAPE ? (
+          // iPad Landscape Layout - Horizontal split: 2/3 calendar, 1/3 events (like mobile landscape but larger spacing)
+          <div
+            className='flex gap-4 h-full max-h-full overflow-hidden'
+            dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+          >
+            {/* Calendar Container - Takes 2/3 of available width */}
+            <div className='w-2/3 flex flex-col bg-white dark:bg-gray-800 rounded-lg shadow-lg min-h-0 overflow-hidden'>
+              {/* Calendar Header */}
+              <div className='h-12 flex items-center justify-between px-4 flex-shrink-0 border-b border-gray-200 dark:border-gray-700'>
+                <div className='flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1'>
+                  <button
+                    onClick={() =>
+                      actualCalendarMode === 'hebrew'
+                        ? navigateHebrewMonth('prev')
+                        : navigateGregorianMonth('prev')
+                    }
+                    className='p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
+                  >
+                    {i18n.language === 'he' ? (
+                      <ChevronRightIcon className='w-4 h-4' />
+                    ) : (
+                      <ChevronLeftIcon className='w-4 h-4' />
+                    )}
+                  </button>
+                  <button
+                    onClick={navigateToToday}
+                    className='px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors'
+                  >
+                    {t('Today')}
+                  </button>
+                  <button
+                    onClick={() =>
+                      actualCalendarMode === 'hebrew'
+                        ? navigateHebrewMonth('next')
+                        : navigateGregorianMonth('next')
+                    }
+                    className='p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
+                  >
+                    {i18n.language === 'he' ? (
+                      <ChevronLeftIcon className='w-4 h-4' />
+                    ) : (
+                      <ChevronRightIcon className='w-4 h-4' />
+                    )}
+                  </button>
+                </div>
+                <h2 className='text-sm font-bold text-gray-900 dark:text-gray-100 truncate max-w-[300px]'>
+                  {getCurrentMonthName()}
+                </h2>
+              </div>
+
+              {/* Weekday Headers */}
+              <div className='h-8 grid grid-cols-7 gap-1 px-2 flex-shrink-0 bg-gray-50 dark:bg-gray-900'>
+                {weekdays.map((day) => (
+                  <div
+                    key={day}
+                    className='flex items-center justify-center text-sm font-medium text-gray-500'
+                  >
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Grid - Takes all remaining space, equal height cells */}
+              <div
+                className='flex-1 grid grid-cols-7 gap-1 p-2'
+                style={{
+                  gridTemplateRows: `repeat(${
+                    actualCalendarMode === 'hebrew'
+                      ? hebrewCalendarGrid?.weeks.length || 6
+                      : gregorianCalendarGrid?.weeks.length || 6
+                  }, 1fr)`,
+                }}
+              >
+                {(actualCalendarMode === 'hebrew'
+                  ? hebrewCalendarGrid?.weeks.flat()
+                  : gregorianCalendarGrid?.weeks.flat()
+                )?.map((day, index) => {
+                  // Get events for this day
+                  let dateToCheck: Date;
+                  let dayEvents: EventOccurrence[] = [];
+
+                  if (
+                    actualCalendarMode === 'hebrew' &&
+                    day &&
+                    isHebrewDay(day)
+                  ) {
+                    dateToCheck = day.gregorianDate;
+                    dayEvents = getEventsForDate(dateToCheck);
+                  } else if (
+                    actualCalendarMode === 'gregorian' &&
+                    day &&
+                    isGregorianDay(day)
+                  ) {
+                    dateToCheck = day.date;
+                    dayEvents = getEventsForDate(dateToCheck);
+                  }
+
+                  return (
+                    <div
+                      key={index}
+                      onClick={() =>
+                        day && handleDayClick(dateToCheck || new Date())
+                      }
+                      className={`
+                        calendar-cell border rounded cursor-pointer transition-colors
+                        ${
+                          day?.isCurrentMonth !== false
+                            ? 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                            : 'bg-gray-50 dark:bg-gray-800 border-transparent not-current-month'
+                        }
+                        ${
+                          day &&
+                          selectedDate &&
+                          ((actualCalendarMode === 'hebrew' &&
+                            isHebrewDay(day) &&
+                            selectedDate.toDateString() ===
+                              day.gregorianDate.toDateString()) ||
+                            (actualCalendarMode === 'gregorian' &&
+                              isGregorianDay(day) &&
+                              selectedDate.toDateString() ===
+                                day.date.toDateString()))
+                            ? 'selected'
+                            : ''
+                        }
+                      `}
+                    >
+                      {day && (
+                        <div className='calendar-cell-content'>
+                          <div className='calendar-cell-primary-date text-gray-900 dark:text-gray-100'>
+                            {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                              ? i18n.language === 'he'
+                                ? gematriya(day.hebrewDay)
+                                : day.hebrewDay
+                              : isGregorianDay(day)
+                                ? day.gregorianDay
+                                : ''}
+                          </div>
+                          <div className='calendar-cell-secondary-date text-gray-500 dark:text-gray-400'>
+                            {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                              ? getGregorianDate(day).day
+                              : isGregorianDay(day)
+                                ? getHebrewDate(day.date).day
+                                : ''}
+                          </div>
+                          <div className='calendar-cell-secondary-month text-gray-500 dark:text-gray-400 hidden'>
+                            {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                              ? getGregorianDate(day).month
+                              : isGregorianDay(day)
+                                ? getHebrewDate(day.date).month.slice(0, 3)
+                                : ''}
+                          </div>
+                          <div className='calendar-cell-events'>
+                            {dayEvents.map((event, idx) => (
+                              <div
+                                key={idx}
+                                className='calendar-cell-event bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEventClick(event);
+                                }}
+                              >
+                                {event.title}
+                              </div>
+                            ))}
+                            {dayEvents.length > 0 && (
+                              <>
+                                <div className='calendar-cell-event-indicator'></div>
+                                {dayEvents.length > 1 && (
+                                  <div className='calendar-cell-event-count'>
+                                    +{dayEvents.length - 1}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Events Section - Takes 1/3 of available width */}
+            <div className='w-1/3 bg-white dark:bg-gray-800 rounded-lg shadow-lg'>
+              <DayEvents
+                selectedDate={selectedDate}
+                events={eventsForSelectedDate}
+                onEventClick={handleEventClick}
+                onAddEventClick={() => setIsModalOpen(true)}
+              />
+            </div>
           </div>
         ) : layoutType === LayoutType.MOBILE_LANDSCAPE ? (
           // Landscape Phone Layout - Horizontal split: 2/3 calendar, 1/3 events
