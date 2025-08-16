@@ -89,26 +89,28 @@ export default function DayEvents({
           </button>
         </div>
       </div>
-      <div className='flex-1 overflow-y-auto p-4'>
+      <div className='flex-1 min-h-0 p-4 overflow-hidden'>
         {events.length > 0 ? (
-          <ul className='text-start space-y-2'>
-            {events.map((event) => (
-              <li
-                key={event.id}
-                onClick={() => onEventClick(event)}
-                className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-3 rounded-md border border-gray-200 dark:border-gray-600 transition-colors'
-              >
-                <div className='font-medium text-gray-900 dark:text-gray-100'>
-                  {event.title}
-                </div>
-                {event.description && (
-                  <div className='text-sm text-gray-500 dark:text-gray-400 mt-1 truncate'>
-                    {event.description}
+          <div className='h-full overflow-y-auto'>
+            <ul className='text-start space-y-2'>
+              {events.map((event) => (
+                <li
+                  key={event.id}
+                  onClick={() => onEventClick(event)}
+                  className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-3 rounded-md border border-gray-200 dark:border-gray-600 transition-colors'
+                >
+                  <div className='font-medium text-gray-900 dark:text-gray-100'>
+                    {event.title}
                   </div>
-                )}
-              </li>
-            ))}
-          </ul>
+                  {event.description && (
+                    <div className='text-sm text-gray-500 dark:text-gray-400 mt-1 truncate'>
+                      {event.description}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : (
           <div className='flex items-center justify-center h-full'>
             <div className='text-center text-gray-500 dark:text-gray-400'>
