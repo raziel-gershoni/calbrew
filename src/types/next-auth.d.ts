@@ -3,6 +3,7 @@ import { DefaultSession } from 'next-auth';
 declare module 'next-auth' {
   interface Session {
     accessToken?: string;
+    error?: string;
     user: {
       id: string;
       calbrew_calendar_id: string;
@@ -17,5 +18,6 @@ declare module 'next-auth/jwt' {
     expiresAt?: number;
     id?: string;
     calbrew_calendar_id?: string;
+    error?: string;
   }
 }

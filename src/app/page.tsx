@@ -1,10 +1,19 @@
 'use client';
 
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
+import { useEffect } from 'react';
 import CalendarView from '@/components/CalendarView';
 
 export default function Home() {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
+
+  // Handle authentication errors by automatically signing out
+  useEffect(() => {
+    if (session?.error === 'RefreshAccessTokenError') {
+      console.warn('Authentication token expired. Signing out automatically.');
+      signOut({ callbackUrl: '/' });
+    }
+  }, [session]);
 
   if (status === 'loading') {
     return (

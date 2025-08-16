@@ -43,6 +43,7 @@ async function ensureCalbrewCalendar(
   accessToken: string,
 ): Promise<string | null> {
   try {
+    console.log('🔑 Setting up OAuth client for calendar access');
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -51,10 +52,14 @@ async function ensureCalbrewCalendar(
     oauth2Client.setCredentials({ access_token: accessToken });
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
+    console.log('📅 Attempting to list calendars...');
     const { data: calendars } = await calendar.calendarList.list();
+    console.log(`✅ Successfully listed ${calendars.items?.length || 0} calendars`);
+    
     let calbrewCalendar = calendars.items?.find((c) => c.summary === 'Calbrew');
 
     if (!calbrewCalendar) {
+      console.log('📝 Calbrew calendar not found, creating new one...');
       const { data: newCalendar } = await calendar.calendars.insert({
         requestBody: {
           summary: 'Calbrew',
@@ -62,11 +67,27 @@ async function ensureCalbrewCalendar(
         },
       });
       calbrewCalendar = newCalendar;
+      console.log(`✅ Created new Calbrew calendar: ${newCalendar?.id}`);
+    } else {
+      console.log(`✅ Found existing Calbrew calendar: ${calbrewCalendar.id}`);
     }
 
     return calbrewCalendar?.id || null;
-  } catch (error) {
-    console.error('Failed to create/find Calbrew calendar:', error);
+  } catch (error: any) {
+    console.error('❌ Failed to create/find Calbrew calendar:');
+    console.error('Error details:', {
+      message: error.message,
+      status: error.status || error.code,
+      statusText: error.statusText,
+      response: error.response?.data
+    });
+    
+    // Log specific error for insufficient scopes
+    if (error.code === 403 || error.status === 403) {
+      console.error('🚫 This appears to be a permissions/scope issue.');
+      console.error('Required scopes: https://www.googleapis.com/auth/calendar');
+    }
+    
     return null;
   }
 }
@@ -78,8 +99,13 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
         params: {
-          scope:
-            'openid email profile https://www.googleapis.com/auth/calendar',
+          scope: [
+            'openid',
+            'email', 
+            'profile',
+            'https://www.googleapis.com/auth/calendar',
+            'https://www.googleapis.com/auth/calendar.events'
+          ].join(' '),
           access_type: 'offline',
           prompt: 'consent',
         },
@@ -94,38 +120,51 @@ export const authOptions: NextAuthOptions = {
       }
 
       try {
-        // Only do essential setup during login - move heavy sync to background
-        const calendarId = await ensureCalbrewCalendar(account.access_token);
-
-        if (!calendarId) {
-          console.error('Failed to create/find Calbrew calendar');
-          return false;
-        }
-
+        console.log('🔐 Starting sign-in process for user:', user.id);
+        
         // Check if user exists
         const userInDb = await dbGet<User>('SELECT * FROM users WHERE id = ?', [
           user.id,
         ]);
 
         if (!userInDb) {
-          // Create new user
+          console.log('👤 Creating new user in database');
+          // Create new user without calendar ID initially
           await dbRun(
             'INSERT INTO users (id, name, email, image, calbrew_calendar_id) VALUES (?, ?, ?, ?, ?)',
-            [user.id, user.name, user.email, user.image, calendarId],
+            [user.id, user.name, user.email, user.image, null],
           );
         } else {
-          // Update existing user's calendar ID
+          console.log('👤 Updating existing user information');
+          // Update existing user info (don't overwrite calendar ID if it exists)
           await dbRun(
-            'UPDATE users SET calbrew_calendar_id = ?, name = ?, email = ?, image = ? WHERE id = ?',
-            [calendarId, user.name, user.email, user.image, user.id],
+            'UPDATE users SET name = ?, email = ?, image = ? WHERE id = ?',
+            [user.name, user.email, user.image, user.id],
           );
         }
 
-        // Note: Heavy sync operations moved to a separate API endpoint
-        // that can be called after successful login
+        // Try to create/find calendar, but don't fail sign-in if it doesn't work
+        console.log('📅 Attempting to set up calendar (non-blocking)');
+        try {
+          const calendarId = await ensureCalbrewCalendar(account.access_token);
+          if (calendarId) {
+            console.log('✅ Calendar setup successful, updating user record');
+            await dbRun(
+              'UPDATE users SET calbrew_calendar_id = ? WHERE id = ?',
+              [calendarId, user.id],
+            );
+          } else {
+            console.warn('⚠️ Calendar setup failed, but continuing with sign-in');
+          }
+        } catch (calendarError) {
+          console.warn('⚠️ Calendar setup failed during sign-in:', calendarError);
+          console.warn('📝 User can still sign in - calendar will be set up on first use');
+        }
+
+        console.log('✅ Sign-in process completed successfully');
         return true;
       } catch (error) {
-        console.error('Error during sign in:', error);
+        console.error('❌ Error during sign in:', error);
         return false;
       }
     },
@@ -205,12 +244,21 @@ export const authOptions: NextAuthOptions = {
         };
       } catch (error) {
         console.error('Error refreshing access token:', error);
+        // Add more detailed logging for debugging
+        if (error && typeof error === 'object' && 'error' in error) {
+          console.error('Google OAuth Error Details:', {
+            error: (error as any).error,
+            error_description: (error as any).error_description,
+            userId: token.id
+          });
+        }
         // The user will be signed out on the client if the session is invalid
         return { ...token, error: 'RefreshAccessTokenError' as const };
       }
     },
     async session({ session, token }) {
       session.accessToken = token.accessToken;
+      session.error = token.error;
       session.user.id = token.id as string;
       session.user.calbrew_calendar_id = token.calbrew_calendar_id as string;
       return session;
