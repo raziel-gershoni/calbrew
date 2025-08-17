@@ -176,15 +176,12 @@
   }
 
   .calendar-cell-event {
-    @apply block text-xs bg-blue-100 text-blue-800 p-0.5 rounded truncate max-h-4;
+    @apply flex items-center text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded truncate max-h-4 leading-tight flex-shrink-0;
   }
 
-  /* Show only first event */
-  .calendar-cell-event:nth-child(n + 2) {
-    @apply hidden;
-  }
+  /* Show all events - let them overflow */
 
-  /* Hide all indicators and badges when showing event titles */
+  /* Hide individual indicators but show badge with count */
   .calendar-cell-event-indicator {
     @apply hidden;
   }
@@ -194,7 +191,17 @@
   }
 
   .calendar-cell-event-badge {
-    @apply hidden;
+    @apply flex items-center justify-center w-[16px] h-[16px] bg-blue-500 text-white rounded-full text-xs font-medium min-w-[16px] absolute top-1;
+  }
+
+  /* LTR: badge on top-right */
+  [dir='ltr'] .calendar-cell-event-badge {
+    @apply right-1;
+  }
+
+  /* RTL: badge on top-left */
+  [dir='rtl'] .calendar-cell-event-badge {
+    @apply left-1;
   }
 }
 
@@ -221,15 +228,12 @@
   }
 
   .calendar-cell-event {
-    @apply block text-sm bg-blue-100 text-blue-800 p-1 rounded truncate max-h-5;
+    @apply flex items-center text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded truncate max-h-5 leading-tight flex-shrink-0;
   }
 
-  /* Show up to 3 events */
-  .calendar-cell-event:nth-child(n + 4) {
-    @apply hidden;
-  }
+  /* Show all events - let them overflow */
 
-  /* Hide all indicators and badges when showing event titles */
+  /* Hide individual indicators but show badge with count */
   .calendar-cell-event-indicator {
     @apply hidden;
   }
@@ -239,7 +243,17 @@
   }
 
   .calendar-cell-event-badge {
-    @apply hidden;
+    @apply flex items-center justify-center w-[18px] h-[18px] bg-blue-500 text-white rounded-full text-xs font-medium min-w-[18px] absolute top-1;
+  }
+
+  /* LTR: badge on top-right */
+  [dir='ltr'] .calendar-cell-event-badge {
+    @apply right-1;
+  }
+
+  /* RTL: badge on top-left */
+  [dir='rtl'] .calendar-cell-event-badge {
+    @apply left-1;
   }
 }
 
@@ -291,14 +305,24 @@
   @apply text-gray-400 dark:text-gray-500;
 }
 
-/* Selected cell styling */
+/* Selected cell styling - enhanced visibility */
 .calendar-cell.selected {
-  @apply ring-2 ring-blue-500;
+  @apply ring-2 ring-blue-500 bg-blue-100 dark:bg-blue-800;
 }
 
-/* Hover effects */
-.calendar-cell:hover {
-  @apply bg-blue-50 dark:bg-blue-900;
+.calendar-cell.selected .calendar-cell-primary-date {
+  @apply text-blue-900 dark:text-blue-100 font-extrabold;
+}
+
+.calendar-cell.selected .calendar-cell-secondary-date {
+  @apply text-blue-700 dark:text-blue-200;
+}
+
+/* Hover effects - only on non-touch devices to avoid mobile artifacts */
+@media (hover: hover) and (pointer: fine) {
+  .calendar-cell:hover:not(.selected) {
+    @apply bg-blue-50 dark:bg-blue-900;
+  }
 }
 
 /* Unified Responsive Layout Structure */

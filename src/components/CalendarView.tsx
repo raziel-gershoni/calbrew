@@ -737,7 +737,7 @@ export default function CalendarView() {
                             isGregorianDay(day) &&
                             selectedDate.toDateString() ===
                               day.date.toDateString()))
-                          ? ''
+                          ? 'selected'
                           : ''
                       }
                     `}
