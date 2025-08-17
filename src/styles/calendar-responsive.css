@@ -219,10 +219,6 @@
     @apply text-xs;
   }
 
-  .calendar-cell-secondary-month {
-    @apply block;
-  }
-
   .calendar-cell-events {
     @apply flex flex-col gap-1 mt-2 flex-1 overflow-hidden;
   }
@@ -281,17 +277,10 @@
   }
 }
 
-/* Medium width cells (80-100px width) */
-@container (min-width: 80px) and (max-width: 100px) {
+/* Wide cells (> 75px width) - show secondary month */
+@container (min-width: 75px) {
   .calendar-cell-secondary-month {
-    @apply hidden;
-  }
-}
-
-/* Wide cells (> 100px width) - show everything */
-@container (min-width: 100px) {
-  .calendar-cell-secondary-month {
-    @apply block;
+    @apply inline;
   }
 }
 

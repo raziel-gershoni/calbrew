@@ -761,13 +761,14 @@ export default function CalendarView() {
                               : isGregorianDay(day)
                                 ? getHebrewDate(day.date).day
                                 : ''}
-                          </div>
-                          <div className='calendar-cell-secondary-month text-gray-500 dark:text-gray-400 hidden'>
-                            {actualCalendarMode === 'hebrew' && isHebrewDay(day)
-                              ? getGregorianDate(day).month
-                              : isGregorianDay(day)
-                                ? getHebrewDate(day.date).month.slice(0, 3)
-                                : ''}
+                            <span className='calendar-cell-secondary-month'>
+                              {actualCalendarMode === 'hebrew' &&
+                              isHebrewDay(day)
+                                ? ` ${getGregorianDate(day).month}`
+                                : isGregorianDay(day)
+                                  ? ` ${getHebrewDate(day.date).month.slice(0, 3)}`
+                                  : ''}
+                            </span>
                           </div>
                         </div>
 
