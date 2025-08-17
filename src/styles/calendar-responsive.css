@@ -380,8 +380,8 @@
   }
 }
 
-/* Large screens: Standard side-by-side */
-@media (min-width: 1024px) {
+/* Large screens: Standard side-by-side - excludes iPad portrait */
+@media (min-width: 1367px) {
   .calendar-responsive-layout {
     grid-template-columns: 2fr 1fr;
     grid-template-rows: 1fr;
@@ -432,8 +432,8 @@
   }
 }
 
-/* iPad portrait */
-@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+/* iPad portrait - includes iPad Pro 11" and 12.9" */
+@media (min-width: 768px) and (max-width: 1366px) and (orientation: portrait) {
   .calendar-responsive-layout {
     grid-template-columns: 1fr;
     grid-template-rows: 2fr 1fr;

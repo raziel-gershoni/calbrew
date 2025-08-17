@@ -88,13 +88,22 @@ export default function CalendarView() {
   useEffect(() => {
     const updateLayout = () => {
       // Use vertical (column) layout if:
-      // - Width is small AND height is greater than width (true portrait)
-      // - Very narrow screens regardless of height
-      const isNarrow = window.innerWidth <= 768;
-      const isTallerThanWide = window.innerHeight > window.innerWidth;
+      // - Very narrow screens (phones) regardless of height
+      // - Small to medium width screens in portrait orientation (including iPads)
+      // - Desktop screens wider than 1366px use horizontal layout
       const isVeryNarrow = window.innerWidth < 480;
+      const isSmallToMedium =
+        window.innerWidth >= 480 && window.innerWidth <= 1366;
+      const isTallerThanWide = window.innerHeight > window.innerWidth;
+      const isDesktop = window.innerWidth > 1366;
 
-      setIsPortrait(isVeryNarrow || (isNarrow && isTallerThanWide));
+      // Portrait layout for:
+      // - Very narrow screens (phones)
+      // - Small to medium screens in portrait (phones and iPads)
+      // Landscape layout for:
+      // - Desktop screens (>1366px)
+      // - Small to medium screens in landscape (phones and iPads in landscape)
+      setIsPortrait(isVeryNarrow || (isSmallToMedium && isTallerThanWide));
     };
 
     updateLayout();
