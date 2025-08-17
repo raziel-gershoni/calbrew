@@ -701,6 +701,7 @@ export default function CalendarView() {
             {/* Calendar Grid - Uses CSS container queries for responsive content */}
             <div
               className='flex-1 grid grid-cols-7 gap-1 p-2 min-h-0 overflow-hidden'
+              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
               style={{
                 gridTemplateRows: `repeat(${
                   actualCalendarMode === 'hebrew'
@@ -764,30 +765,36 @@ export default function CalendarView() {
                   >
                     {day && (
                       <div className='calendar-cell-content'>
-                        <div className='calendar-cell-primary-date text-gray-900 dark:text-gray-100'>
-                          {actualCalendarMode === 'hebrew' && isHebrewDay(day)
-                            ? i18n.language === 'he'
-                              ? gematriya(day.hebrewDay)
-                              : day.hebrewDay
-                            : isGregorianDay(day)
-                              ? day.gregorianDay
-                              : ''}
+                        {/* Date column (left in LTR, right in RTL) */}
+                        <div className='calendar-cell-date-column'>
+                          <div className='calendar-cell-primary-date text-gray-900 dark:text-gray-100'>
+                            {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                              ? i18n.language === 'he'
+                                ? gematriya(day.hebrewDay)
+                                : day.hebrewDay
+                              : isGregorianDay(day)
+                                ? day.gregorianDay
+                                : ''}
+                          </div>
+                          <div className='calendar-cell-secondary-date text-gray-500 dark:text-gray-400'>
+                            {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                              ? getGregorianDate(day).day
+                              : isGregorianDay(day)
+                                ? getHebrewDate(day.date).day
+                                : ''}
+                          </div>
+                          <div className='calendar-cell-secondary-month text-gray-500 dark:text-gray-400 hidden'>
+                            {actualCalendarMode === 'hebrew' && isHebrewDay(day)
+                              ? getGregorianDate(day).month
+                              : isGregorianDay(day)
+                                ? getHebrewDate(day.date).month.slice(0, 3)
+                                : ''}
+                          </div>
                         </div>
-                        <div className='calendar-cell-secondary-date text-gray-500 dark:text-gray-400'>
-                          {actualCalendarMode === 'hebrew' && isHebrewDay(day)
-                            ? getGregorianDate(day).day
-                            : isGregorianDay(day)
-                              ? getHebrewDate(day.date).day
-                              : ''}
-                        </div>
-                        <div className='calendar-cell-secondary-month text-gray-500 dark:text-gray-400 hidden'>
-                          {actualCalendarMode === 'hebrew' && isHebrewDay(day)
-                            ? getGregorianDate(day).month
-                            : isGregorianDay(day)
-                              ? getHebrewDate(day.date).month.slice(0, 3)
-                              : ''}
-                        </div>
+
+                        {/* Events column (right in LTR, left in RTL) */}
                         <div className='calendar-cell-events'>
+                          {/* Event titles (shown in larger cells via CSS) */}
                           {dayEvents.map((event, idx) => (
                             <div
                               key={idx}
@@ -800,6 +807,8 @@ export default function CalendarView() {
                               {event.title}
                             </div>
                           ))}
+
+                          {/* Legacy indicators (hidden in compact cells via CSS) */}
                           {dayEvents.length > 0 && (
                             <>
                               <div className='calendar-cell-event-indicator'></div>
@@ -809,6 +818,24 @@ export default function CalendarView() {
                                 </div>
                               )}
                             </>
+                          )}
+
+                          {/* New circular badge for compact cells (shown via CSS) */}
+                          {dayEvents.length > 0 && (
+                            <div
+                              className='calendar-cell-event-badge cursor-pointer'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (dayEvents.length === 1) {
+                                  handleEventClick(dayEvents[0]);
+                                } else {
+                                  // If multiple events, clicking the badge will select the day to show all events in sidebar
+                                  handleDayClick(dateToCheck || new Date());
+                                }
+                              }}
+                            >
+                              {dayEvents.length}
+                            </div>
                           )}
                         </div>
                       </div>
