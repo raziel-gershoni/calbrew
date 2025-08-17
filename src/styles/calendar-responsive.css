@@ -55,7 +55,7 @@
   }
 
   .calendar-cell-events {
-    @apply flex-row items-center gap-1 mt-0;
+    @apply flex-row items-center gap-1 mt-0 justify-end;
   }
 
   .calendar-cell-event {
@@ -63,26 +63,40 @@
   }
 
   .calendar-cell-event-indicator {
-    @apply w-1 h-1;
+    @apply hidden;
+  }
+
+  .calendar-cell-event-count {
+    @apply hidden;
+  }
+
+  .calendar-cell-event-badge {
+    @apply flex items-center justify-center w-4 h-4 bg-blue-500 text-white rounded-full text-xs font-medium min-w-[1rem];
   }
 }
 
-/* Small cells (40-60px height) - stacked minimal */
+/* Small cells (40-60px height) - compact column layout */
 @container (min-height: 40px) and (max-height: 60px) {
   .calendar-cell-content {
-    @apply flex-col;
+    @apply flex-row items-start justify-between p-0.5;
+  }
+
+  /* Date column (left in LTR, right in RTL) */
+  .calendar-cell-date-column {
+    @apply flex flex-col items-start flex-shrink-0;
   }
 
   .calendar-cell-primary-date {
-    @apply text-sm font-bold;
+    @apply text-sm font-bold leading-tight;
   }
 
   .calendar-cell-secondary-date {
-    @apply text-xs;
+    @apply text-xs opacity-70 leading-tight;
   }
 
+  /* Events column (right in LTR, left in RTL) - badges at top */
   .calendar-cell-events {
-    @apply flex-row items-center justify-center gap-1;
+    @apply flex flex-row items-start justify-end flex-1;
   }
 
   .calendar-cell-event {
@@ -90,26 +104,40 @@
   }
 
   .calendar-cell-event-indicator {
-    @apply w-1.5 h-1.5;
+    @apply hidden;
+  }
+
+  .calendar-cell-event-count {
+    @apply hidden;
+  }
+
+  .calendar-cell-event-badge {
+    @apply flex items-center justify-center w-[18px] h-[18px] bg-blue-500 text-white rounded-full text-xs font-medium min-w-[18px];
   }
 }
 
-/* Medium cells (60-80px height) - show event indicators */
-@container (min-height: 60px) and (max-height: 80px) {
+/* Medium cells (60-75px height) - compact column layout with more space */
+@container (min-height: 60px) and (max-height: 75px) {
   .calendar-cell-content {
-    @apply flex-col;
+    @apply flex-row items-start justify-between p-0.5;
+  }
+
+  /* Date column (left in LTR, right in RTL) */
+  .calendar-cell-date-column {
+    @apply flex flex-col items-start flex-shrink-0;
   }
 
   .calendar-cell-primary-date {
-    @apply text-sm font-bold;
+    @apply text-base font-bold leading-tight;
   }
 
   .calendar-cell-secondary-date {
-    @apply text-xs;
+    @apply text-sm opacity-70 leading-tight;
   }
 
+  /* Events column (right in LTR, left in RTL) */
   .calendar-cell-events {
-    @apply flex flex-col gap-0.5 mt-1;
+    @apply flex flex-row items-start justify-end flex-1;
   }
 
   .calendar-cell-event {
@@ -117,12 +145,20 @@
   }
 
   .calendar-cell-event-indicator {
-    @apply w-2 h-2;
+    @apply hidden;
+  }
+
+  .calendar-cell-event-count {
+    @apply hidden;
+  }
+
+  .calendar-cell-event-badge {
+    @apply flex items-center justify-center w-[18px] h-[18px] bg-blue-500 text-white rounded-full text-xs font-medium min-w-[18px];
   }
 }
 
-/* Large cells (80-100px height) - show some event titles */
-@container (min-height: 80px) and (max-height: 100px) {
+/* Large cells (75-100px height) - show some event titles */
+@container (min-height: 75px) and (max-height: 100px) {
   .calendar-cell-content {
     @apply flex-col h-full;
   }
@@ -148,7 +184,16 @@
     @apply hidden;
   }
 
+  /* Hide all indicators and badges when showing event titles */
   .calendar-cell-event-indicator {
+    @apply hidden;
+  }
+
+  .calendar-cell-event-count {
+    @apply hidden;
+  }
+
+  .calendar-cell-event-badge {
     @apply hidden;
   }
 }
@@ -184,7 +229,16 @@
     @apply hidden;
   }
 
+  /* Hide all indicators and badges when showing event titles */
   .calendar-cell-event-indicator {
+    @apply hidden;
+  }
+
+  .calendar-cell-event-count {
+    @apply hidden;
+  }
+
+  .calendar-cell-event-badge {
     @apply hidden;
   }
 }
