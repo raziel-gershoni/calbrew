@@ -82,35 +82,6 @@ export default function CalendarView() {
   const { calendarMode } = useCalendarMode();
   const actualCalendarMode = calendarMode;
 
-  // Responsive layout state
-  const [isPortrait, setIsPortrait] = useState(false);
-
-  useEffect(() => {
-    const updateLayout = () => {
-      // Use vertical (column) layout if:
-      // - Very narrow screens (phones) regardless of height
-      // - Small to medium width screens in portrait orientation (including iPads)
-      // - Desktop screens wider than 1366px use horizontal layout
-      const isVeryNarrow = window.innerWidth < 480;
-      const isSmallToMedium =
-        window.innerWidth >= 480 && window.innerWidth <= 1366;
-      const isTallerThanWide = window.innerHeight > window.innerWidth;
-      const isDesktop = window.innerWidth > 1366;
-
-      // Portrait layout for:
-      // - Very narrow screens (phones)
-      // - Small to medium screens in portrait (phones and iPads)
-      // Landscape layout for:
-      // - Desktop screens (>1366px)
-      // - Small to medium screens in landscape (phones and iPads in landscape)
-      setIsPortrait(isVeryNarrow || (isSmallToMedium && isTallerThanWide));
-    };
-
-    updateLayout();
-    window.addEventListener('resize', updateLayout);
-    return () => window.removeEventListener('resize', updateLayout);
-  }, []);
-
   const {
     events: masterEvents,
     isLoading,
@@ -642,8 +613,7 @@ export default function CalendarView() {
       {/* Main Content - Unified Responsive Layout */}
       <div className='flex-1 min-h-0 overflow-hidden'>
         <div
-          className='h-full flex gap-2 p-1 sm:p-2 lg:p-3'
-          style={{ flexDirection: isPortrait ? 'column' : 'row' }}
+          className='h-full calendar-responsive-layout p-1 sm:p-2 lg:p-3'
           dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
         >
           {/* Calendar Section */}
