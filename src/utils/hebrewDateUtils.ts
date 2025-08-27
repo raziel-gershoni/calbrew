@@ -90,7 +90,11 @@ export function generateEventOccurrences(
   return events.flatMap((event) => {
     const occurrences: EventOccurrence[] = [];
 
-    for (let year = startYear; year <= endYear; year++) {
+    // Only generate occurrences for years >= the event's original year
+    // This prevents showing events in years before they were created
+    const effectiveStartYear = Math.max(startYear, event.hebrew_year);
+
+    for (let year = effectiveStartYear; year <= endYear; year++) {
       const gregorianDate = hebrewToGregorian(
         event.hebrew_day,
         event.hebrew_month,
