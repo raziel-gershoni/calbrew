@@ -78,7 +78,7 @@ export default function EventForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className={`space-y-4 max-w-lg mx-auto bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+      className='space-y-4 max-w-lg mx-auto bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md text-start'
     >
       <h2 className='text-2xl font-bold text-center text-gray-800 dark:text-gray-200'>
         {t('Create New Event')}
@@ -96,7 +96,7 @@ export default function EventForm({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+          className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 text-start`}
         />
       </div>
       <div>
@@ -110,7 +110,7 @@ export default function EventForm({
           id='description'
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+          className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 text-start`}
         />
       </div>
       {/* Selected Date Display */}
@@ -119,7 +119,7 @@ export default function EventForm({
           {t('Hebrew Date')}
         </label>
         <div
-          className={`p-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-center ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+          className={`p-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-center text-start`}
         >
           <span className='text-lg font-medium text-gray-900 dark:text-gray-100'>
             {(() => {
@@ -173,7 +173,7 @@ export default function EventForm({
           id='recurrence_rule'
           value={recurrence_rule}
           onChange={(e) => setRecurrenceRule(e.target.value)}
-          className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+          className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 text-start`}
         >
           <option value='yearly'>{t('Yearly')}</option>
           <option value='monthly'>{t('Monthly')}</option>

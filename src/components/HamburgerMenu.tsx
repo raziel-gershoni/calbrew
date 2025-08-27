@@ -213,7 +213,7 @@ export default function HamburgerMenu({
                   />
                 </svg>
               )}
-              עברית
+              {t('Hebrew')}
             </button>
 
             {/* Divider */}
@@ -222,7 +222,7 @@ export default function HamburgerMenu({
             {/* Calendar Mode Section */}
             <div className='px-4 py-2'>
               <div className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2'>
-                {i18n.language === 'he' ? 'תצוגת לוח שנה' : 'Calendar View'}
+                {t('Calendar View')}
               </div>
               <div className='flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1'>
                 <button
@@ -245,7 +245,7 @@ export default function HamburgerMenu({
                   >
                     <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
                   </svg>
-                  {i18n.language === 'he' ? 'עברי' : 'Hebrew'}
+                  {t('Hebrew Calendar')}
                 </button>
                 <button
                   onClick={() => handleCalendarModeChange('gregorian')}
@@ -267,7 +267,7 @@ export default function HamburgerMenu({
                   >
                     <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
                   </svg>
-                  {i18n.language === 'he' ? 'גרגוריאני' : 'Gregorian'}
+                  {t('Gregorian')}
                 </button>
               </div>
             </div>

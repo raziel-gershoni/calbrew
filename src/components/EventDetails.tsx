@@ -19,7 +19,7 @@ export default function EventDetails({
   isSaving,
   isDeleting,
 }: EventDetailsProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editedEvent, setEditedEvent] = useState(event);
 
@@ -47,7 +47,7 @@ export default function EventDetails({
 
   return (
     <div
-      className={`bg-white dark:bg-gray-700 shadow-lg rounded-lg p-4 ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+      className={`bg-white dark:bg-gray-700 shadow-lg rounded-lg p-4 text-start`}
     >
       {isEditing ? (
         <div>
@@ -57,14 +57,14 @@ export default function EventDetails({
             onChange={(e) =>
               setEditedEvent({ ...editedEvent!, title: e.target.value })
             }
-            className={`w-full p-2 mb-2 border rounded-md ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+            className={`w-full p-2 mb-2 border rounded-md text-start`}
           />
           <textarea
             value={editedEvent?.description || ''}
             onChange={(e) =>
               setEditedEvent({ ...editedEvent!, description: e.target.value })
             }
-            className={`w-full p-2 mb-2 border rounded-md ${i18n.language === 'he' ? 'text-right' : 'text-left'}`}
+            className={`w-full p-2 mb-2 border rounded-md text-start`}
           />
           <div className='flex gap-2 justify-start'>
             <button

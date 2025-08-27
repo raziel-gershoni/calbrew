@@ -54,24 +54,16 @@ const resources = {
       Active: 'Active',
       'User Avatar': 'User Avatar',
       'Loading...': 'Loading...',
-      // Calendar month names
-      January: 'January',
-      February: 'February',
-      March: 'March',
-      April: 'April',
-      May: 'May',
-      June: 'June',
-      July: 'July',
-      August: 'August',
-      September: 'September',
-      October: 'October',
-      November: 'November',
-      December: 'December',
       // Language names
       English: 'English',
       Spanish: 'Spanish',
       Hebrew: 'Hebrew',
       Language: 'Language',
+      // Calendar type names
+      Gregorian: 'Gregorian',
+      'Hebrew Calendar': 'Hebrew',
+      'Calendar View': 'Calendar View',
+      User: 'User',
       // Additional event list translations
       'No events for this date': 'No events for this date',
       'Select a date to view events': 'Select a date to view events',
@@ -128,24 +120,16 @@ const resources = {
       Active: 'פעיל',
       'User Avatar': 'תמונת משתמש',
       'Loading...': 'טוען...',
-      // Calendar month names
-      January: 'ינואר',
-      February: 'פברואר',
-      March: 'מרץ',
-      April: 'אפריל',
-      May: 'מאי',
-      June: 'יוני',
-      July: 'יולי',
-      August: 'אוגוסט',
-      September: 'ספטמבר',
-      October: 'אוקטובר',
-      November: 'נובמבר',
-      December: 'דצמבר',
       // Language names
       English: 'אנגלית',
       Spanish: 'ספרדית',
       Hebrew: 'עברית',
       Language: 'שפה',
+      // Calendar type names
+      Gregorian: 'לועזי',
+      'Hebrew Calendar': 'עברי',
+      'Calendar View': 'תצוגת לוח שנה',
+      User: 'משתמש',
       // Additional event list translations
       'No events for this date': 'אין אירועים לתאריך זה',
       'Select a date to view events': 'בחר תאריך לצפייה באירועים',
@@ -203,24 +187,16 @@ const resources = {
       Active: 'Activo',
       'User Avatar': 'Avatar de Usuario',
       'Loading...': 'Cargando...',
-      // Calendar month names
-      January: 'Enero',
-      February: 'Febrero',
-      March: 'Marzo',
-      April: 'Abril',
-      May: 'Mayo',
-      June: 'Junio',
-      July: 'Julio',
-      August: 'Agosto',
-      September: 'Septiembre',
-      October: 'Octubre',
-      November: 'Noviembre',
-      December: 'Diciembre',
       // Language names
       English: 'Inglés',
       Spanish: 'Español',
       Hebrew: 'Hebreo',
       Language: 'Idioma',
+      // Calendar type names
+      Gregorian: 'Gregoriano',
+      'Hebrew Calendar': 'Hebreo',
+      'Calendar View': 'Vista de Calendario',
+      User: 'Usuario',
       // Additional event list translations
       'No events for this date': 'No hay eventos para esta fecha',
       'Select a date to view events': 'Selecciona una fecha para ver eventos',
@@ -250,5 +226,13 @@ i18n.on('languageChanged', (lng) => {
     localStorage.setItem('calbrew-language', lng);
   }
 });
+
+// RTL languages configuration
+export const RTL_LANGUAGES = ['he', 'ar', 'fa', 'ur'];
+
+// Helper function to get text direction
+export const getTextDirection = (language: string): 'rtl' | 'ltr' => {
+  return RTL_LANGUAGES.includes(language) ? 'rtl' : 'ltr';
+};
 
 export default i18n;

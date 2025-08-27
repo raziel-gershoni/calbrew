@@ -99,6 +99,7 @@ export default function UserProfileModal({
               {/* User Avatar */}
               {session.user.image && (
                 <div className='flex justify-center'>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={session.user.image}
                     alt={session.user.name || t('User Avatar')}

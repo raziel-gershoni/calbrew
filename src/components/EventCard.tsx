@@ -1,6 +1,7 @@
 'use client';
 
 import { HDate } from '@hebcal/core';
+import { useTranslation } from 'react-i18next';
 
 interface Event {
   id: string;
@@ -23,6 +24,7 @@ export default function EventCard({
   onDelete,
   isDeleting,
 }: EventCardProps) {
+  const { t } = useTranslation();
   const currentHebrewYear = new HDate().getFullYear();
   const anniversary = currentHebrewYear - event.hebrew_year;
   const hebrewDate = new HDate(
@@ -57,7 +59,7 @@ export default function EventCard({
           disabled={isDeleting}
           className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded disabled:bg-red-400'
         >
-          {isDeleting ? 'Deleting...' : 'Delete'}
+          {isDeleting ? t('Deleting...') : t('Delete')}
         </button>
       </div>
     </div>

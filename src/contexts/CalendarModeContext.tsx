@@ -53,7 +53,7 @@ export function CalendarModeProvider({ children }: CalendarModeProviderProps) {
         'hebrew';
       setCalendarModeState(savedMode);
     }
-  }, [session?.user?.id]);
+  }, [session?.user?.id, session]);
 
   const fetchUserCalendarMode = async () => {
     // Prevent concurrent calls

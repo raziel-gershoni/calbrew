@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
 
@@ -13,27 +13,7 @@ export const useLanguage = () => {
   const hasInitializedRef = useRef(false);
   const fetchingRef = useRef(false);
 
-  // Fetch user's language preference on session load
-  useEffect(() => {
-    if (hasInitializedRef.current) {
-      return;
-    }
-
-    if (session?.user?.id) {
-      hasInitializedRef.current = true;
-      fetchUserLanguage();
-    } else if (session !== undefined) {
-      // Wait for session to be determined
-      hasInitializedRef.current = true;
-      // If not logged in, use localStorage fallback
-      const savedLanguage = localStorage.getItem('calbrew-language') || 'en';
-      if (i18n.language !== savedLanguage) {
-        i18n.changeLanguage(savedLanguage);
-      }
-    }
-  }, [session?.user?.id, i18n]);
-
-  const fetchUserLanguage = async () => {
+  const fetchUserLanguage = useCallback(async () => {
     // Prevent concurrent calls
     if (fetchingRef.current) {
       return;
@@ -63,7 +43,27 @@ export const useLanguage = () => {
     } finally {
       fetchingRef.current = false;
     }
-  };
+  }, [i18n]);
+
+  // Fetch user's language preference on session load
+  useEffect(() => {
+    if (hasInitializedRef.current) {
+      return;
+    }
+
+    if (session?.user?.id) {
+      hasInitializedRef.current = true;
+      fetchUserLanguage();
+    } else if (session !== undefined) {
+      // Wait for session to be determined
+      hasInitializedRef.current = true;
+      // If not logged in, use localStorage fallback
+      const savedLanguage = localStorage.getItem('calbrew-language') || 'en';
+      if (i18n.language !== savedLanguage) {
+        i18n.changeLanguage(savedLanguage);
+      }
+    }
+  }, [session?.user?.id, i18n, fetchUserLanguage, session]);
 
   const changeLanguage = async (newLanguage: 'en' | 'he' | 'es') => {
     setIsLoading(true);

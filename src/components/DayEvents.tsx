@@ -2,6 +2,7 @@
 
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { useTranslation } from 'react-i18next';
+import { getTextDirection } from '@/i18n';
 import { EventOccurrence } from '@/utils/hebrewDateUtils';
 import { useCalendarMode } from '@/contexts/CalendarModeContext';
 
@@ -69,7 +70,7 @@ export default function DayEvents({
   return (
     <div
       className='h-full flex flex-col bg-white dark:bg-gray-700 shadow-lg rounded-lg'
-      dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+      dir={getTextDirection(i18n.language)}
     >
       <div className='flex-shrink-0 p-4 border-b border-gray-200 dark:border-gray-600'>
         <div className='flex justify-between items-center'>

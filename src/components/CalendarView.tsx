@@ -10,6 +10,7 @@ import EventDetails from './EventDetails';
 import LoadingSpinner from './LoadingSpinner';
 import CalendarHeader from './CalendarHeader';
 import { useTranslation } from 'react-i18next';
+import { getTextDirection } from '@/i18n';
 import { useEvents } from '@/hooks/useEvents';
 import {
   generateEventOccurrences,
@@ -44,38 +45,6 @@ const isHebrewDay = (day: HebrewDay | GregorianDay): day is HebrewDay => {
 const isGregorianDay = (day: HebrewDay | GregorianDay): day is GregorianDay => {
   return 'gregorianDay' in day && 'date' in day;
 };
-
-// Gregorian month names in Hebrew
-const GREGORIAN_MONTHS_HE = [
-  'ינואר',
-  'פברואר',
-  'מרץ',
-  'אפריל',
-  'מאי',
-  'יוני',
-  'יולי',
-  'אוגוסט',
-  'ספטמבר',
-  'אוקטובר',
-  'נובמבר',
-  'דצמבר',
-];
-
-// Gregorian month names in English
-const GREGORIAN_MONTHS_EN = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
 
 export default function CalendarView() {
   const { t, i18n } = useTranslation();
@@ -391,12 +360,10 @@ export default function CalendarView() {
 
   const getGregorianDate = (hebrewDay: HebrewDay) => {
     const date = hebrewDay.gregorianDate;
+    const monthName = date.toLocaleDateString(i18n.language, { month: 'long' });
     return {
       day: date.getDate(),
-      month:
-        i18n.language === 'he'
-          ? GREGORIAN_MONTHS_HE[date.getMonth()]
-          : GREGORIAN_MONTHS_EN[date.getMonth()],
+      month: monthName,
       year: date.getFullYear(),
     };
   };
@@ -411,10 +378,10 @@ export default function CalendarView() {
         i18n.language === 'he' ? gematriya(hebrewYear) : hebrewYear;
       return `${hebrewMonthName} ${yearDisplay}`;
     } else {
-      const monthName =
-        i18n.language === 'he'
-          ? GREGORIAN_MONTHS_HE[gregorianMonth]
-          : GREGORIAN_MONTHS_EN[gregorianMonth];
+      const date = new Date(gregorianYear, gregorianMonth, 1);
+      const monthName = date.toLocaleDateString(i18n.language, {
+        month: 'long',
+      });
       return `${monthName} ${gregorianYear}`;
     }
   };
@@ -614,7 +581,7 @@ export default function CalendarView() {
       <div className='flex-1 min-h-0 overflow-hidden'>
         <div
           className='h-full calendar-responsive-layout p-1 sm:p-2 lg:p-3'
-          dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+          dir={getTextDirection(i18n.language)}
         >
           {/* Calendar Section */}
           <div
@@ -632,11 +599,7 @@ export default function CalendarView() {
                   }
                   className='p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
                 >
-                  {i18n.language === 'he' ? (
-                    <ChevronRightIcon className='w-4 h-4' />
-                  ) : (
-                    <ChevronLeftIcon className='w-4 h-4' />
-                  )}
+                  <ChevronLeftIcon className='w-4 h-4 rtl:rotate-180' />
                 </button>
                 <button
                   onClick={navigateToToday}
@@ -652,11 +615,7 @@ export default function CalendarView() {
                   }
                   className='p-1.5 rounded hover:bg-white dark:hover:bg-gray-600 transition-colors'
                 >
-                  {i18n.language === 'he' ? (
-                    <ChevronLeftIcon className='w-4 h-4' />
-                  ) : (
-                    <ChevronRightIcon className='w-4 h-4' />
-                  )}
+                  <ChevronRightIcon className='w-4 h-4 rtl:rotate-180' />
                 </button>
               </div>
               <h2 className='text-sm font-semibold text-gray-900 dark:text-gray-100 text-center flex-1 min-w-0 mx-2'>
@@ -680,7 +639,7 @@ export default function CalendarView() {
             {/* Calendar Grid - Uses CSS container queries for responsive content */}
             <div
               className='flex-1 grid grid-cols-7 gap-1 p-2 min-h-0 overflow-hidden'
-              dir={i18n.language === 'he' ? 'rtl' : 'ltr'}
+              dir={getTextDirection(i18n.language)}
               style={{
                 gridTemplateRows: `repeat(${
                   actualCalendarMode === 'hebrew'
