@@ -75,18 +75,18 @@ async function ensureCalbrewCalendar(
     }
 
     return calbrewCalendar?.id || null;
-  } catch (error: any) {
-    // eslint-disable-line @typescript-eslint/no-explicit-any
+  } catch (error: unknown) {
+    const errorObj = error as any; // eslint-disable-line @typescript-eslint/no-explicit-any
     console.error('❌ Failed to create/find Calbrew calendar:');
     console.error('Error details:', {
-      message: error.message,
-      status: error.status || error.code,
-      statusText: error.statusText,
-      response: error.response?.data,
+      message: errorObj.message,
+      status: errorObj.status || errorObj.code,
+      statusText: errorObj.statusText,
+      response: errorObj.response?.data,
     });
 
     // Log specific error for insufficient scopes
-    if (error.code === 403 || error.status === 403) {
+    if (errorObj.code === 403 || errorObj.status === 403) {
       console.error('🚫 This appears to be a permissions/scope issue.');
       console.error(
         'Required scopes: https://www.googleapis.com/auth/calendar',
