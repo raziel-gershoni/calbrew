@@ -18,9 +18,7 @@ export default function Home() {
   if (status === 'loading') {
     return (
       <div className='flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900'>
-        <div className='text-lg text-gray-800 dark:text-gray-200'>
-          Loading...
-        </div>
+        <div className='h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'></div>
       </div>
     );
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 
 export interface GcalSyncState {
@@ -17,6 +17,9 @@ export function useGcalSync() {
     error: null,
   });
 
+  // Prevent duplicate calls in Strict Mode
+  const fetchingRef = useRef(false);
+
   // Fetch current sync preference
   useEffect(() => {
     if (!session?.user?.id) {
@@ -25,7 +28,13 @@ export function useGcalSync() {
     }
 
     const fetchSyncPreference = async () => {
+      // Prevent concurrent calls
+      if (fetchingRef.current) {
+        return;
+      }
+
       try {
+        fetchingRef.current = true;
         setSyncState((prev) => ({ ...prev, isLoading: true, error: null }));
 
         const response = await fetch('/api/user/gcal-sync');
@@ -46,6 +55,8 @@ export function useGcalSync() {
           isLoading: false,
           error: error instanceof Error ? error.message : 'Unknown error',
         }));
+      } finally {
+        fetchingRef.current = false;
       }
     };
 

@@ -160,7 +160,7 @@ export async function createEvent(event: {
   hebrew_month: number;
   hebrew_day: number;
   recurrence_rule: string;
-  last_synced_hebrew_year: number;
+  last_synced_hebrew_year: number | null;
 }): Promise<void> {
   return withDatabaseRetry(async () => {
     const stmt = getPreparedStatement(

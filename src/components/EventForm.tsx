@@ -10,12 +10,14 @@ interface EventFormProps {
   onAddEvent: (event: Omit<Event, 'id'>) => void;
   isCreating: boolean;
   selectedDate: Date | null;
+  onFormReset?: () => void;
 }
 
 export default function EventForm({
   onAddEvent,
   isCreating,
   selectedDate,
+  onFormReset,
 }: EventFormProps) {
   const { t, i18n } = useTranslation();
   const { syncEnabled: userSyncEnabled } = useGcalSync();
@@ -41,6 +43,22 @@ export default function EventForm({
   useEffect(() => {
     setSyncWithGcal(userSyncEnabled);
   }, [userSyncEnabled]);
+
+  // Reset form when parent requests it
+  const _resetForm = () => {
+    setTitle('');
+    setDescription('');
+    setSyncWithGcal(userSyncEnabled);
+  };
+
+  // Expose reset function via callback
+  useEffect(() => {
+    if (onFormReset) {
+      onFormReset();
+    }
+  }, [onFormReset]);
+
+  // Reset form is handled via useEffect callback
 
   const numMonths = HDate.monthsInYear(hebrew_year);
   const yearMonths = Array.from({ length: numMonths }, (_, i) => {
@@ -79,9 +97,7 @@ export default function EventForm({
       recurrence_rule,
       sync_with_gcal: syncWithGcal,
     });
-    setTitle('');
-    setDescription('');
-    setSyncWithGcal(userSyncEnabled); // Reset to user preference
+    // Don't clear form immediately - keep data visible until modal closes
   };
 
   return (
@@ -89,9 +105,6 @@ export default function EventForm({
       onSubmit={handleSubmit}
       className='space-y-4 max-w-lg mx-auto bg-white dark:bg-gray-700 p-6 rounded-lg shadow-md text-start'
     >
-      <h2 className='text-2xl font-bold text-center text-gray-800 dark:text-gray-200'>
-        {t('Create New Event')}
-      </h2>
       <div>
         <label
           htmlFor='title'

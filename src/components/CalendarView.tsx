@@ -57,7 +57,7 @@ export default function CalendarView() {
     isCreating,
     isSaving,
     isDeleting,
-    fetchEvents,
+    fetchEvents: _fetchEvents,
     createEvent,
     updateEvent,
     deleteEvent,
@@ -474,7 +474,7 @@ export default function CalendarView() {
   };
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return <LoadingSpinner fullScreen={true} />;
   }
 
   return (
@@ -484,8 +484,11 @@ export default function CalendarView() {
 
       {/* Event Form Modal */}
       {isModalOpen && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
-          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto'>
+        <div className='fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50'>
+          <div 
+            className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto'
+            dir={getTextDirection(i18n.language)}
+          >
             <div className='p-4 border-b border-gray-200 dark:border-gray-700'>
               <div className='flex justify-between items-center'>
                 <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
@@ -536,8 +539,11 @@ export default function CalendarView() {
 
       {/* Event Details Modal */}
       {selectedEvent && !isModalOpen && (
-        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50'>
-          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto'>
+        <div className='fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50'>
+          <div 
+            className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto'
+            dir={getTextDirection(i18n.language)}
+          >
             <div className='p-4 border-b border-gray-200 dark:border-gray-700'>
               <div className='flex justify-between items-center'>
                 <h2 className='text-lg font-semibold text-gray-900 dark:text-gray-100'>
@@ -578,8 +584,7 @@ export default function CalendarView() {
                     if (!response.ok) {
                       throw new Error('Failed to sync event');
                     }
-                    // Refresh events after successful sync
-                    await fetchEvents();
+                    // EventDetails component handles the sync status update via local state
                   } catch (error) {
                     console.error('Error syncing event:', error);
                     throw error; // Re-throw to let EventDetails handle the error state

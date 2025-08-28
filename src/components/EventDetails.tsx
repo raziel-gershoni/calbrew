@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
 
@@ -27,6 +27,9 @@ export default function EventDetails({
   const [isEventSynced, setIsEventSynced] = useState<boolean | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Prevent duplicate calls in Strict Mode
+  const fetchingRef = useRef(false);
+
   useEffect(() => {
     setEditedEvent(event);
     if (event === null) {
@@ -43,7 +46,13 @@ export default function EventDetails({
     }
 
     const checkSyncStatus = async () => {
+      // Prevent concurrent calls
+      if (fetchingRef.current) {
+        return;
+      }
+
       try {
+        fetchingRef.current = true;
         const response = await fetch(`/api/events/${event.id}/sync-status`);
         if (response.ok) {
           const data = await response.json();
@@ -55,6 +64,8 @@ export default function EventDetails({
       } catch (error) {
         console.error('Error checking sync status:', error);
         setIsEventSynced(false);
+      } finally {
+        fetchingRef.current = false;
       }
     };
 
