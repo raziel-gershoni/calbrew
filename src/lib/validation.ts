@@ -20,6 +20,7 @@ export const CreateEventSchema = z.object({
     .min(1, 'Invalid Hebrew day')
     .max(30, 'Invalid Hebrew day'),
   recurrence_rule: z.enum(['yearly', 'monthly', 'weekly']),
+  sync_with_gcal: z.boolean().optional().default(true),
 });
 
 export const UpdateEventSchema = CreateEventSchema.extend({

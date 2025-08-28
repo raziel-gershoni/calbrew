@@ -113,6 +113,17 @@ db.serialize(() => {
     },
   );
 
+  // Add gcal_sync_enabled column to existing users table if it doesn't exist
+  db.run(
+    `ALTER TABLE users ADD COLUMN gcal_sync_enabled BOOLEAN DEFAULT TRUE`,
+    (err) => {
+      // Ignore error if column already exists
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error('Error adding gcal_sync_enabled column:', err.message);
+      }
+    },
+  );
+
   // Create indexes for better performance
   db.run(`CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id)`);
   db.run(

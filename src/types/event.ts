@@ -6,4 +6,5 @@ export interface Event {
   hebrew_month: number;
   hebrew_day: number;
   recurrence_rule: string;
+  sync_with_gcal?: boolean;
 }

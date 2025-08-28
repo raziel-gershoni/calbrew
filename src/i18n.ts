@@ -67,6 +67,16 @@ const resources = {
       // Additional event list translations
       'No events for this date': 'No events for this date',
       'Select a date to view events': 'Select a date to view events',
+      // Google Calendar sync translations
+      'Google Calendar': 'Google Calendar',
+      'Google Sync': 'Google Sync',
+      'Sync with Google Calendar': 'Sync with Google Calendar',
+      'Synced with Google Calendar': 'Synced with Google Calendar',
+      'Not synced with Google Calendar': 'Not synced with Google Calendar',
+      'Checking sync status...': 'Checking sync status...',
+      'Start syncing with Google Calendar':
+        'Start syncing with Google Calendar',
+      'Syncing...': 'Syncing...',
     },
   },
   he: {
@@ -133,6 +143,15 @@ const resources = {
       // Additional event list translations
       'No events for this date': 'אין אירועים לתאריך זה',
       'Select a date to view events': 'בחר תאריך לצפייה באירועים',
+      // Google Calendar sync translations
+      'Google Calendar': 'יומן גוגל',
+      'Google Sync': 'סנכרון גוגל',
+      'Sync with Google Calendar': 'סנכרון עם יומן גוגל',
+      'Synced with Google Calendar': 'מסונכרן עם יומן גוגל',
+      'Not synced with Google Calendar': 'לא מסונכרן עם יומן גוגל',
+      'Checking sync status...': 'בודק סטטוס סינכרון...',
+      'Start syncing with Google Calendar': 'התחל סינכרון עם יומן גוגל',
+      'Syncing...': 'מסנכרן...',
     },
   },
   es: {
@@ -200,6 +219,16 @@ const resources = {
       // Additional event list translations
       'No events for this date': 'No hay eventos para esta fecha',
       'Select a date to view events': 'Selecciona una fecha para ver eventos',
+      // Google Calendar sync translations
+      'Google Calendar': 'Google Calendar',
+      'Google Sync': 'Sincronización Google',
+      'Sync with Google Calendar': 'Sincronizar con Google Calendar',
+      'Synced with Google Calendar': 'Sincronizado con Google Calendar',
+      'Not synced with Google Calendar': 'No sincronizado con Google Calendar',
+      'Checking sync status...': 'Verificando estado de sincronización...',
+      'Start syncing with Google Calendar':
+        'Comenzar sincronización con Google Calendar',
+      'Syncing...': 'Sincronizando...',
     },
   },
 };

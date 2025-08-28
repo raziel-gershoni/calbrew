@@ -514,6 +514,128 @@ export async function updateUserCalendarMode(
   }, 'Update user calendar mode');
 }
 
+// Google Calendar sync operations
+export async function getUserGcalSyncEnabled(userId: string): Promise<boolean> {
+  return withDatabaseRetry(async () => {
+    const stmt = getPreparedStatement(
+      'getUserGcalSyncEnabled',
+      'SELECT gcal_sync_enabled FROM users WHERE id = ?',
+    );
+    return new Promise<boolean>((resolve, reject) => {
+      stmt.get(
+        [userId],
+        (err: Error | null, row?: { gcal_sync_enabled: number | null }) => {
+          if (err) {
+            console.error('Error getting user gcal sync enabled:', err);
+            reject(
+              createDatabaseError('Failed to get user gcal sync enabled', err),
+            );
+            return;
+          }
+          // Convert SQLite integer to boolean (1 = true, 0/null = false)
+          resolve(row?.gcal_sync_enabled === 1);
+        },
+      );
+    });
+  });
+}
+
+export async function updateUserGcalSyncEnabled(
+  userId: string,
+  enabled: boolean,
+): Promise<void> {
+  return withDatabaseRetry(async () => {
+    const stmt = getPreparedStatement(
+      'updateUserGcalSyncEnabled',
+      'UPDATE users SET gcal_sync_enabled = ? WHERE id = ?',
+    );
+    return new Promise<void>((resolve, reject) => {
+      // Convert boolean to integer for SQLite
+      stmt.run([enabled ? 1 : 0, userId], function (err: Error | null) {
+        if (err) {
+          console.error('Error updating user gcal sync enabled:', err);
+          reject(
+            createDatabaseError('Failed to update user gcal sync enabled', err),
+          );
+          return;
+        }
+        resolve();
+      });
+    });
+  });
+}
+
+export async function isEventSynced(eventId: string): Promise<boolean> {
+  return withDatabaseRetry(async () => {
+    const stmt = getPreparedStatement(
+      'isEventSynced',
+      'SELECT COUNT(*) as count FROM event_occurrences WHERE event_id = ?',
+    );
+    return new Promise<boolean>((resolve, reject) => {
+      stmt.get([eventId], (err: Error | null, row?: { count: number }) => {
+        if (err) {
+          console.error('Error checking if event is synced:', err);
+          reject(
+            createDatabaseError('Failed to check if event is synced', err),
+          );
+          return;
+        }
+        resolve((row?.count || 0) > 0);
+      });
+    });
+  });
+}
+
+export async function getEventsSyncStatus(
+  eventIds: string[],
+): Promise<Map<string, boolean>> {
+  if (eventIds.length === 0) {
+    return new Map();
+  }
+
+  return withDatabaseRetry(async () => {
+    // Create placeholders for IN clause
+    const placeholders = eventIds.map(() => '?').join(',');
+    const sql = `
+      SELECT event_id, COUNT(*) as count 
+      FROM event_occurrences 
+      WHERE event_id IN (${placeholders}) 
+      GROUP BY event_id
+    `;
+
+    return new Promise<Map<string, boolean>>((resolve, reject) => {
+      db.all(
+        sql,
+        eventIds,
+        (
+          err: Error | null,
+          rows?: Array<{ event_id: string; count: number }>,
+        ) => {
+          if (err) {
+            console.error('Error getting events sync status:', err);
+            reject(
+              createDatabaseError('Failed to get events sync status', err),
+            );
+            return;
+          }
+
+          const syncStatus = new Map<string, boolean>();
+          // Initialize all events as not synced
+          eventIds.forEach((id) => syncStatus.set(id, false));
+          // Mark synced events as true
+          rows?.forEach((row) => {
+            if (row.count > 0) {
+              syncStatus.set(row.event_id, true);
+            }
+          });
+
+          resolve(syncStatus);
+        },
+      );
+    });
+  });
+}
+
 // Performance monitoring
 export function logPreparedStatementStats() {
   console.log(`Prepared statements cache size: ${preparedStatements.size}`);

@@ -106,11 +106,17 @@ export async function POST(req: NextRequest) {
       hebrew_month,
       hebrew_day,
       recurrence_rule,
+      sync_with_gcal,
     } = validatedData;
 
     const eventId = crypto.randomUUID();
+
+    // Check if we should sync with Google Calendar
+    // Per-event choice takes precedence over global setting
+    const shouldSyncWithGcal = sync_with_gcal;
+
     const syncWindow = calculateSyncWindow(hebrew_year);
-    const lastSyncedHebrewYear = syncWindow.end;
+    const lastSyncedHebrewYear = shouldSyncWithGcal ? syncWindow.end : null;
 
     // Create event in database with retry logic
     await dbCreateEvent({
@@ -125,153 +131,157 @@ export async function POST(req: NextRequest) {
       last_synced_hebrew_year: lastSyncedHebrewYear,
     });
 
-    // Get fresh calendar ID from database (more reliable than session)
-    let calendarId = await getCurrentCalendarId(session.user.id);
+    // Only sync with Google Calendar if enabled
+    if (shouldSyncWithGcal) {
+      // Get fresh calendar ID from database (more reliable than session)
+      let calendarId = await getCurrentCalendarId(session.user.id);
 
-    if (!calendarId) {
-      // Only check/create calendar if we don't have an ID stored
-      const calendarCheck = await ensureCalendarExists(
-        session.accessToken!,
-        session.user.id,
-        undefined, // No current ID to check
+      if (!calendarId) {
+        // Only check/create calendar if we don't have an ID stored
+        const calendarCheck = await ensureCalendarExists(
+          session.accessToken!,
+          session.user.id,
+          undefined, // No current ID to check
+        );
+
+        if (!calendarCheck.calendarId) {
+          return NextResponse.json(
+            createErrorResponse(
+              `Failed to create calendar: ${calendarCheck.error || 'Unknown error'}`,
+              'CALENDAR_ERROR',
+            ),
+            { status: 500 },
+          );
+        }
+
+        calendarId = calendarCheck.calendarId;
+        console.info(`Created/found Calbrew calendar: ${calendarId}`);
+      }
+
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI,
       );
 
-      if (!calendarCheck.calendarId) {
-        return NextResponse.json(
-          createErrorResponse(
-            `Failed to create calendar: ${calendarCheck.error || 'Unknown error'}`,
-            'CALENDAR_ERROR',
-          ),
-          { status: 500 },
-        );
-      }
+      oauth2Client.setCredentials({ access_token: session.accessToken });
+      const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-      calendarId = calendarCheck.calendarId;
-      console.info(`Created/found Calbrew calendar: ${calendarId}`);
-    }
+      const yearRange = Array.from(
+        { length: syncWindow.end - syncWindow.start + 1 },
+        (_, i) => syncWindow.start + i,
+      );
 
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI,
-    );
+      // Create Google Calendar events with retry logic
+      const createdOccurrences = [];
+      for (const year of yearRange) {
+        const anniversary = year - hebrew_year;
+        const eventTitle =
+          anniversary > 0 ? `(${anniversary}) ${title}` : title;
 
-    oauth2Client.setCredentials({ access_token: session.accessToken });
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+        const gregorianDate = new HDate(hebrew_day, hebrew_month, year).greg();
+        const dateString = `${gregorianDate.getFullYear()}-${String(gregorianDate.getMonth() + 1).padStart(2, '0')}-${String(gregorianDate.getDate()).padStart(2, '0')}`;
 
-    const yearRange = Array.from(
-      { length: syncWindow.end - syncWindow.start + 1 },
-      (_, i) => syncWindow.start + i,
-    );
-
-    // Create Google Calendar events with retry logic
-    const createdOccurrences = [];
-    for (const year of yearRange) {
-      const anniversary = year - hebrew_year;
-      const eventTitle = anniversary > 0 ? `(${anniversary}) ${title}` : title;
-
-      const gregorianDate = new HDate(hebrew_day, hebrew_month, year).greg();
-      const dateString = `${gregorianDate.getFullYear()}-${String(gregorianDate.getMonth() + 1).padStart(2, '0')}-${String(gregorianDate.getDate()).padStart(2, '0')}`;
-
-      const eventData = {
-        summary: eventTitle,
-        description: description || undefined,
-        start: {
-          date: dateString,
-        },
-        end: {
-          date: dateString,
-        },
-        extendedProperties: {
-          private: {
-            calbrew_event_id: eventId,
+        const eventData = {
+          summary: eventTitle,
+          description: description || undefined,
+          start: {
+            date: dateString,
           },
-        },
-      };
+          end: {
+            date: dateString,
+          },
+          extendedProperties: {
+            private: {
+              calbrew_event_id: eventId,
+            },
+          },
+        };
 
-      try {
-        const createdEvent = await withGoogleCalendarRetry(async () => {
-          return await calendar.events.insert({
-            calendarId: calendarId!,
-            requestBody: eventData,
-          });
-        }, `Create event for year ${year}`);
+        try {
+          const createdEvent = await withGoogleCalendarRetry(async () => {
+            return await calendar.events.insert({
+              calendarId: calendarId!,
+              requestBody: eventData,
+            });
+          }, `Create event for year ${year}`);
 
-        if (createdEvent.data?.id) {
-          createdOccurrences.push({
-            id: crypto.randomUUID(),
-            event_id: eventId,
-            gregorian_date: dateString,
-            google_event_id: createdEvent.data.id!,
-          });
-        }
-      } catch (error: unknown) {
-        // Define interface for Google Calendar API errors
-        interface GoogleApiError {
-          response?: {
-            status?: number;
-          };
-        }
+          if (createdEvent.data?.id) {
+            createdOccurrences.push({
+              id: crypto.randomUUID(),
+              event_id: eventId,
+              gregorian_date: dateString,
+              google_event_id: createdEvent.data.id!,
+            });
+          }
+        } catch (error: unknown) {
+          // Define interface for Google Calendar API errors
+          interface GoogleApiError {
+            response?: {
+              status?: number;
+            };
+          }
 
-        // If calendar not found (404), try to create/find a new calendar and retry
-        if (
-          (error as GoogleApiError)?.response?.status === 404 &&
-          year === yearRange[0]
-        ) {
-          console.warn(
-            `Calendar ${calendarId} not found, attempting to create/find new calendar`,
-          );
-
-          try {
-            const calendarCheck = await ensureCalendarExists(
-              session.accessToken!,
-              session.user.id,
-              undefined, // Force search/create
+          // If calendar not found (404), try to create/find a new calendar and retry
+          if (
+            (error as GoogleApiError)?.response?.status === 404 &&
+            year === yearRange[0]
+          ) {
+            console.warn(
+              `Calendar ${calendarId} not found, attempting to create/find new calendar`,
             );
 
-            if (calendarCheck.calendarId) {
-              calendarId = calendarCheck.calendarId;
-              console.info(`Using new calendar: ${calendarId}`);
+            try {
+              const calendarCheck = await ensureCalendarExists(
+                session.accessToken!,
+                session.user.id,
+                undefined, // Force search/create
+              );
 
-              // Retry the event creation with new calendar ID
-              const createdEvent = await withGoogleCalendarRetry(async () => {
-                return await calendar.events.insert({
-                  calendarId: calendarId!,
-                  requestBody: eventData,
-                });
-              }, `Retry create event for year ${year} with new calendar`);
+              if (calendarCheck.calendarId) {
+                calendarId = calendarCheck.calendarId;
+                console.info(`Using new calendar: ${calendarId}`);
 
-              if (createdEvent.data?.id) {
-                createdOccurrences.push({
-                  id: crypto.randomUUID(),
-                  event_id: eventId,
-                  gregorian_date: dateString,
-                  google_event_id: createdEvent.data.id!,
-                });
+                // Retry the event creation with new calendar ID
+                const createdEvent = await withGoogleCalendarRetry(async () => {
+                  return await calendar.events.insert({
+                    calendarId: calendarId!,
+                    requestBody: eventData,
+                  });
+                }, `Retry create event for year ${year} with new calendar`);
+
+                if (createdEvent.data?.id) {
+                  createdOccurrences.push({
+                    id: crypto.randomUUID(),
+                    event_id: eventId,
+                    gregorian_date: dateString,
+                    google_event_id: createdEvent.data.id!,
+                  });
+                }
+              } else {
+                console.error(
+                  `Failed to create event for year ${year}: Could not create/find calendar`,
+                );
               }
-            } else {
+            } catch (retryError) {
               console.error(
-                `Failed to create event for year ${year}: Could not create/find calendar`,
+                `Failed to create event for year ${year} even after calendar retry:`,
+                retryError,
               );
             }
-          } catch (retryError) {
-            console.error(
-              `Failed to create event for year ${year} even after calendar retry:`,
-              retryError,
-            );
+          } else {
+            console.error(`Failed to create event for year ${year}:`, error);
           }
-        } else {
-          console.error(`Failed to create event for year ${year}:`, error);
+          // Continue to the next year even if one fails
         }
-        // Continue to the next year even if one fails
       }
-    }
 
-    // Batch insert event occurrences for better performance
-    if (createdOccurrences.length > 0) {
-      await createEventOccurrence(createdOccurrences[0]);
-      for (let i = 1; i < createdOccurrences.length; i++) {
-        await createEventOccurrence(createdOccurrences[i]);
+      // Batch insert event occurrences for better performance
+      if (createdOccurrences.length > 0) {
+        await createEventOccurrence(createdOccurrences[0]);
+        for (let i = 1; i < createdOccurrences.length; i++) {
+          await createEventOccurrence(createdOccurrences[i]);
+        }
       }
     }
 

@@ -21,6 +21,7 @@ import {
   deleteEvent,
   getEventOccurrencesByEventId,
   deleteEventOccurrencesByEventId,
+  isEventSynced,
 } from '@/lib/db-utils';
 import { withGoogleCalendarRetry, AppError } from '@/lib/retry';
 
@@ -116,6 +117,16 @@ export async function PUT(
       hebrew_day,
       recurrence_rule,
     });
+
+    // Check if event is synced with Google Calendar
+    const eventIsSynced = await isEventSynced(id);
+
+    if (!eventIsSynced) {
+      // Event is not synced, return success without Google Calendar operations
+      return NextResponse.json(
+        createSuccessResponse(undefined, 'Event updated successfully'),
+      );
+    }
 
     const occurrences = await getEventOccurrencesByEventId(id);
 

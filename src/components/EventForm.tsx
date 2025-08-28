@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
+import { useGcalSync } from '@/hooks/useGcalSync';
 
 interface EventFormProps {
   onAddEvent: (event: Omit<Event, 'id'>) => void;
@@ -17,6 +18,7 @@ export default function EventForm({
   selectedDate,
 }: EventFormProps) {
   const { t, i18n } = useTranslation();
+  const { syncEnabled: userSyncEnabled } = useGcalSync();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [hebrew_year, setHebrewYear] = useState(new HDate().getFullYear());
@@ -25,6 +27,7 @@ export default function EventForm({
   );
   const [hebrew_day, setHebrewDay] = useState(new HDate().getDate());
   const [recurrence_rule, _setRecurrenceRule] = useState('yearly');
+  const [syncWithGcal, setSyncWithGcal] = useState(userSyncEnabled);
 
   useEffect(() => {
     if (selectedDate) {
@@ -34,6 +37,10 @@ export default function EventForm({
       setHebrewDay(hdate.getDate());
     }
   }, [selectedDate]);
+
+  useEffect(() => {
+    setSyncWithGcal(userSyncEnabled);
+  }, [userSyncEnabled]);
 
   const numMonths = HDate.monthsInYear(hebrew_year);
   const yearMonths = Array.from({ length: numMonths }, (_, i) => {
@@ -70,9 +77,11 @@ export default function EventForm({
       hebrew_month: hebrew_month_num,
       hebrew_day,
       recurrence_rule,
+      sync_with_gcal: syncWithGcal,
     });
     setTitle('');
     setDescription('');
+    setSyncWithGcal(userSyncEnabled); // Reset to user preference
   };
 
   return (
@@ -181,6 +190,24 @@ export default function EventForm({
         </select>
       </div>
       */}
+
+      {/* Google Calendar Sync Checkbox */}
+      <div className='flex items-center'>
+        <input
+          id='syncWithGcal'
+          type='checkbox'
+          checked={syncWithGcal}
+          onChange={(e) => setSyncWithGcal(e.target.checked)}
+          className='h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800'
+        />
+        <label
+          htmlFor='syncWithGcal'
+          className='ms-2 block text-sm text-gray-700 dark:text-gray-300'
+        >
+          {t('Sync with Google Calendar')}
+        </label>
+      </div>
+
       <button
         type='submit'
         disabled={isCreating}

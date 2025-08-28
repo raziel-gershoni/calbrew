@@ -57,6 +57,7 @@ export default function CalendarView() {
     isCreating,
     isSaving,
     isDeleting,
+    fetchEvents,
     createEvent,
     updateEvent,
     deleteEvent,
@@ -567,6 +568,21 @@ export default function CalendarView() {
                     setSelectedEvent(null);
                   } catch (error) {
                     console.error('Error updating event:', error);
+                  }
+                }}
+                onSync={async (id: string) => {
+                  try {
+                    const response = await fetch(`/api/events/${id}/sync`, {
+                      method: 'POST',
+                    });
+                    if (!response.ok) {
+                      throw new Error('Failed to sync event');
+                    }
+                    // Refresh events after successful sync
+                    await fetchEvents();
+                  } catch (error) {
+                    console.error('Error syncing event:', error);
+                    throw error; // Re-throw to let EventDetails handle the error state
                   }
                 }}
                 isSaving={isSaving}
