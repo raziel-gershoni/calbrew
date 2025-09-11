@@ -77,6 +77,9 @@ const resources = {
       'Start syncing with Google Calendar':
         'Start syncing with Google Calendar',
       'Syncing...': 'Syncing...',
+      // Hebrew Calendar Events
+      'Hebrew Calendar Events': 'Hebrew Calendar Events',
+      'Your Events': 'Your Events',
     },
   },
   he: {
@@ -152,6 +155,9 @@ const resources = {
       'Checking sync status...': 'בודק סטטוס סינכרון...',
       'Start syncing with Google Calendar': 'התחל סינכרון עם יומן גוגל',
       'Syncing...': 'מסנכרן...',
+      // Hebrew Calendar Events
+      'Hebrew Calendar Events': 'אירועי לוח עברי',
+      'Your Events': 'האירועים שלך',
     },
   },
   es: {
@@ -229,6 +235,9 @@ const resources = {
       'Start syncing with Google Calendar':
         'Comenzar sincronización con Google Calendar',
       'Syncing...': 'Sincronizando...',
+      // Hebrew Calendar Events
+      'Hebrew Calendar Events': 'Eventos del Calendario Hebreo',
+      'Your Events': 'Tus Eventos',
     },
   },
 };

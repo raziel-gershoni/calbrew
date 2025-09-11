@@ -1,4 +1,11 @@
-import { HDate, Locale, gematriya } from '@hebcal/core';
+import {
+  HDate,
+  Locale,
+  gematriya,
+  HebrewCalendar,
+  Event,
+  flags,
+} from '@hebcal/core';
 
 export interface HebrewDateRange {
   startYear: number;
@@ -211,9 +218,9 @@ export function getOverlappingGregorianMonths(
     const firstYear = firstDayGregorian.getFullYear();
     const lastYear = lastDayGregorian.getFullYear();
     if (firstYear === lastYear) {
-      return `${firstMonth}/${lastMonth}, ${firstYear}`;
+      return `${firstMonth} - ${lastMonth}, ${firstYear}`;
     } else {
-      return `${firstMonth}, ${firstYear}/${lastMonth}, ${lastYear}`;
+      return `${firstMonth}, ${firstYear} - ${lastMonth}, ${lastYear}`;
     }
   }
 }
@@ -265,14 +272,217 @@ export function getOverlappingHebrewMonths(
         : lastDayHebrew.getFullYear().toString();
 
     if (firstDayHebrew.getFullYear() === lastDayHebrew.getFullYear()) {
-      return `${localizedFirstMonth}/${localizedLastMonth}, ${firstYear}`;
+      return `${localizedFirstMonth} - ${localizedLastMonth}, ${firstYear}`;
     } else {
-      return `${localizedFirstMonth}, ${firstYear}/${localizedLastMonth}, ${lastYear}`;
+      return `${localizedFirstMonth}, ${firstYear} - ${localizedLastMonth}, ${lastYear}`;
     }
   }
 }
 
 /**
- * Check if year changes within a month and return appropriate year display
- * This function is now removed as we handle years directly in the overlapping month functions
+ * Hebrew calendar event interface
  */
+export interface HebrewCalendarEvent {
+  id: string;
+  title: string;
+  date: Date;
+  hebrewDate: HDate;
+  type:
+    | 'holiday'
+    | 'fast'
+    | 'rosh_chodesh'
+    | 'parsha'
+    | 'omer'
+    | 'molad'
+    | 'special_shabbat'
+    | 'minor_holiday'
+    | 'modern_holiday'
+    | 'other';
+  flags: number;
+}
+
+/**
+ * Get event type based on HebCal flags
+ */
+function getEventType(eventFlags: number): HebrewCalendarEvent['type'] {
+  if (eventFlags & flags.CHAG || eventFlags & flags.YOM_TOV_ENDS) {
+    return 'holiday';
+  }
+  if (eventFlags & flags.MAJOR_FAST || eventFlags & flags.MINOR_FAST) {
+    return 'fast';
+  }
+  if (eventFlags & flags.ROSH_CHODESH) {
+    return 'rosh_chodesh';
+  }
+  if (eventFlags & flags.PARSHA_HASHAVUA) {
+    return 'parsha';
+  }
+  if (eventFlags & flags.OMER_COUNT) {
+    return 'omer';
+  }
+  if (eventFlags & flags.MOLAD) {
+    return 'molad';
+  }
+  if (eventFlags & flags.SPECIAL_SHABBAT) {
+    return 'special_shabbat';
+  }
+  if (eventFlags & flags.MINOR_HOLIDAY) {
+    return 'minor_holiday';
+  }
+  if (eventFlags & flags.MODERN_HOLIDAY) {
+    return 'modern_holiday';
+  }
+  return 'other';
+}
+
+/**
+ * Get Hebrew calendar events for a Hebrew month
+ */
+export function getHebrewEventsForHebrewMonth(
+  hebrewMonth: number,
+  hebrewYear: number,
+  language: string = 'en',
+): HebrewCalendarEvent[] {
+  try {
+    const events = HebrewCalendar.calendar({
+      year: hebrewYear,
+      month: hebrewMonth,
+      isHebrewYear: true,
+      il: true, // Use Israeli schedule for holidays and Torah readings
+    });
+
+    return events.map((event: Event, index: number) => {
+      const hebrewDate = event.getDate();
+      let title =
+        language === 'he'
+          ? event.render('he') || event.renderBrief('he') || event.getDesc()
+          : event.getDesc(); // Already transliterated by default
+
+      // Convert Hebrew years to gematriya when displaying in Hebrew
+      if (language === 'he' && title) {
+        // Replace any 4-digit Hebrew years (5xxx) with gematriya
+        title = title.replace(/\b5\d{3}\b/g, (match) => {
+          const year = parseInt(match);
+          return gematriya(year);
+        });
+      }
+
+      return {
+        id: `hebrew-event-${hebrewYear}-${hebrewMonth}-${index}`,
+        title,
+        date: hebrewDate.greg(),
+        hebrewDate,
+        type: getEventType(event.getFlags()),
+        flags: event.getFlags(),
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching Hebrew events for Hebrew month:', error);
+    return [];
+  }
+}
+
+/**
+ * Get Hebrew calendar events for a Gregorian month
+ */
+export function getHebrewEventsForGregorianMonth(
+  gregorianMonth: number, // 1-12
+  gregorianYear: number,
+  language: string = 'en',
+): HebrewCalendarEvent[] {
+  try {
+    const events = HebrewCalendar.calendar({
+      year: gregorianYear,
+      month: gregorianMonth,
+      isHebrewYear: false,
+      il: true, // Use Israeli schedule for holidays and Torah readings
+    });
+
+    return events.map((event: Event, index: number) => {
+      const hebrewDate = event.getDate();
+      let title =
+        language === 'he'
+          ? event.render('he') || event.renderBrief('he') || event.getDesc()
+          : event.getDesc(); // Already transliterated by default
+
+      // Convert Hebrew years to gematriya when displaying in Hebrew
+      if (language === 'he' && title) {
+        // Replace any 4-digit Hebrew years (5xxx) with gematriya
+        title = title.replace(/\b5\d{3}\b/g, (match) => {
+          const year = parseInt(match);
+          return gematriya(year);
+        });
+      }
+
+      return {
+        id: `hebrew-event-${gregorianYear}-${gregorianMonth}-${index}`,
+        title,
+        date: hebrewDate.greg(),
+        hebrewDate,
+        type: getEventType(event.getFlags()),
+        flags: event.getFlags(),
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching Hebrew events for Gregorian month:', error);
+    return [];
+  }
+}
+
+/**
+ * Get Hebrew calendar events for a date range using start/end dates
+ */
+function getHebrewEventsForDateRange(
+  startDate: Date,
+  endDate: Date,
+  language: string = 'en',
+): HebrewCalendarEvent[] {
+  try {
+    const events = HebrewCalendar.calendar({
+      start: startDate,
+      end: endDate,
+      il: true, // Use Israeli schedule for holidays and Torah readings
+    });
+
+    return events.map((event: Event, index: number) => {
+      const hebrewDate = event.getDate();
+      let title =
+        language === 'he'
+          ? event.render('he') || event.renderBrief('he') || event.getDesc()
+          : event.getDesc(); // Already transliterated by default
+
+      // Convert Hebrew years to gematriya when displaying in Hebrew
+      if (language === 'he' && title) {
+        // Replace any 4-digit Hebrew years (5xxx) with gematriya
+        title = title.replace(/\b5\d{3}\b/g, (match) => {
+          const year = parseInt(match);
+          return gematriya(year);
+        });
+      }
+
+      return {
+        id: `hebrew-event-range-${index}`,
+        title,
+        date: hebrewDate.greg(),
+        hebrewDate,
+        type: getEventType(event.getFlags()),
+        flags: event.getFlags(),
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching Hebrew events for date range:', error);
+    return [];
+  }
+}
+
+/**
+ * Get Hebrew calendar events for a specific date range (renamed export)
+ * Uses the exact date range from the calendar grid to show events in overlapping days
+ */
+export function getHebrewEventsForCalendarRange(
+  startDate: Date,
+  endDate: Date,
+  language: string = 'en',
+): HebrewCalendarEvent[] {
+  return getHebrewEventsForDateRange(startDate, endDate, language);
+}

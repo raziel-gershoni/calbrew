@@ -12,11 +12,14 @@ import CalendarHeader from './CalendarHeader';
 import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
 import { useEvents } from '@/hooks/useEvents';
+import { useHebrewEvents } from '@/hooks/useHebrewEvents';
 import {
   generateEventOccurrences,
   EventOccurrence,
   getOverlappingGregorianMonths,
   getOverlappingHebrewMonths,
+  getHebrewEventsForCalendarRange,
+  HebrewCalendarEvent,
 } from '@/utils/hebrewDateUtils';
 
 // Types
@@ -52,6 +55,7 @@ export default function CalendarView() {
   const { t, i18n } = useTranslation();
   const { calendarMode } = useCalendarMode();
   const actualCalendarMode = calendarMode;
+  const { showHebrewEvents } = useHebrewEvents();
 
   const {
     events: masterEvents,
@@ -89,6 +93,7 @@ export default function CalendarView() {
 
   // Event display state
   const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
+  const [hebrewEvents, setHebrewEvents] = useState<HebrewCalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<EventOccurrence | null>(
     null,
@@ -179,6 +184,20 @@ export default function CalendarView() {
     );
     setOccurrences(newOccurrences);
   }, [masterEvents, calendarViewRange]);
+
+  // Fetch Hebrew calendar events for the entire calendar view range
+  useEffect(() => {
+    if (showHebrewEvents) {
+      const events = getHebrewEventsForCalendarRange(
+        calendarViewRange.start,
+        calendarViewRange.end,
+        i18n.language,
+      );
+      setHebrewEvents(events);
+    } else {
+      setHebrewEvents([]);
+    }
+  }, [showHebrewEvents, calendarViewRange, i18n.language]);
 
   // Generate Hebrew month view with overlapping days
   const hebrewCalendarGrid = useMemo(() => {
@@ -404,6 +423,18 @@ export default function CalendarView() {
   const eventsForSelectedDate = selectedDate
     ? getEventsForDate(selectedDate)
     : [];
+
+  const hebrewEventsForSelectedDate =
+    selectedDate && showHebrewEvents
+      ? hebrewEvents.filter((hebrewEvent) => {
+          const eventDate = hebrewEvent.date;
+          return (
+            eventDate.getDate() === selectedDate.getDate() &&
+            eventDate.getMonth() === selectedDate.getMonth() &&
+            eventDate.getFullYear() === selectedDate.getFullYear()
+          );
+        })
+      : [];
 
   // Navigation functions
   const navigateHebrewMonth = (direction: 'prev' | 'next') => {
@@ -702,6 +733,7 @@ export default function CalendarView() {
                 // Get events for this day
                 let dateToCheck: Date;
                 let dayEvents: EventOccurrence[] = [];
+                let dayHebrewEvents: HebrewCalendarEvent[] = [];
 
                 if (
                   actualCalendarMode === 'hebrew' &&
@@ -717,6 +749,18 @@ export default function CalendarView() {
                 ) {
                   dateToCheck = day.date;
                   dayEvents = getEventsForDate(dateToCheck);
+                }
+
+                // Get Hebrew calendar events for this day
+                if (dateToCheck! && showHebrewEvents) {
+                  dayHebrewEvents = hebrewEvents.filter((hebrewEvent) => {
+                    const eventDate = hebrewEvent.date;
+                    return (
+                      eventDate.getDate() === dateToCheck.getDate() &&
+                      eventDate.getMonth() === dateToCheck.getMonth() &&
+                      eventDate.getFullYear() === dateToCheck.getFullYear()
+                    );
+                  });
                 }
 
                 return (
@@ -780,7 +824,21 @@ export default function CalendarView() {
 
                         {/* Events column (right in LTR, left in RTL) */}
                         <div className='calendar-cell-events'>
-                          {/* Event titles (shown in larger cells via CSS) */}
+                          {/* Hebrew Calendar Event titles (shown first/on top in larger cells via CSS) */}
+                          {dayHebrewEvents.map((hebrewEvent, idx) => (
+                            <div
+                              key={`hebrew-${idx}`}
+                              className='calendar-cell-hebrew-event'
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDayClick(dateToCheck || new Date());
+                              }}
+                            >
+                              {hebrewEvent.title}
+                            </div>
+                          ))}
+
+                          {/* User Event titles (shown after Hebrew events in larger cells via CSS) */}
                           {dayEvents.map((event, idx) => (
                             <div
                               key={idx}
@@ -795,24 +853,35 @@ export default function CalendarView() {
                           ))}
 
                           {/* Legacy indicators (hidden in compact cells via CSS) */}
-                          {dayEvents.length > 0 && (
+                          {(dayEvents.length > 0 ||
+                            dayHebrewEvents.length > 0) && (
                             <>
                               <div className='calendar-cell-event-indicator'></div>
-                              {dayEvents.length > 1 && (
+                              {dayEvents.length + dayHebrewEvents.length >
+                                1 && (
                                 <div className='calendar-cell-event-count'>
-                                  +{dayEvents.length - 1}
+                                  +
+                                  {dayEvents.length +
+                                    dayHebrewEvents.length -
+                                    1}
                                 </div>
                               )}
                             </>
                           )}
 
                           {/* New circular badge for compact cells (shown via CSS) */}
-                          {dayEvents.length > 0 && (
+                          {(dayEvents.length > 0 ||
+                            dayHebrewEvents.length > 0) && (
                             <div
                               className='calendar-cell-event-badge cursor-pointer'
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (dayEvents.length === 1) {
+                                const totalEvents =
+                                  dayEvents.length + dayHebrewEvents.length;
+                                if (
+                                  totalEvents === 1 &&
+                                  dayEvents.length === 1
+                                ) {
                                   handleEventClick(dayEvents[0]);
                                 } else {
                                   // If multiple events, clicking the badge will select the day to show all events in sidebar
@@ -820,7 +889,7 @@ export default function CalendarView() {
                                 }
                               }}
                             >
-                              {dayEvents.length}
+                              {dayEvents.length + dayHebrewEvents.length}
                             </div>
                           )}
                         </div>
@@ -837,6 +906,7 @@ export default function CalendarView() {
             <DayEvents
               selectedDate={selectedDate}
               events={eventsForSelectedDate}
+              hebrewEvents={hebrewEventsForSelectedDate}
               onEventClick={handleEventClick}
               onAddEventClick={() => setIsModalOpen(true)}
             />

@@ -3,11 +3,12 @@
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
-import { EventOccurrence } from '@/utils/hebrewDateUtils';
+import { EventOccurrence, HebrewCalendarEvent } from '@/utils/hebrewDateUtils';
 import { useCalendarMode } from '@/contexts/CalendarModeContext';
 
 interface DayEventsProps {
   events: EventOccurrence[];
+  hebrewEvents?: HebrewCalendarEvent[];
   onEventClick: (event: EventOccurrence) => void;
   onAddEventClick: () => void;
   selectedDate: Date | null;
@@ -15,6 +16,7 @@ interface DayEventsProps {
 
 export default function DayEvents({
   events,
+  hebrewEvents = [],
   onEventClick,
   onAddEventClick,
   selectedDate,
@@ -91,26 +93,57 @@ export default function DayEvents({
         </div>
       </div>
       <div className='flex-1 min-h-0 p-4 overflow-hidden'>
-        {events.length > 0 ? (
+        {events.length > 0 || hebrewEvents.length > 0 ? (
           <div className='h-full overflow-y-auto'>
-            <ul className='text-start space-y-2'>
-              {events.map((event) => (
-                <li
-                  key={event.id}
-                  onClick={() => onEventClick(event)}
-                  className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-3 rounded-md border border-gray-200 dark:border-gray-600 transition-colors'
-                >
-                  <div className='font-medium text-gray-900 dark:text-gray-100'>
-                    {event.title}
-                  </div>
-                  {event.description && (
-                    <div className='text-sm text-gray-500 dark:text-gray-400 mt-1 truncate'>
-                      {event.description}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <div className='text-start space-y-4'>
+              {/* Hebrew Calendar Events Section - ON TOP */}
+              {hebrewEvents.length > 0 && (
+                <div>
+                  <h3 className='text-sm font-semibold text-purple-700 dark:text-purple-300 mb-2 uppercase tracking-wide'>
+                    {t('Hebrew Calendar')}
+                  </h3>
+                  <ul className='space-y-2'>
+                    {hebrewEvents.map((hebrewEvent) => (
+                      <li
+                        key={hebrewEvent.id}
+                        className='p-3 rounded-md border border-purple-200 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20'
+                      >
+                        <div className='font-medium text-purple-900 dark:text-purple-100'>
+                          {hebrewEvent.title}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* User Events Section - BELOW Hebrew events */}
+              {events.length > 0 && (
+                <div>
+                  <h3 className='text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 uppercase tracking-wide'>
+                    {t('Your Events')}
+                  </h3>
+                  <ul className='space-y-2'>
+                    {events.map((event) => (
+                      <li
+                        key={event.id}
+                        onClick={() => onEventClick(event)}
+                        className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-3 rounded-md border border-gray-200 dark:border-gray-600 transition-colors'
+                      >
+                        <div className='font-medium text-gray-900 dark:text-gray-100'>
+                          {event.title}
+                        </div>
+                        {event.description && (
+                          <div className='text-sm text-gray-500 dark:text-gray-400 mt-1 truncate'>
+                            {event.description}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className='flex items-center justify-center h-full'>

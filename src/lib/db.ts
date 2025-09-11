@@ -41,6 +41,7 @@ db.serialize(() => {
       image TEXT,
       calbrew_calendar_id TEXT,
       language TEXT DEFAULT 'en',
+      hebrew_events_enabled BOOLEAN DEFAULT 1,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
@@ -48,6 +49,19 @@ db.serialize(() => {
     (err) => {
       if (err) {
         console.error('Error creating users table:', err.message);
+      }
+    },
+  );
+
+  // Add hebrew_events_enabled column if it doesn't exist (migration)
+  db.run(
+    `ALTER TABLE users ADD COLUMN hebrew_events_enabled BOOLEAN DEFAULT 1`,
+    (err) => {
+      if (err && !err.message.includes('duplicate column name')) {
+        console.error(
+          'Error adding hebrew_events_enabled column:',
+          err.message,
+        );
       }
     },
   );

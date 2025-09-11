@@ -9,6 +9,7 @@ import {
   type CalendarMode,
 } from '@/contexts/CalendarModeContext';
 import { useGcalSync } from '@/hooks/useGcalSync';
+import { useHebrewEvents } from '@/hooks/useHebrewEvents';
 
 interface HamburgerMenuProps {
   onOpenProfile?: () => void;
@@ -31,6 +32,11 @@ export default function HamburgerMenu({
     isLoading: isSyncLoading,
     updateSyncPreference,
   } = useGcalSync();
+  const {
+    showHebrewEvents,
+    isLoading: isHebrewEventsLoading,
+    updateShowHebrewEvents,
+  } = useHebrewEvents();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -72,6 +78,11 @@ export default function HamburgerMenu({
 
   const handleSyncToggle = async () => {
     await updateSyncPreference(!syncEnabled);
+    // Keep hamburger open so user can see the process
+  };
+
+  const handleHebrewEventsToggle = async () => {
+    await updateShowHebrewEvents(!showHebrewEvents);
     // Keep hamburger open so user can see the process
   };
 
@@ -330,6 +341,76 @@ export default function HamburgerMenu({
                   {isSyncLoading && (
                     <svg
                       className='w-2 h-2 animate-spin text-blue-600'
+                      fill='none'
+                      viewBox='0 0 24 24'
+                    >
+                      <circle
+                        className='opacity-25'
+                        cx='12'
+                        cy='12'
+                        r='10'
+                        stroke='currentColor'
+                        strokeWidth='4'
+                      />
+                      <path
+                        className='opacity-75'
+                        fill='currentColor'
+                        d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                      />
+                    </svg>
+                  )}
+                </div>
+              </div>
+            </button>
+
+            {/* Divider */}
+            <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
+
+            {/* Hebrew Calendar Events */}
+            <button
+              onClick={handleHebrewEventsToggle}
+              disabled={isHebrewEventsLoading}
+              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-colors duration-200'
+            >
+              <div className='flex items-center'>
+                <svg
+                  className='w-4 h-4 me-3'
+                  fill='none'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth='2'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
+                </svg>
+                {t('Hebrew Calendar Events')}
+              </div>
+              <div className='relative'>
+                <input
+                  type='checkbox'
+                  checked={showHebrewEvents}
+                  onChange={() => {}} // Handled by button onClick
+                  className='sr-only'
+                />
+                <div
+                  className={`block w-8 h-4 rounded-full transition-all duration-200 ${
+                    isHebrewEventsLoading
+                      ? 'bg-purple-400 animate-pulse'
+                      : showHebrewEvents
+                        ? 'bg-purple-600'
+                        : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                ></div>
+                <div
+                  className={`absolute left-0 top-0 bg-white w-4 h-4 rounded-full transition-all duration-200 shadow flex items-center justify-center ${
+                    showHebrewEvents ? 'translate-x-4' : 'translate-x-0'
+                  }`}
+                >
+                  {isHebrewEventsLoading && (
+                    <svg
+                      className='animate-spin w-2 h-2 text-gray-400'
+                      xmlns='http://www.w3.org/2000/svg'
                       fill='none'
                       viewBox='0 0 24 24'
                     >
