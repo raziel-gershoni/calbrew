@@ -15,6 +15,8 @@ import { useEvents } from '@/hooks/useEvents';
 import {
   generateEventOccurrences,
   EventOccurrence,
+  getOverlappingGregorianMonths,
+  getOverlappingHebrewMonths,
 } from '@/utils/hebrewDateUtils';
 
 // Types
@@ -185,16 +187,10 @@ export default function CalendarView() {
     }
 
     const days: (HebrewDay | null)[][] = [];
-    let dayCount = 29;
-    try {
-      const testDate = new HDate(30, hebrewMonth, hebrewYear);
-      const firstOfMonth = new HDate(1, hebrewMonth, hebrewYear);
-      if (testDate.getMonth() === firstOfMonth.getMonth()) {
-        dayCount = 30;
-      }
-    } catch {
-      // Month has 29 days
-    }
+
+    // Get the correct number of days in Hebrew month
+    const firstOfMonth = new HDate(1, hebrewMonth, hebrewYear);
+    const dayCount = firstOfMonth.daysInMonth();
 
     const firstDay = new HDate(1, hebrewMonth, hebrewYear);
     const firstDayGregorian = firstDay.greg();
@@ -243,13 +239,10 @@ export default function CalendarView() {
       const lastDayOfMonth = new HDate(dayCount, hebrewMonth, hebrewYear);
       const lastDayGregorian = lastDayOfMonth.greg();
 
+      let dayOffset = 1;
       while (currentWeek.length < 7) {
         const nextDayGregorian = new Date(lastDayGregorian);
-        nextDayGregorian.setDate(
-          nextDayGregorian.getDate() +
-            ((currentWeek.length - ((dayCount - 1) % 7) + 6) % 7) +
-            1,
-        );
+        nextDayGregorian.setDate(lastDayGregorian.getDate() + dayOffset);
         const nextDayHebrew = new HDate(nextDayGregorian);
         currentWeek.push({
           hebrewDay: nextDayHebrew.getDate(),
@@ -260,6 +253,7 @@ export default function CalendarView() {
           hebrewDateString: nextDayHebrew.toString(),
           isCurrentMonth: false,
         });
+        dayOffset++;
       }
       days.push(currentWeek);
     }
@@ -375,15 +369,30 @@ export default function CalendarView() {
         i18n.language === 'he'
           ? Locale.gettext(hebrewMonth, 'he') || hebrewMonth
           : hebrewMonth;
-      const yearDisplay =
+
+      const primaryYear =
         i18n.language === 'he' ? gematriya(hebrewYear) : hebrewYear;
-      return `${hebrewMonthName} ${yearDisplay}`;
+
+      const overlappingGregorianMonths = getOverlappingGregorianMonths(
+        hebrewMonth,
+        hebrewYear,
+        i18n.language,
+      );
+
+      return `${hebrewMonthName} ${primaryYear} (${overlappingGregorianMonths})`;
     } else {
       const date = new Date(gregorianYear, gregorianMonth, 1);
       const monthName = date.toLocaleDateString(i18n.language, {
         month: 'long',
       });
-      return `${monthName} ${gregorianYear}`;
+
+      const overlappingHebrewMonths = getOverlappingHebrewMonths(
+        gregorianMonth,
+        gregorianYear,
+        i18n.language,
+      );
+
+      return `${monthName} ${gregorianYear} (${overlappingHebrewMonths})`;
     }
   };
 
@@ -399,32 +408,49 @@ export default function CalendarView() {
   // Navigation functions
   const navigateHebrewMonth = (direction: 'prev' | 'next') => {
     const currentDate = new HDate(1, hebrewMonth, hebrewYear);
-    const currentMonth = currentDate.getMonth(); // Get numeric month (1-13)
+    const currentMonth = currentDate.getMonth(); // Get numeric month (1=Nisan, 7=Tishrei)
     const currentYear = currentDate.getFullYear();
 
     let newMonth: number;
     let newYear: number;
 
     if (direction === 'next') {
-      // Check if current year is a leap year to handle month count properly
-      const monthsInCurrentYear = currentDate.isLeapYear() ? 13 : 12;
-
-      if (currentMonth < monthsInCurrentYear) {
+      // In Hebrew calendar: 1=Nisan...6=Elul, 7=Tishrei...12/13=Adar(II)
+      // Year boundary is between Elul (6) and Tishrei (7)
+      if (currentMonth === 6) {
+        // Elul -> Tishrei (new year)
+        newMonth = 7; // Tishrei
+        newYear = currentYear + 1;
+      } else if (currentMonth < 6) {
+        // Nisan to Elul (same year)
         newMonth = currentMonth + 1;
         newYear = currentYear;
       } else {
-        newMonth = 1; // Tishrei (start of new year)
-        newYear = currentYear + 1;
+        // Tishrei to Adar (same year)
+        const monthsInCurrentYear = currentDate.isLeapYear() ? 13 : 12;
+        if (currentMonth < monthsInCurrentYear) {
+          newMonth = currentMonth + 1;
+          newYear = currentYear;
+        } else {
+          // Adar -> Nisan (same Hebrew year, but next "cycle")
+          newMonth = 1; // Nisan
+          newYear = currentYear;
+        }
       }
     } else {
-      if (currentMonth > 1) {
-        newMonth = currentMonth - 1;
+      // Previous month navigation
+      if (currentMonth === 7) {
+        // Tishrei -> Elul (previous year)
+        newMonth = 6; // Elul
+        newYear = currentYear - 1;
+      } else if (currentMonth === 1) {
+        // Nisan -> Adar (previous "cycle")
+        const prevYearForAdar = new HDate(1, 1, currentYear);
+        newMonth = prevYearForAdar.isLeapYear() ? 13 : 12; // Adar or Adar II
         newYear = currentYear;
       } else {
-        // Going to previous year's last month
-        newYear = currentYear - 1;
-        const prevYearDate = new HDate(1, 1, newYear);
-        newMonth = prevYearDate.isLeapYear() ? 13 : 12;
+        newMonth = currentMonth - 1;
+        newYear = currentYear;
       }
     }
 
@@ -485,7 +511,7 @@ export default function CalendarView() {
       {/* Event Form Modal */}
       {isModalOpen && (
         <div className='fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50'>
-          <div 
+          <div
             className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto'
             dir={getTextDirection(i18n.language)}
           >
@@ -540,7 +566,7 @@ export default function CalendarView() {
       {/* Event Details Modal */}
       {selectedEvent && !isModalOpen && (
         <div className='fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50'>
-          <div 
+          <div
             className='bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto'
             dir={getTextDirection(i18n.language)}
           >
@@ -746,7 +772,7 @@ export default function CalendarView() {
                               isHebrewDay(day)
                                 ? ` ${getGregorianDate(day).month}`
                                 : isGregorianDay(day)
-                                  ? ` ${getHebrewDate(day.date).month.slice(0, 3)}`
+                                  ? ` ${getHebrewDate(day.date).month}`
                                   : ''}
                             </span>
                           </div>
