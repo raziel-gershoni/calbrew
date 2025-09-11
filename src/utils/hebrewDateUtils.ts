@@ -1,4 +1,4 @@
-import { HDate } from '@hebcal/core';
+import { HDate, Locale, gematriya } from '@hebcal/core';
 
 export interface HebrewDateRange {
   startYear: number;
@@ -178,3 +178,101 @@ export function hebrewToGregorianCached(
 export function clearHebrewDateCache(): void {
   hebrewDateCache.clear();
 }
+
+/**
+ * Get overlapping Gregorian months for a Hebrew month
+ */
+export function getOverlappingGregorianMonths(
+  hebrewMonth: string,
+  hebrewYear: number,
+  language: string = 'en',
+): string {
+  const firstDay = new HDate(1, hebrewMonth, hebrewYear);
+  const firstDayGregorian = firstDay.greg();
+
+  // Get the correct last day using HDate's daysInMonth method
+  const daysInHebrewMonth = firstDay.daysInMonth();
+  const lastDay = new HDate(daysInHebrewMonth, hebrewMonth, hebrewYear);
+  const lastDayGregorian = lastDay.greg();
+
+  const firstMonth = firstDayGregorian.toLocaleDateString(language, {
+    month: 'long',
+  });
+  const lastMonth = lastDayGregorian.toLocaleDateString(language, {
+    month: 'long',
+  });
+
+  if (firstMonth === lastMonth) {
+    // Hebrew month falls entirely within one Gregorian month
+    const year = firstDayGregorian.getFullYear();
+    return `${firstMonth}, ${year}`;
+  } else {
+    // Hebrew month spans two Gregorian months
+    const firstYear = firstDayGregorian.getFullYear();
+    const lastYear = lastDayGregorian.getFullYear();
+    if (firstYear === lastYear) {
+      return `${firstMonth}/${lastMonth}, ${firstYear}`;
+    } else {
+      return `${firstMonth}, ${firstYear}/${lastMonth}, ${lastYear}`;
+    }
+  }
+}
+
+/**
+ * Get overlapping Hebrew months for a Gregorian month
+ */
+export function getOverlappingHebrewMonths(
+  gregorianMonth: number,
+  gregorianYear: number,
+  language: string = 'en',
+): string {
+  const firstDay = new Date(gregorianYear, gregorianMonth, 1);
+  const lastDay = new Date(gregorianYear, gregorianMonth + 1, 0);
+
+  const firstDayHebrew = new HDate(firstDay);
+  const lastDayHebrew = new HDate(lastDay);
+
+  const firstMonthName = firstDayHebrew.getMonthName();
+  const lastMonthName = lastDayHebrew.getMonthName();
+
+  // Get localized Hebrew month names if in Hebrew
+  const getLocalizedHebrewMonth = (monthName: string) => {
+    if (language === 'he') {
+      return Locale.gettext(monthName, 'he') || monthName;
+    }
+    return monthName;
+  };
+
+  const localizedFirstMonth = getLocalizedHebrewMonth(firstMonthName);
+  const localizedLastMonth = getLocalizedHebrewMonth(lastMonthName);
+
+  if (firstMonthName === lastMonthName) {
+    // Gregorian month falls entirely within one Hebrew month
+    const year =
+      language === 'he'
+        ? gematriya(firstDayHebrew.getFullYear())
+        : firstDayHebrew.getFullYear().toString();
+    return `${localizedFirstMonth}, ${year}`;
+  } else {
+    // Gregorian month spans two Hebrew months
+    const firstYear =
+      language === 'he'
+        ? gematriya(firstDayHebrew.getFullYear())
+        : firstDayHebrew.getFullYear().toString();
+    const lastYear =
+      language === 'he'
+        ? gematriya(lastDayHebrew.getFullYear())
+        : lastDayHebrew.getFullYear().toString();
+
+    if (firstDayHebrew.getFullYear() === lastDayHebrew.getFullYear()) {
+      return `${localizedFirstMonth}/${localizedLastMonth}, ${firstYear}`;
+    } else {
+      return `${localizedFirstMonth}, ${firstYear}/${localizedLastMonth}, ${lastYear}`;
+    }
+  }
+}
+
+/**
+ * Check if year changes within a month and return appropriate year display
+ * This function is now removed as we handle years directly in the overlapping month functions
+ */
