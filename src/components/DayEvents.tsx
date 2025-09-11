@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
 import { EventOccurrence, HebrewCalendarEvent } from '@/utils/hebrewDateUtils';
 import { useCalendarMode } from '@/contexts/CalendarModeContext';
+import { PlusIcon, CalendarIcon } from '@heroicons/react/24/outline';
 
 interface DayEventsProps {
   events: EventOccurrence[];
@@ -87,8 +88,9 @@ export default function DayEvents({
           <button
             onClick={onAddEventClick}
             className='bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition-colors'
+            title={t('Add Event')}
           >
-            {t('Add Event')}
+            <PlusIcon className='h-5 w-5' />
           </button>
         </div>
       </div>
@@ -148,7 +150,7 @@ export default function DayEvents({
         ) : (
           <div className='flex items-center justify-center h-full'>
             <div className='text-center text-gray-500 dark:text-gray-400'>
-              <p className='text-lg mb-2'>📅</p>
+              <CalendarIcon className='w-8 h-8 mb-2 text-gray-400 mx-auto' />
               <p className='text-sm'>
                 {selectedDate
                   ? t('No events for this date')

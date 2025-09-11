@@ -10,6 +10,15 @@ import {
 } from '@/contexts/CalendarModeContext';
 import { useGcalSync } from '@/hooks/useGcalSync';
 import { useHebrewEvents } from '@/hooks/useHebrewEvents';
+import {
+  Bars3Icon,
+  LanguageIcon,
+  CalendarDaysIcon,
+  CalendarDateRangeIcon,
+  ArrowPathIcon,
+  UserIcon,
+  ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline';
 
 interface HamburgerMenuProps {
   onOpenProfile?: () => void;
@@ -107,17 +116,7 @@ export default function HamburgerMenu({
         aria-label={t('Menu')}
         aria-expanded={isOpen}
       >
-        <svg
-          className='w-6 h-6 text-gray-600 dark:text-gray-300'
-          fill='none'
-          strokeLinecap='round'
-          strokeLinejoin='round'
-          strokeWidth='2'
-          viewBox='0 0 24 24'
-          stroke='currentColor'
-        >
-          <path d='M4 6h16M4 12h16M4 18h16' />
-        </svg>
+        <Bars3Icon className='w-6 h-6 text-gray-600 dark:text-gray-300' />
       </button>
 
       {/* Dropdown Menu */}
@@ -127,124 +126,61 @@ export default function HamburgerMenu({
           className='absolute end-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50'
         >
           <div className='py-2'>
-            {/* English */}
-            <button
-              onClick={() => handleLanguageSelect('en')}
-              disabled={isLanguageLoading}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200 ${
-                i18n.language === 'en'
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                  : 'text-gray-700 dark:text-gray-200'
-              }`}
-            >
-              <svg
-                className='w-4 h-4 me-3'
-                fill='none'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth='2'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-              >
-                <path d='M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' />
-              </svg>
-              {i18n.language === 'en' && (
-                <svg
-                  className='w-3 h-3 me-2'
-                  fill='currentColor'
-                  viewBox='0 0 20 20'
+            {/* Language Section */}
+            <div className='px-4 py-2'>
+              <div className='flex items-center mb-2'>
+                <LanguageIcon className='w-4 h-4 me-2' />
+                <div className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  {t('Language')}
+                </div>
+              </div>
+              <div className='flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1'>
+                <button
+                  onClick={() => handleLanguageSelect('en')}
+                  disabled={isLanguageLoading}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    i18n.language === 'en'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                  }`}
                 >
-                  <path
-                    fillRule='evenodd'
-                    d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                    clipRule='evenodd'
-                  />
-                </svg>
-              )}
-              English
-            </button>
-
-            {/* Spanish */}
-            <button
-              onClick={() => handleLanguageSelect('es')}
-              disabled={isLanguageLoading}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200 ${
-                i18n.language === 'es'
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                  : 'text-gray-700 dark:text-gray-200'
-              }`}
-            >
-              <svg
-                className='w-4 h-4 me-3'
-                fill='none'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth='2'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-              >
-                <path d='M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' />
-              </svg>
-              {i18n.language === 'es' && (
-                <svg
-                  className='w-3 h-3 me-2'
-                  fill='currentColor'
-                  viewBox='0 0 20 20'
+                  EN
+                </button>
+                <button
+                  onClick={() => handleLanguageSelect('es')}
+                  disabled={isLanguageLoading}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    i18n.language === 'es'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                  }`}
                 >
-                  <path
-                    fillRule='evenodd'
-                    d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                    clipRule='evenodd'
-                  />
-                </svg>
-              )}
-              Español
-            </button>
-
-            {/* Hebrew */}
-            <button
-              onClick={() => handleLanguageSelect('he')}
-              disabled={isLanguageLoading}
-              className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-colors duration-200 ${
-                i18n.language === 'he'
-                  ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                  : 'text-gray-700 dark:text-gray-200'
-              }`}
-            >
-              <svg
-                className='w-4 h-4 me-3'
-                fill='none'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth='2'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-              >
-                <path d='M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129' />
-              </svg>
-              {i18n.language === 'he' && (
-                <svg
-                  className='w-3 h-3 me-2'
-                  fill='currentColor'
-                  viewBox='0 0 20 20'
+                  ES
+                </button>
+                <button
+                  onClick={() => handleLanguageSelect('he')}
+                  disabled={isLanguageLoading}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    i18n.language === 'he'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                  }`}
                 >
-                  <path
-                    fillRule='evenodd'
-                    d='M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z'
-                    clipRule='evenodd'
-                  />
-                </svg>
-              )}
-              {t('Hebrew')}
-            </button>
+                  HE
+                </button>
+              </div>
+            </div>
 
             {/* Divider */}
             <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
 
             {/* Calendar Mode Section */}
             <div className='px-4 py-2'>
-              <div className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2'>
-                {t('Calendar View')}
+              <div className='flex items-center mb-2'>
+                <CalendarDaysIcon className='w-4 h-4 me-2' />
+                <div className='text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider'>
+                  {t('Calendar View')}
+                </div>
               </div>
               <div className='flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1'>
                 <button
@@ -256,17 +192,6 @@ export default function HamburgerMenu({
                       : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
                   }`}
                 >
-                  <svg
-                    className='w-3 h-3 mx-auto mb-1'
-                    fill='none'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
-                  </svg>
                   {t('Hebrew Calendar')}
                 </button>
                 <button
@@ -278,17 +203,6 @@ export default function HamburgerMenu({
                       : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
                   }`}
                 >
-                  <svg
-                    className='w-3 h-3 mx-auto mb-1'
-                    fill='none'
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth='2'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                  >
-                    <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
-                  </svg>
                   {t('Gregorian')}
                 </button>
               </div>
@@ -304,17 +218,7 @@ export default function HamburgerMenu({
               className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
             >
               <div className='flex items-center'>
-                <svg
-                  className='w-4 h-4 me-3'
-                  fill='none'
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth='2'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                >
-                  <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
-                </svg>
+                <ArrowPathIcon className='w-4 h-4 me-3' />
                 {t('Google Sync')}
               </div>
               <div className='relative'>
@@ -373,17 +277,7 @@ export default function HamburgerMenu({
               className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-colors duration-200'
             >
               <div className='flex items-center'>
-                <svg
-                  className='w-4 h-4 me-3'
-                  fill='none'
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth='2'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                >
-                  <path d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
-                </svg>
+                <CalendarDateRangeIcon className='w-4 h-4 me-3' />
                 {t('Hebrew Calendar Events')}
               </div>
               <div className='relative'>
@@ -441,17 +335,7 @@ export default function HamburgerMenu({
               onClick={handleOpenProfile}
               className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
             >
-              <svg
-                className='w-4 h-4 me-3'
-                fill='none'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth='2'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-              >
-                <path d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
-              </svg>
+              <UserIcon className='w-4 h-4 me-3' />
               {t('User Profile')}
             </button>
 
@@ -460,17 +344,7 @@ export default function HamburgerMenu({
               onClick={handleSignOut}
               className='w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center transition-colors duration-200'
             >
-              <svg
-                className='w-4 h-4 me-3'
-                fill='none'
-                strokeLinecap='round'
-                strokeLinejoin='round'
-                strokeWidth='2'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-              >
-                <path d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' />
-              </svg>
+              <ArrowRightOnRectangleIcon className='w-4 h-4 me-3' />
               {t('Sign Out')}
             </button>
           </div>

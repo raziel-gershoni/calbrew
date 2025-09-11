@@ -1,6 +1,11 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
+import {
+  XMarkIcon,
+  CheckCircleIcon,
+  ArrowRightOnRectangleIcon,
+} from '@heroicons/react/24/outline';
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useRef } from 'react';
 
@@ -78,17 +83,7 @@ export default function UserProfileModal({
             className='text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors'
             aria-label={t('Close')}
           >
-            <svg
-              className='w-6 h-6'
-              fill='none'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth='2'
-              viewBox='0 0 24 24'
-              stroke='currentColor'
-            >
-              <path d='M6 18L18 6M6 6l12 12' />
-            </svg>
+            <XMarkIcon className='w-6 h-6' />
           </button>
         </div>
 
@@ -160,17 +155,7 @@ export default function UserProfileModal({
                     {t('Session Status')}
                   </label>
                   <div className='p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-green-800 dark:text-green-300 flex items-center'>
-                    <svg
-                      className='w-4 h-4 me-2'
-                      fill='currentColor'
-                      viewBox='0 0 20 20'
-                    >
-                      <path
-                        fillRule='evenodd'
-                        d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z'
-                        clipRule='evenodd'
-                      />
-                    </svg>
+                    <CheckCircleIcon className='w-4 h-4 me-2' />
                     {t('Active')}
                   </div>
                 </div>
@@ -191,17 +176,7 @@ export default function UserProfileModal({
             onClick={handleSignOut}
             className='px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors flex items-center'
           >
-            <svg
-              className='w-4 h-4 me-2'
-              fill='none'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth='2'
-              viewBox='0 0 24 24'
-              stroke='currentColor'
-            >
-              <path d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' />
-            </svg>
+            <ArrowRightOnRectangleIcon className='w-4 h-4 me-2' />
             {t('Sign Out')}
           </button>
         </div>

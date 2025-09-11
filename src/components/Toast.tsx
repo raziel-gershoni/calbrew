@@ -1,6 +1,12 @@
 'use client';
 
 import { useState, createContext, useContext, ReactNode } from 'react';
+import {
+  CheckIcon,
+  XMarkIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+} from '@heroicons/react/24/outline';
 
 interface Toast {
   id: string;
@@ -75,69 +81,13 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
     switch (type) {
       case 'success':
-        return (
-          <svg
-            className={iconClass}
-            fill='none'
-            viewBox='0 0 24 24'
-            stroke='currentColor'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M5 13l4 4L19 7'
-            />
-          </svg>
-        );
+        return <CheckIcon className={iconClass} />;
       case 'error':
-        return (
-          <svg
-            className={iconClass}
-            fill='none'
-            viewBox='0 0 24 24'
-            stroke='currentColor'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M6 18L18 6M6 6l12 12'
-            />
-          </svg>
-        );
+        return <XMarkIcon className={iconClass} />;
       case 'warning':
-        return (
-          <svg
-            className={iconClass}
-            fill='none'
-            viewBox='0 0 24 24'
-            stroke='currentColor'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z'
-            />
-          </svg>
-        );
+        return <ExclamationTriangleIcon className={iconClass} />;
       default:
-        return (
-          <svg
-            className={iconClass}
-            fill='none'
-            viewBox='0 0 24 24'
-            stroke='currentColor'
-          >
-            <path
-              strokeLinecap='round'
-              strokeLinejoin='round'
-              strokeWidth={2}
-              d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
-            />
-          </svg>
-        );
+        return <InformationCircleIcon className={iconClass} />;
     }
   };
 
@@ -161,19 +111,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                 onClick={() => removeToast(toast.id)}
                 className='ml-4 text-current opacity-70 hover:opacity-100'
               >
-                <svg
-                  className='h-4 w-4'
-                  fill='none'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    strokeWidth={2}
-                    d='M6 18L18 6M6 6l12 12'
-                  />
-                </svg>
+                <XMarkIcon className='h-4 w-4' />
               </button>
             </div>
           ))}
