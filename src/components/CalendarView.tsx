@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useCalendarMode } from '@/contexts/CalendarModeContext';
@@ -9,6 +9,7 @@ import DayEvents from './DayEvents';
 import EventDetails from './EventDetails';
 import LoadingSpinner from './LoadingSpinner';
 import CalendarHeader from './CalendarHeader';
+import JumpToDateModal from './JumpToDateModal';
 import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
 import { useEvents } from '@/hooks/useEvents';
@@ -95,10 +96,18 @@ export default function CalendarView() {
   const [occurrences, setOccurrences] = useState<EventOccurrence[]>([]);
   const [hebrewEvents, setHebrewEvents] = useState<HebrewCalendarEvent[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const selectedDateRef = useRef<Date | null>(new Date());
+
+  // Helper function to update both state and ref synchronously
+  const updateSelectedDate = (date: Date | null) => {
+    selectedDateRef.current = date;
+    setSelectedDate(date);
+  };
   const [selectedEvent, setSelectedEvent] = useState<EventOccurrence | null>(
     null,
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isJumpToDateModalOpen, setIsJumpToDateModalOpen] = useState(false);
 
   // Initialize calendar to current month
   useEffect(() => {
@@ -420,21 +429,26 @@ export default function CalendarView() {
     return occurrences.filter((event) => event.date.toDateString() === dateStr);
   };
 
-  const eventsForSelectedDate = selectedDate
-    ? getEventsForDate(selectedDate)
-    : [];
+  const eventsForSelectedDate = useMemo(() => {
+    const currentDate = selectedDateRef.current;
+    return currentDate ? getEventsForDate(currentDate) : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, getEventsForDate]); // selectedDate needed to trigger re-renders
 
-  const hebrewEventsForSelectedDate =
-    selectedDate && showHebrewEvents
+  const hebrewEventsForSelectedDate = useMemo(() => {
+    const currentDate = selectedDateRef.current;
+    return currentDate && showHebrewEvents
       ? hebrewEvents.filter((hebrewEvent) => {
           const eventDate = hebrewEvent.date;
           return (
-            eventDate.getDate() === selectedDate.getDate() &&
-            eventDate.getMonth() === selectedDate.getMonth() &&
-            eventDate.getFullYear() === selectedDate.getFullYear()
+            eventDate.getDate() === currentDate.getDate() &&
+            eventDate.getMonth() === currentDate.getMonth() &&
+            eventDate.getFullYear() === currentDate.getFullYear()
           );
         })
       : [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, showHebrewEvents, hebrewEvents]); // selectedDate needed to trigger re-renders
 
   // Navigation functions
   const navigateHebrewMonth = (direction: 'prev' | 'next') => {
@@ -489,29 +503,44 @@ export default function CalendarView() {
     const targetDate = new HDate(1, newMonth, newYear);
     setHebrewYear(newYear);
     setHebrewMonth(targetDate.getMonthName());
+    // Update selectedDate to the first day of the new month
+    updateSelectedDate(targetDate.greg());
   };
 
   const navigateGregorianMonth = (direction: 'prev' | 'next') => {
+    let newMonth, newYear;
+
     if (direction === 'next') {
       if (gregorianMonth === 11) {
+        newMonth = 0;
+        newYear = gregorianYear + 1;
         setGregorianMonth(0);
         setGregorianYear(gregorianYear + 1);
       } else {
+        newMonth = gregorianMonth + 1;
+        newYear = gregorianYear;
         setGregorianMonth(gregorianMonth + 1);
       }
     } else {
       if (gregorianMonth === 0) {
+        newMonth = 11;
+        newYear = gregorianYear - 1;
         setGregorianMonth(11);
         setGregorianYear(gregorianYear - 1);
       } else {
+        newMonth = gregorianMonth - 1;
+        newYear = gregorianYear;
         setGregorianMonth(gregorianMonth - 1);
       }
     }
+
+    // Update selectedDate to the first day of the new month
+    updateSelectedDate(new Date(newYear, newMonth, 1));
   };
 
   const navigateToToday = () => {
     const now = new Date();
-    setSelectedDate(now);
+    updateSelectedDate(now);
     if (actualCalendarMode === 'hebrew') {
       const hebrewDate = new HDate(now);
       setHebrewYear(hebrewDate.getFullYear());
@@ -523,11 +552,23 @@ export default function CalendarView() {
   };
 
   const handleDayClick = (date: Date) => {
-    setSelectedDate(date);
+    updateSelectedDate(date);
   };
 
   const handleEventClick = (event: EventOccurrence) => {
     setSelectedEvent(event);
+  };
+
+  const handleJumpToDate = (date: Date) => {
+    updateSelectedDate(date);
+    if (actualCalendarMode === 'hebrew') {
+      const hebrewDate = new HDate(date);
+      setHebrewYear(hebrewDate.getFullYear());
+      setHebrewMonth(hebrewDate.getMonthName());
+    } else {
+      setGregorianYear(date.getFullYear());
+      setGregorianMonth(date.getMonth());
+    }
   };
 
   if (isLoading) {
@@ -564,7 +605,9 @@ export default function CalendarView() {
             </div>
             <div className='p-4'>
               <EventForm
-                selectedDate={selectedDate}
+                key={`event-form-${isModalOpen}-${selectedDateRef.current?.getTime()}`}
+                selectedDate={selectedDateRef.current}
+                onDateChange={updateSelectedDate}
                 onAddEvent={async (eventData) => {
                   try {
                     if (selectedEvent) {
@@ -593,6 +636,14 @@ export default function CalendarView() {
           </div>
         </div>
       )}
+
+      {/* Jump to Date Modal */}
+      <JumpToDateModal
+        isOpen={isJumpToDateModalOpen}
+        onClose={() => setIsJumpToDateModalOpen(false)}
+        onDateSelected={handleJumpToDate}
+        initialDate={selectedDateRef.current || new Date()}
+      />
 
       {/* Event Details Modal */}
       {selectedEvent && !isModalOpen && (
@@ -699,7 +750,12 @@ export default function CalendarView() {
               <h2 className='text-sm font-semibold text-gray-900 dark:text-gray-100 text-center flex-1 min-w-0 mx-2'>
                 <span className='truncate'>{getCurrentMonthName()}</span>
               </h2>
-              <div className='w-20'></div> {/* Spacer for balance */}
+              <button
+                onClick={() => setIsJumpToDateModalOpen(true)}
+                className='px-2.5 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors'
+              >
+                {t('Go to Date')}
+              </button>
             </div>
 
             {/* Weekday Headers */}
@@ -735,20 +791,28 @@ export default function CalendarView() {
                 let dayEvents: EventOccurrence[] = [];
                 let dayHebrewEvents: HebrewCalendarEvent[] = [];
 
-                if (
-                  actualCalendarMode === 'hebrew' &&
-                  day &&
-                  isHebrewDay(day)
-                ) {
-                  dateToCheck = day.gregorianDate;
+                // Always set dateToCheck based on calendar mode and day type
+                if (day) {
+                  if (actualCalendarMode === 'hebrew' && isHebrewDay(day)) {
+                    dateToCheck = day.gregorianDate;
+                  } else if (
+                    actualCalendarMode === 'gregorian' &&
+                    isGregorianDay(day)
+                  ) {
+                    dateToCheck = day.date;
+                  } else if (isHebrewDay(day)) {
+                    // Fallback: if day is HebrewDay but we're in wrong mode
+                    dateToCheck = day.gregorianDate;
+                  } else if (isGregorianDay(day)) {
+                    // Fallback: if day is GregorianDay but we're in wrong mode
+                    dateToCheck = day.date;
+                  } else {
+                    // Last resort fallback
+                    dateToCheck = new Date();
+                  }
                   dayEvents = getEventsForDate(dateToCheck);
-                } else if (
-                  actualCalendarMode === 'gregorian' &&
-                  day &&
-                  isGregorianDay(day)
-                ) {
-                  dateToCheck = day.date;
-                  dayEvents = getEventsForDate(dateToCheck);
+                } else {
+                  dateToCheck = new Date();
                 }
 
                 // Get Hebrew calendar events for this day
@@ -904,7 +968,7 @@ export default function CalendarView() {
           {/* Events Section - Responsive sidebar/bottom panel */}
           <div style={{ flex: '1', minHeight: '0', minWidth: '0' }}>
             <DayEvents
-              selectedDate={selectedDate}
+              selectedDate={selectedDateRef.current}
               events={eventsForSelectedDate}
               hebrewEvents={hebrewEventsForSelectedDate}
               onEventClick={handleEventClick}

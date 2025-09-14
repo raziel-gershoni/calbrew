@@ -80,6 +80,11 @@ const resources = {
       // Hebrew Calendar Events
       'Hebrew Calendar Events': 'Hebrew Calendar Events',
       'Your Events': 'Your Events',
+      // Jump to Date functionality
+      'Jump to Date': 'Jump to Date',
+      'Go to Date': 'Go to Date',
+      'Edit Date': 'Edit Date',
+      Confirm: 'Confirm',
     },
   },
   he: {
@@ -158,6 +163,11 @@ const resources = {
       // Hebrew Calendar Events
       'Hebrew Calendar Events': 'אירועי לוח עברי',
       'Your Events': 'האירועים שלך',
+      // Jump to Date functionality
+      'Jump to Date': 'קפיצה לתאריך',
+      'Go to Date': 'עבור לתאריך',
+      'Edit Date': 'ערוך תאריך',
+      Confirm: 'אשר',
     },
   },
   es: {
@@ -238,6 +248,11 @@ const resources = {
       // Hebrew Calendar Events
       'Hebrew Calendar Events': 'Eventos del Calendario Hebreo',
       'Your Events': 'Tus Eventos',
+      // Jump to Date functionality
+      'Jump to Date': 'Saltar a Fecha',
+      'Go to Date': 'Ir a Fecha',
+      'Edit Date': 'Editar Fecha',
+      Confirm: 'Confirmar',
     },
   },
 };

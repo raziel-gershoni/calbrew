@@ -13,6 +13,8 @@
   "dependencies": {
     "@hebcal/core": "^5.10.0",
     "@heroicons/react": "^2.2.0",
+    "@ncdai/react-wheel-picker": "^1.0.16",
+    "clsx": "^2.1.1",
     "google-auth-library": "^10.1.0",
     "googleapis": "^154.0.0",
     "i18next": "^25.3.2",
@@ -23,6 +25,7 @@
     "react-dom": "19.1.0",
     "react-i18next": "^15.6.1",
     "sqlite3": "^5.1.7",
+    "tailwind-merge": "^3.3.1",
     "zod": "^4.0.17"
   },
   "devDependencies": {
