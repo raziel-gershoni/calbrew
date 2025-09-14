@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import db from '@/lib/db';
+import { query } from '@/lib/postgres';
 
 interface UserCalendarInfo {
   calbrew_calendar_id: string | null;
@@ -15,21 +15,12 @@ export async function GET() {
   }
 
   try {
-    const userInfo = await new Promise<UserCalendarInfo | undefined>(
-      (resolve, reject) => {
-        db.get(
-          'SELECT calbrew_calendar_id FROM users WHERE id = ?',
-          [session.user.id],
-          (err, row: UserCalendarInfo | undefined) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(row);
-            }
-          },
-        );
-      },
+    const result = await query<UserCalendarInfo>(
+      'SELECT calbrew_calendar_id FROM users WHERE id = $1',
+      [session.user.id]
     );
+
+    const userInfo = result.rows[0];
 
     return NextResponse.json({
       calbrew_calendar_id: userInfo?.calbrew_calendar_id || null,

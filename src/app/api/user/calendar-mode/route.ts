@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getUserCalendarMode, updateUserCalendarMode } from '@/lib/db-utils';
+import { getUserCalendarMode, updateUserCalendarMode } from '@/lib/postgres-utils';
 
 // GET: Get user's calendar mode preference
 export async function GET(_request: NextRequest) {
@@ -15,12 +15,24 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    const calendarMode = await getUserCalendarMode(session.user.id);
+    try {
+      const calendarMode = await getUserCalendarMode(session.user.id);
 
-    return NextResponse.json({
-      success: true,
-      data: { calendarMode },
-    });
+      return NextResponse.json({
+        success: true,
+        data: { calendarMode },
+      });
+    } catch (error) {
+      // If user not found, force re-authentication
+      if (error instanceof Error && error.message.includes('User not found')) {
+        return NextResponse.json({
+          success: false,
+          error: 'User not found in database',
+          code: 'USER_NOT_FOUND_PLEASE_REAUTH',
+        }, { status: 401 });
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('Error fetching user calendar mode:', error);
     return NextResponse.json(
