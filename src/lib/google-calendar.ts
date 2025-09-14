@@ -1,19 +1,5 @@
 import { google } from 'googleapis';
-import db from '@/lib/db';
-
-// Helper function to handle database operations with proper error handling
-function dbRun(sql: string, params: unknown[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, (err) => {
-      if (err) {
-        console.error('Database error in dbRun:', err);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
-}
+import { query } from '@/lib/postgres';
 
 export interface CalendarCheckResult {
   calendarId: string | null;
@@ -90,10 +76,10 @@ export async function ensureCalendarExists(
     // Update user's calendar ID in database if it changed
     if (calendarId !== currentCalendarId) {
       try {
-        await dbRun('UPDATE users SET calbrew_calendar_id = ? WHERE id = ?', [
-          calendarId,
-          userId,
-        ]);
+        await query(
+          'UPDATE users SET calbrew_calendar_id = $1 WHERE id = $2',
+          [calendarId, userId]
+        );
       } catch (dbError) {
         console.error(
           'Failed to update user calendar ID in database:',

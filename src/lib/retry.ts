@@ -171,19 +171,14 @@ export async function withDatabaseRetry<T>(
     retryCondition: (error: RetryableError) => {
       console.error(`${operationName} error:`, error?.message || error);
 
-      // Retry on database lock errors
-      if (
-        error?.message?.includes('SQLITE_BUSY') ||
-        error?.message?.includes('database is locked')
-      ) {
-        return true;
-      }
-
-      // Retry on connection errors
+      // Retry on database connection errors (PostgreSQL)
       const networkError = error as NetworkError;
       if (
-        networkError?.code === 'SQLITE_CANTOPEN' ||
-        error?.message?.includes('unable to open database')
+        error?.message?.includes('connection terminated') ||
+        error?.message?.includes('server closed the connection') ||
+        error?.message?.includes('timeout expired') ||
+        networkError?.code === 'ECONNRESET' ||
+        networkError?.code === 'ECONNREFUSED'
       ) {
         return true;
       }

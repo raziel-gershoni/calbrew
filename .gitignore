@@ -41,8 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 # database
-*.db
-calbrew.db
 /data/
 
 # claude code documentation
