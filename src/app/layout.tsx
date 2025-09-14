@@ -27,6 +27,27 @@ export const metadata: Metadata = {
     'events',
     'calendar management',
   ],
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'CalBrew',
+  },
+  icons: {
+    icon: [
+      { url: '/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/favicon-192x192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/icons/icon-192x192.png',
+  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: '#3b82f6',
 };
 
 export default function RootLayout({
@@ -37,9 +58,24 @@ export default function RootLayout({
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
-        <meta
-          name='viewport'
-          content='width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes'
+        <meta name='apple-mobile-web-app-capable' content='yes' />
+        <meta name='apple-mobile-web-app-status-bar-style' content='default' />
+        <meta name='apple-mobile-web-app-title' content='CalBrew' />
+        <meta name='mobile-web-app-capable' content='yes' />
+        <meta name='msapplication-TileColor' content='#3b82f6' />
+        <meta name='msapplication-tap-highlight' content='no' />
+        <link rel='apple-touch-icon' href='/icons/icon-192x192.png' />
+        <link
+          rel='icon'
+          type='image/png'
+          sizes='96x96'
+          href='/favicon-96x96.png'
+        />
+        <link
+          rel='icon'
+          type='image/png'
+          sizes='192x192'
+          href='/favicon-192x192.png'
         />
       </head>
       <body

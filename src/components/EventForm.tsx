@@ -1,15 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HDate, gematriya, Locale } from '@hebcal/core';
+import { HDate, Locale } from '@hebcal/core';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
 import { useGcalSync } from '@/hooks/useGcalSync';
+import UnifiedDatePicker from './UnifiedDatePicker';
 
 interface EventFormProps {
   onAddEvent: (event: Omit<Event, 'id'>) => void;
   isCreating: boolean;
   selectedDate: Date | null;
+  onDateChange?: (date: Date) => void;
   onFormReset?: () => void;
 }
 
@@ -17,6 +19,7 @@ export default function EventForm({
   onAddEvent,
   isCreating,
   selectedDate,
+  onDateChange,
   onFormReset,
 }: EventFormProps) {
   const { t, i18n } = useTranslation();
@@ -135,51 +138,24 @@ export default function EventForm({
           className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-gray-100 text-start`}
         />
       </div>
-      {/* Selected Date Display */}
+      {/* Date Picker Section */}
       <div>
-        <label className='block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2'>
-          {t('Hebrew Date')}
-        </label>
-        <div
-          className={`p-3 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-center text-start`}
-        >
-          <span className='text-lg font-medium text-gray-900 dark:text-gray-100'>
-            {(() => {
-              if (!selectedDate) {
-                return t('No date selected');
+        {/* Date Picker */}
+        <div className='bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md p-3'>
+          <UnifiedDatePicker
+            selectedDate={selectedDate || new Date()}
+            onDateChange={(newDate) => {
+              const hdate = new HDate(newDate);
+              setHebrewYear(hdate.getFullYear());
+              setHebrewMonthNum(hdate.getMonth());
+              setHebrewDay(hdate.getDate());
+              // Update parent component's selectedDate
+              if (onDateChange) {
+                onDateChange(newDate);
               }
-
-              const hdate = new HDate(selectedDate);
-              const dayStr =
-                i18n.language === 'he'
-                  ? gematriya(hdate.getDate())
-                  : hdate.getDate().toString();
-              const monthNameEn = hdate.getMonthName();
-              const monthNameHe = Locale.gettext(monthNameEn, 'he');
-              const monthStr =
-                i18n.language === 'he' ? monthNameHe : monthNameEn;
-              const yearStr =
-                i18n.language === 'he'
-                  ? gematriya(hdate.getFullYear())
-                  : hdate.getFullYear().toString();
-
-              return i18n.language === 'he'
-                ? `${dayStr} ${monthStr}, ${yearStr}`
-                : `${dayStr} ${monthStr}, ${yearStr}`;
-            })()}
-          </span>
-          {selectedDate && (
-            <div className='text-sm text-gray-500 dark:text-gray-400 mt-1'>
-              {selectedDate.toLocaleDateString(
-                i18n.language === 'he' ? 'he-IL' : 'en-US',
-                {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                },
-              )}
-            </div>
-          )}
+            }}
+            className='justify-center'
+          />
         </div>
       </div>
       {/* Recurrence dropdown hidden for now - functionality not implemented */}
