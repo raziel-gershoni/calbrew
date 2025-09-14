@@ -17,7 +17,7 @@ export async function GET() {
   try {
     const result = await query<UserCalendarInfo>(
       'SELECT calbrew_calendar_id FROM users WHERE id = $1',
-      [session.user.id]
+      [session.user.id],
     );
 
     const userInfo = result.rows[0];

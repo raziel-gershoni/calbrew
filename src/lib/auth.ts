@@ -11,7 +11,6 @@ if (!process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error('Missing GOOGLE_CLIENT_SECRET environment variable');
 }
 
-
 // Helper function to safely create or find Calbrew calendar
 async function ensureCalbrewCalendar(
   accessToken: string,
@@ -100,14 +99,15 @@ export const authOptions: NextAuthOptions = {
 
       try {
         console.log('🔐 Starting sign-in process for user:', user.id);
-        
+
         // Initialize database schema if needed
         await initializeDatabase();
 
         // Check if user exists
-        const userResult = await query<Record<string, unknown>>('SELECT * FROM users WHERE id = $1', [
-          user.id,
-        ]);
+        const userResult = await query<Record<string, unknown>>(
+          'SELECT * FROM users WHERE id = $1',
+          [user.id],
+        );
 
         if (!userResult.rows[0]) {
           console.log('👤 Creating new user in database');

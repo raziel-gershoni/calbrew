@@ -4,7 +4,7 @@ import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
   },
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
@@ -12,7 +12,10 @@ const pool = new Pool({
 });
 
 // Helper function to execute queries
-export async function query<T extends QueryResultRow = QueryResultRow>(text: string, params?: unknown[]): Promise<QueryResult<T>> {
+export async function query<T extends QueryResultRow = QueryResultRow>(
+  text: string,
+  params?: unknown[],
+): Promise<QueryResult<T>> {
   const client = await pool.connect();
   try {
     const result = await client.query<T>(text, params);
@@ -24,7 +27,7 @@ export async function query<T extends QueryResultRow = QueryResultRow>(text: str
 
 // Helper function to execute transactions
 export async function transaction<T>(
-  callback: (client: PoolClient) => Promise<T>
+  callback: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
   const client = await pool.connect();
   try {
@@ -43,7 +46,7 @@ export async function transaction<T>(
 // Initialize database schema
 export async function initializeDatabase(): Promise<void> {
   console.log('🔄 Initializing PostgreSQL database...');
-  
+
   try {
     // Create users table
     await query(`
@@ -95,9 +98,15 @@ export async function initializeDatabase(): Promise<void> {
     console.log('✅ Event occurrences table created/verified');
 
     // Create indexes for better performance
-    await query('CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id)');
-    await query('CREATE INDEX IF NOT EXISTS idx_event_occurrences_event_id ON event_occurrences(event_id)');
-    await query('CREATE INDEX IF NOT EXISTS idx_event_occurrences_date ON event_occurrences(gregorian_date)');
+    await query(
+      'CREATE INDEX IF NOT EXISTS idx_events_user_id ON events(user_id)',
+    );
+    await query(
+      'CREATE INDEX IF NOT EXISTS idx_event_occurrences_event_id ON event_occurrences(event_id)',
+    );
+    await query(
+      'CREATE INDEX IF NOT EXISTS idx_event_occurrences_date ON event_occurrences(gregorian_date)',
+    );
     console.log('✅ Database indexes created/verified');
 
     console.log('🎉 PostgreSQL database initialization complete!');

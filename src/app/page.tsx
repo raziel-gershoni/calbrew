@@ -17,7 +17,7 @@ export default function Home() {
 
   if (status === 'loading') {
     return (
-      <div className='flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900'>
+      <div className='flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900 mobile-viewport-container'>
         <div className='h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent'></div>
       </div>
     );
@@ -25,7 +25,7 @@ export default function Home() {
 
   if (status === 'unauthenticated') {
     return (
-      <div className='flex flex-col justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900'>
+      <div className='flex flex-col justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900 mobile-viewport-container'>
         <h1 className='text-4xl font-bold mb-4 text-gray-800 dark:text-gray-200'>
           Welcome to Calbrew
         </h1>
@@ -43,7 +43,7 @@ export default function Home() {
   }
 
   return (
-    <div className='h-screen bg-gray-50 dark:bg-gray-800 flex flex-col'>
+    <div className='h-screen bg-gray-50 dark:bg-gray-800 flex flex-col mobile-viewport-container'>
       <main className='flex-1 flex flex-col'>
         <CalendarView />
       </main>

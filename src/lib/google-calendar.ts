@@ -76,10 +76,10 @@ export async function ensureCalendarExists(
     // Update user's calendar ID in database if it changed
     if (calendarId !== currentCalendarId) {
       try {
-        await query(
-          'UPDATE users SET calbrew_calendar_id = $1 WHERE id = $2',
-          [calendarId, userId]
-        );
+        await query('UPDATE users SET calbrew_calendar_id = $1 WHERE id = $2', [
+          calendarId,
+          userId,
+        ]);
       } catch (dbError) {
         console.error(
           'Failed to update user calendar ID in database:',

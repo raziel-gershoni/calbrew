@@ -13,9 +13,9 @@ export async function GET(): Promise<Response> {
 
     const result = await query<{ hebrew_events_enabled: boolean }>(
       'SELECT hebrew_events_enabled FROM users WHERE id = $1',
-      [session.user.id]
+      [session.user.id],
     );
-    
+
     const user = result.rows[0];
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest): Promise<Response> {
 
     const result = await query(
       'UPDATE users SET hebrew_events_enabled = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [hebrewEventsEnabled, session.user.id]
+      [hebrewEventsEnabled, session.user.id],
     );
 
     if (result.rowCount === 0) {

@@ -25,11 +25,14 @@ export async function GET(_request: NextRequest) {
     } catch (error) {
       // If user not found, force re-authentication
       if (error instanceof Error && error.message.includes('User not found')) {
-        return NextResponse.json({
-          success: false,
-          error: 'User not found in database',
-          code: 'USER_NOT_FOUND_PLEASE_REAUTH',
-        }, { status: 401 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'User not found in database',
+            code: 'USER_NOT_FOUND_PLEASE_REAUTH',
+          },
+          { status: 401 },
+        );
       }
       throw error;
     }

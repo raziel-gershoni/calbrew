@@ -26,16 +26,75 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* Mobile landscape optimizations */
+/* MOBILE-FIRST CSS-only viewport handling */
+
+/* 1. MOBILE BASE: Start with mobile viewport handling */
+.mobile-viewport-container {
+  /* Mobile-first: Use 100dvh for mobile browser chrome handling */
+  height: 100dvh;
+  min-height: 100dvh;
+
+  /* Fallback for older mobile browsers */
+  height: 100vh;
+  min-height: 100vh;
+}
+
+/* Ensure html and body respect mobile viewport from the start */
+html,
+body {
+  height: 100%;
+  height: 100dvh;
+  min-height: 100%;
+  min-height: 100dvh;
+}
+
+/* 2. MOBILE-SPECIFIC OPTIMIZATIONS */
+@media (max-width: 768px) {
+  /* Mobile viewport container optimizations */
+  .mobile-viewport-container {
+    /* Ensure proper mobile browser chrome handling */
+    height: 100dvh;
+    min-height: 100dvh;
+
+    /* Fallback for older mobile browsers */
+    height: 100vh;
+    min-height: 100vh;
+
+    /* Mobile-specific optimizations */
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+  }
+
+  /* Prevent horizontal scrolling on mobile */
+  body {
+    overflow-x: hidden;
+  }
+}
+
+/* 3. MOBILE LANDSCAPE: Specific mobile landscape handling */
 @media (max-width: 768px) and (orientation: landscape) {
   /* Ensure proper mobile landscape behavior */
   body {
     min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile */
+    min-height: 100dvh;
   }
 
   /* Reduce padding/margins in landscape for more space */
   .calendar-container {
     padding: 0.5rem;
+  }
+}
+
+/* 4. PROGRESSIVE ENHANCEMENT: Fallback for browsers without dvh support */
+@supports not (height: 100dvh) {
+  .mobile-viewport-container {
+    height: 100vh;
+    min-height: 100vh;
+  }
+
+  html,
+  body {
+    height: 100vh;
+    min-height: 100vh;
   }
 }

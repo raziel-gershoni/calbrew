@@ -24,42 +24,54 @@ interface EventOccurrence {
 
 // User operations
 export async function getUserById(userId: string): Promise<User | null> {
-  const result = await query<User>('SELECT * FROM users WHERE id = $1', [userId]);
+  const result = await query<User>('SELECT * FROM users WHERE id = $1', [
+    userId,
+  ]);
   return result.rows[0] || null;
 }
 
-export async function getCurrentCalendarId(userId: string): Promise<string | null> {
+export async function getCurrentCalendarId(
+  userId: string,
+): Promise<string | null> {
   const result = await query<{ calbrew_calendar_id: string | null }>(
     'SELECT calbrew_calendar_id FROM users WHERE id = $1',
-    [userId]
+    [userId],
   );
   return result.rows[0]?.calbrew_calendar_id || null;
 }
 
-export async function updateUserCalendarId(userId: string, calendarId: string): Promise<void> {
+export async function updateUserCalendarId(
+  userId: string,
+  calendarId: string,
+): Promise<void> {
   const result = await query(
     'UPDATE users SET calbrew_calendar_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-    [calendarId, userId]
+    [calendarId, userId],
   );
-  
+
   if (result.rowCount === 0) {
     throw new Error('User not found when updating calendar ID');
   }
 }
 
 // Event operations
-export async function getEventsByUserId(userId: string): Promise<DatabaseEvent[]> {
+export async function getEventsByUserId(
+  userId: string,
+): Promise<DatabaseEvent[]> {
   const result = await query<DatabaseEvent>(
     'SELECT * FROM events WHERE user_id = $1 ORDER BY created_at DESC',
-    [userId]
+    [userId],
   );
   return result.rows;
 }
 
-export async function getEventById(eventId: string, userId: string): Promise<DatabaseEvent | null> {
+export async function getEventById(
+  eventId: string,
+  userId: string,
+): Promise<DatabaseEvent | null> {
   const result = await query<DatabaseEvent>(
     'SELECT * FROM events WHERE id = $1 AND user_id = $2',
-    [eventId, userId]
+    [eventId, userId],
   );
   return result.rows[0] || null;
 }
@@ -90,7 +102,7 @@ export async function createEvent(event: {
       event.hebrew_day,
       event.recurrence_rule,
       event.last_synced_hebrew_year,
-    ]
+    ],
   );
 }
 
@@ -118,7 +130,7 @@ export async function updateEvent(event: {
       event.recurrence_rule,
       event.id,
       event.user_id,
-    ]
+    ],
   );
 
   if (result.rowCount === 0) {
@@ -126,10 +138,13 @@ export async function updateEvent(event: {
   }
 }
 
-export async function deleteEvent(eventId: string, userId: string): Promise<void> {
+export async function deleteEvent(
+  eventId: string,
+  userId: string,
+): Promise<void> {
   const result = await query(
     'DELETE FROM events WHERE id = $1 AND user_id = $2',
-    [eventId, userId]
+    [eventId, userId],
   );
 
   if (result.rowCount === 0) {
@@ -146,19 +161,28 @@ export async function createEventOccurrence(occurrence: {
 }): Promise<void> {
   await query(
     'INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id) VALUES ($1, $2, $3, $4)',
-    [occurrence.id, occurrence.event_id, occurrence.gregorian_date, occurrence.google_event_id]
+    [
+      occurrence.id,
+      occurrence.event_id,
+      occurrence.gregorian_date,
+      occurrence.google_event_id,
+    ],
   );
 }
 
-export async function getEventOccurrencesByEventId(eventId: string): Promise<EventOccurrence[]> {
+export async function getEventOccurrencesByEventId(
+  eventId: string,
+): Promise<EventOccurrence[]> {
   const result = await query<EventOccurrence>(
     'SELECT * FROM event_occurrences WHERE event_id = $1 ORDER BY gregorian_date',
-    [eventId]
+    [eventId],
   );
   return result.rows;
 }
 
-export async function deleteEventOccurrencesByEventId(eventId: string): Promise<void> {
+export async function deleteEventOccurrencesByEventId(
+  eventId: string,
+): Promise<void> {
   await query('DELETE FROM event_occurrences WHERE event_id = $1', [eventId]);
 }
 
@@ -169,13 +193,18 @@ export async function createEventOccurrencesBatch(
     event_id: string;
     gregorian_date: string;
     google_event_id: string;
-  }>
+  }>,
 ): Promise<void> {
   await transaction(async (client: PoolClient) => {
     for (const occurrence of occurrences) {
       await client.query(
         'INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id) VALUES ($1, $2, $3, $4)',
-        [occurrence.id, occurrence.event_id, occurrence.gregorian_date, occurrence.google_event_id]
+        [
+          occurrence.id,
+          occurrence.event_id,
+          occurrence.gregorian_date,
+          occurrence.google_event_id,
+        ],
       );
     }
   });
@@ -185,20 +214,23 @@ export async function createEventOccurrencesBatch(
 export async function getUserLanguage(userId: string): Promise<string> {
   const result = await query<{ language: string }>(
     'SELECT language FROM users WHERE id = $1',
-    [userId]
+    [userId],
   );
-  
+
   if (!result.rows[0]) {
     throw new Error('User not found when getting language');
   }
-  
+
   return result.rows[0].language || 'en';
 }
 
-export async function updateUserLanguage(userId: string, language: string): Promise<void> {
+export async function updateUserLanguage(
+  userId: string,
+  language: string,
+): Promise<void> {
   const result = await query(
     'UPDATE users SET language = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-    [language, userId]
+    [language, userId],
   );
 
   if (result.rowCount === 0) {
@@ -210,20 +242,23 @@ export async function updateUserLanguage(userId: string, language: string): Prom
 export async function getUserCalendarMode(userId: string): Promise<string> {
   const result = await query<{ calendar_mode: string }>(
     'SELECT calendar_mode FROM users WHERE id = $1',
-    [userId]
+    [userId],
   );
-  
+
   if (!result.rows[0]) {
     throw new Error('User not found when getting calendar mode');
   }
-  
+
   return result.rows[0].calendar_mode || 'hebrew';
 }
 
-export async function updateUserCalendarMode(userId: string, calendarMode: string): Promise<void> {
+export async function updateUserCalendarMode(
+  userId: string,
+  calendarMode: string,
+): Promise<void> {
   const result = await query(
     'UPDATE users SET calendar_mode = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-    [calendarMode, userId]
+    [calendarMode, userId],
   );
 
   if (result.rowCount === 0) {
@@ -235,27 +270,32 @@ export async function updateUserCalendarMode(userId: string, calendarMode: strin
 export async function getUserGcalSyncEnabled(userId: string): Promise<boolean> {
   const result = await query<{ gcal_sync_enabled: boolean }>(
     'SELECT gcal_sync_enabled FROM users WHERE id = $1',
-    [userId]
+    [userId],
   );
   return result.rows[0]?.gcal_sync_enabled || false;
 }
 
-export async function updateUserGcalSyncEnabled(userId: string, enabled: boolean): Promise<void> {
-  await query(
-    'UPDATE users SET gcal_sync_enabled = $1 WHERE id = $2',
-    [enabled, userId]
-  );
+export async function updateUserGcalSyncEnabled(
+  userId: string,
+  enabled: boolean,
+): Promise<void> {
+  await query('UPDATE users SET gcal_sync_enabled = $1 WHERE id = $2', [
+    enabled,
+    userId,
+  ]);
 }
 
 export async function isEventSynced(eventId: string): Promise<boolean> {
   const result = await query<{ count: string }>(
     'SELECT COUNT(*) as count FROM event_occurrences WHERE event_id = $1',
-    [eventId]
+    [eventId],
   );
   return parseInt(result.rows[0]?.count || '0') > 0;
 }
 
-export async function getEventsSyncStatus(eventIds: string[]): Promise<Map<string, boolean>> {
+export async function getEventsSyncStatus(
+  eventIds: string[],
+): Promise<Map<string, boolean>> {
   if (eventIds.length === 0) {
     return new Map();
   }
@@ -266,7 +306,7 @@ export async function getEventsSyncStatus(eventIds: string[]): Promise<Map<strin
      FROM event_occurrences 
      WHERE event_id IN (${placeholders}) 
      GROUP BY event_id`,
-    eventIds
+    eventIds,
   );
 
   const syncStatus = new Map<string, boolean>();
