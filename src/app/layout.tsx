@@ -6,6 +6,7 @@ import { ThemeProvider } from './theme-provider';
 import { LanguageProvider } from './language-provider';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/Toast';
+import { Analytics } from '@vercel/analytics/next';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -95,6 +96,7 @@ export default function RootLayout({
             </ThemeProvider>
           </LanguageProvider>
         </ErrorBoundary>
+        <Analytics />
       </body>
     </html>
   );
