@@ -22,7 +22,7 @@ import {
   getEventOccurrencesByEventId,
   deleteEventOccurrencesByEventId,
   isEventSynced,
-} from '@/lib/db-utils';
+} from '@/lib/postgres-utils';
 import { withGoogleCalendarRetry, AppError } from '@/lib/retry';
 
 // Keeping for potential future use

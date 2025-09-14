@@ -1,7 +1,7 @@
-import { NextAuthOptions, User } from 'next-auth';
+import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { google } from 'googleapis';
-import db from '@/lib/db';
+import { query, initializeDatabase } from '@/lib/postgres';
 
 if (!process.env.GOOGLE_CLIENT_ID) {
   throw new Error('Missing GOOGLE_CLIENT_ID environment variable');
@@ -12,30 +12,23 @@ if (!process.env.GOOGLE_CLIENT_SECRET) {
 }
 
 // Helper function to handle database operations with proper error handling
-function dbGet<T>(sql: string, params: unknown[]): Promise<T | undefined> {
-  return new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) {
-        console.error('Database error in dbGet:', err);
-        reject(err);
-      } else {
-        resolve(row as T | undefined);
-      }
-    });
-  });
+async function dbGet<T extends Record<string, unknown>>(sql: string, params: unknown[]): Promise<T | undefined> {
+  try {
+    const result = await query<T>(sql, params);
+    return result.rows[0];
+  } catch (err) {
+    console.error('Database error in dbGet:', err);
+    throw err;
+  }
 }
 
-function dbRun(sql: string, params: unknown[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    db.run(sql, params, (err) => {
-      if (err) {
-        console.error('Database error in dbRun:', err);
-        reject(err);
-      } else {
-        resolve();
-      }
-    });
-  });
+async function dbRun(sql: string, params: unknown[]): Promise<void> {
+  try {
+    await query(sql, params);
+  } catch (err) {
+    console.error('Database error in dbRun:', err);
+    throw err;
+  }
 }
 
 // Helper function to safely create or find Calbrew calendar
@@ -126,9 +119,12 @@ export const authOptions: NextAuthOptions = {
 
       try {
         console.log('🔐 Starting sign-in process for user:', user.id);
+        
+        // Initialize database schema if needed
+        await initializeDatabase();
 
         // Check if user exists
-        const userInDb = await dbGet<User>('SELECT * FROM users WHERE id = ?', [
+        const userInDb = await dbGet<Record<string, unknown>>('SELECT * FROM users WHERE id = $1', [
           user.id,
         ]);
 
@@ -136,14 +132,14 @@ export const authOptions: NextAuthOptions = {
           console.log('👤 Creating new user in database');
           // Create new user without calendar ID initially
           await dbRun(
-            'INSERT INTO users (id, name, email, image, calbrew_calendar_id) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO users (id, name, email, image, calbrew_calendar_id) VALUES ($1, $2, $3, $4, $5)',
             [user.id, user.name, user.email, user.image, null],
           );
         } else {
           console.log('👤 Updating existing user information');
           // Update existing user info (don't overwrite calendar ID if it exists)
           await dbRun(
-            'UPDATE users SET name = ?, email = ?, image = ? WHERE id = ?',
+            'UPDATE users SET name = $1, email = $2, image = $3 WHERE id = $4',
             [user.name, user.email, user.image, user.id],
           );
         }
@@ -155,7 +151,7 @@ export const authOptions: NextAuthOptions = {
           if (calendarId) {
             console.log('✅ Calendar setup successful, updating user record');
             await dbRun(
-              'UPDATE users SET calbrew_calendar_id = ? WHERE id = ?',
+              'UPDATE users SET calbrew_calendar_id = $1 WHERE id = $2',
               [calendarId, user.id],
             );
           } else {
@@ -190,7 +186,7 @@ export const authOptions: NextAuthOptions = {
 
         try {
           const userFromDb = await dbGet<{ calbrew_calendar_id: string }>(
-            'SELECT calbrew_calendar_id FROM users WHERE id = ?',
+            'SELECT calbrew_calendar_id FROM users WHERE id = $1',
             [user.id],
           );
           token.calbrew_calendar_id = userFromDb?.calbrew_calendar_id;
@@ -206,7 +202,7 @@ export const authOptions: NextAuthOptions = {
       if (trigger === 'update' && token.id) {
         try {
           const userFromDb = await dbGet<{ calbrew_calendar_id: string }>(
-            'SELECT calbrew_calendar_id FROM users WHERE id = ?',
+            'SELECT calbrew_calendar_id FROM users WHERE id = $1',
             [token.id as string],
           );
           token.calbrew_calendar_id = userFromDb?.calbrew_calendar_id;

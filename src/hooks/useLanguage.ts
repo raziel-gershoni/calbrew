@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
+import { useAutoReauth } from './useAutoReauth';
 
 export const useLanguage = () => {
   const { data: session } = useSession();
   const { i18n } = useTranslation();
+  const { apiCall } = useAutoReauth();
   const [isLoading, setIsLoading] = useState(false);
 
   // Use refs to prevent duplicate calls in Strict Mode
@@ -21,7 +23,7 @@ export const useLanguage = () => {
 
     try {
       fetchingRef.current = true;
-      const response = await fetch('/api/user/language');
+      const response = await apiCall('/api/user/language');
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
@@ -43,7 +45,7 @@ export const useLanguage = () => {
     } finally {
       fetchingRef.current = false;
     }
-  }, [i18n]);
+  }, [i18n, apiCall]);
 
   // Fetch user's language preference on session load
   useEffect(() => {
@@ -77,7 +79,7 @@ export const useLanguage = () => {
 
       // If user is logged in, save to database
       if (session?.user?.id) {
-        const response = await fetch('/api/user/language', {
+        const response = await apiCall('/api/user/language', {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

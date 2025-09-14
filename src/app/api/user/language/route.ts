@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { getUserLanguage, updateUserLanguage } from '@/lib/db-utils';
+import { getUserLanguage, updateUserLanguage } from '@/lib/postgres-utils';
 
 // GET: Get user's language preference
 export async function GET(_request: NextRequest) {
@@ -15,12 +15,24 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    const language = await getUserLanguage(session.user.id);
+    try {
+      const language = await getUserLanguage(session.user.id);
 
-    return NextResponse.json({
-      success: true,
-      data: { language },
-    });
+      return NextResponse.json({
+        success: true,
+        data: { language },
+      });
+    } catch (error) {
+      // If user not found, force re-authentication
+      if (error instanceof Error && error.message.includes('User not found')) {
+        return NextResponse.json({
+          success: false,
+          error: 'User not found in database',
+          code: 'USER_NOT_FOUND_PLEASE_REAUTH',
+        }, { status: 401 });
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('Error fetching user language:', error);
     return NextResponse.json(

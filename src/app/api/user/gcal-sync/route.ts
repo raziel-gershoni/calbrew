@@ -10,7 +10,7 @@ import {
 import {
   getUserGcalSyncEnabled,
   updateUserGcalSyncEnabled,
-} from '@/lib/db-utils';
+} from '@/lib/postgres-utils';
 import { AppError } from '@/lib/retry';
 
 const UpdateSyncPreferenceSchema = z.object({

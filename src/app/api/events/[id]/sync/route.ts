@@ -15,7 +15,7 @@ import {
   getEventById,
   isEventSynced,
   createEventOccurrence,
-} from '@/lib/db-utils';
+} from '@/lib/postgres-utils';
 import { withGoogleCalendarRetry, AppError } from '@/lib/retry';
 
 function calculateSyncWindow(event_start_year: number): {

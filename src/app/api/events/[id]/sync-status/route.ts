@@ -7,7 +7,7 @@ import {
   createErrorResponse,
   validateRequest,
 } from '@/lib/validation';
-import { getEventById, isEventSynced } from '@/lib/db-utils';
+import { getEventById, isEventSynced } from '@/lib/postgres-utils';
 import { AppError } from '@/lib/retry';
 
 export async function GET(
