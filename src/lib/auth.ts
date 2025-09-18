@@ -3,6 +3,12 @@ import GoogleProvider from 'next-auth/providers/google';
 import { google } from 'googleapis';
 import { query, initializeDatabase } from '@/lib/postgres';
 
+// Get environment-specific calendar name
+const getCalendarName = () => {
+  const isDev = process.env.NODE_ENV === 'development';
+  return isDev ? 'Calbrew-Dev' : 'Calbrew';
+};
+
 if (!process.env.GOOGLE_CLIENT_ID) {
   throw new Error('Missing GOOGLE_CLIENT_ID environment variable');
 }
@@ -31,20 +37,21 @@ async function ensureCalbrewCalendar(
       `✅ Successfully listed ${calendars.items?.length || 0} calendars`,
     );
 
-    let calbrewCalendar = calendars.items?.find((c) => c.summary === 'Calbrew');
+    const calendarName = getCalendarName();
+    let calbrewCalendar = calendars.items?.find((c) => c.summary === calendarName);
 
     if (!calbrewCalendar) {
-      console.log('📝 Calbrew calendar not found, creating new one...');
+      console.log(`📝 ${calendarName} calendar not found, creating new one...`);
       const { data: newCalendar } = await calendar.calendars.insert({
         requestBody: {
-          summary: 'Calbrew',
-          description: 'Hebrew calendar events managed by Calbrew',
+          summary: calendarName,
+          description: `Hebrew calendar events managed by ${calendarName}`,
         },
       });
       calbrewCalendar = newCalendar;
-      console.log(`✅ Created new Calbrew calendar: ${newCalendar?.id}`);
+      console.log(`✅ Created new ${calendarName} calendar: ${newCalendar?.id}`);
     } else {
-      console.log(`✅ Found existing Calbrew calendar: ${calbrewCalendar.id}`);
+      console.log(`✅ Found existing ${calendarName} calendar: ${calbrewCalendar.id}`);
     }
 
     return calbrewCalendar?.id || null;

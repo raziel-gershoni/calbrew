@@ -64,11 +64,11 @@ export async function PUT(request: NextRequest) {
     const { language } = body;
 
     // Validate language
-    if (!language || !['en', 'he', 'es'].includes(language)) {
+    if (!language || !['en', 'he', 'es', 'ru'].includes(language)) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Invalid language. Must be "en", "he", or "es"',
+          error: 'Invalid language. Must be "en", "he", "es", or "ru"',
         },
         { status: 400 },
       );
