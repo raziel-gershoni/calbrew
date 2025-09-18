@@ -21,6 +21,7 @@ import {
   getOverlappingHebrewMonths,
   getHebrewEventsForCalendarRange,
   HebrewCalendarEvent,
+  formatEventTitle,
 } from '@/utils/hebrewDateUtils';
 
 // Types
@@ -407,11 +408,17 @@ export default function CalendarView() {
         i18n.language,
       );
 
-      return `${hebrewMonthName} ${primaryYear} (${overlappingGregorianMonths})`;
+      return {
+        primary: `${hebrewMonthName} ${primaryYear}`,
+        secondary: overlappingGregorianMonths
+      };
     } else {
       const date = new Date(gregorianYear, gregorianMonth, 1);
       const monthName = date.toLocaleDateString(i18n.language, {
         month: 'long',
+      });
+      const monthNameShort = date.toLocaleDateString(i18n.language, {
+        month: 'short',
       });
 
       const overlappingHebrewMonths = getOverlappingHebrewMonths(
@@ -420,7 +427,11 @@ export default function CalendarView() {
         i18n.language,
       );
 
-      return `${monthName} ${gregorianYear} (${overlappingHebrewMonths})`;
+      return {
+        primary: `${monthName} ${gregorianYear}`,
+        primaryShort: `${monthNameShort} ${gregorianYear}`,
+        secondary: overlappingHebrewMonths
+      };
     }
   };
 
@@ -605,7 +616,7 @@ export default function CalendarView() {
             </div>
             <div className='p-4'>
               <EventForm
-                key={`event-form-${isModalOpen}-${selectedDateRef.current?.getTime()}`}
+                key={`event-form-${isModalOpen}`}
                 selectedDate={selectedDateRef.current}
                 onDateChange={updateSelectedDate}
                 onAddEvent={async (eventData) => {
@@ -718,7 +729,10 @@ export default function CalendarView() {
             style={{ flex: '2', minHeight: '0', minWidth: '0' }}
           >
             {/* Header - Compact design matching button height */}
-            <div className='flex items-center justify-between px-3 py-1.5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900'>
+            <div 
+              className='flex items-center justify-between px-3 py-1.5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900'
+              style={{ containerType: 'inline-size' }}
+            >
               <div className='flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-md p-0.5'>
                 <button
                   onClick={() =>
@@ -747,9 +761,37 @@ export default function CalendarView() {
                   <ChevronRightIcon className='w-4 h-4 rtl:rotate-180' />
                 </button>
               </div>
-              <h2 className='text-sm font-semibold text-gray-900 dark:text-gray-100 text-center flex-1 min-w-0 mx-2'>
-                <span className='truncate'>{getCurrentMonthName()}</span>
-              </h2>
+              
+              <div className='text-sm font-semibold text-gray-900 dark:text-gray-100 text-center flex-1 min-w-0 mx-2 responsive-month-header'>
+                {(() => {
+                  const monthData = getCurrentMonthName();
+                  return (
+                    <>
+                      {/* Full version with secondary calendar */}
+                      <span className='month-full'>
+                        {monthData.primary} ({monthData.secondary})
+                      </span>
+                      
+                      {/* Short version (3-letter months for Gregorian) */}
+                      <span className='month-short'>
+                        {actualCalendarMode === 'gregorian' && monthData.primaryShort 
+                          ? `${monthData.primaryShort} (${monthData.secondary})`
+                          : `${monthData.primary} (${monthData.secondary})`
+                        }
+                      </span>
+                      
+                      {/* Minimal version (primary only) */}
+                      <span className='month-minimal'>
+                        {actualCalendarMode === 'gregorian' && monthData.primaryShort 
+                          ? monthData.primaryShort
+                          : monthData.primary
+                        }
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+              
               <button
                 onClick={() => setIsJumpToDateModalOpen(true)}
                 className='px-2.5 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors'
@@ -912,7 +954,7 @@ export default function CalendarView() {
                                 handleEventClick(event);
                               }}
                             >
-                              {event.title}
+                              {formatEventTitle(event.title, event.anniversary || 0)}
                             </div>
                           ))}
 

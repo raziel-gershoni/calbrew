@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
 import {
@@ -35,6 +35,12 @@ export default function GregorianDatePicker({
   const [pickedYear, setPickedYear] = useState(selectedGregorian.year);
   const [pickedMonth, setPickedMonth] = useState(selectedGregorian.month);
   const [pickedDay, setPickedDay] = useState(selectedGregorian.day);
+  
+  // Dynamic year range state
+  const [yearRange, setYearRange] = useState(() => ({
+    min: selectedGregorian.year - 100,
+    max: selectedGregorian.year + 100,
+  }));
 
   // Update local state when selectedDate changes
   useEffect(() => {
@@ -43,19 +49,46 @@ export default function GregorianDatePicker({
     setPickedDay(selectedGregorian.day);
   }, [selectedGregorian]);
 
-  // Generate year range (±20 years from current)
+  // Expand year range when approaching limits
+  const expandYearRange = useCallback((selectedYear: number) => {
+    setYearRange(prev => {
+      const buffer = 50; // Years to keep on each side
+      const expandBy = 100; // Years to add when expanding
+      
+      let newMin = prev.min;
+      let newMax = prev.max;
+      
+      // Expand backward if we're close to the minimum
+      if (selectedYear - prev.min < buffer) {
+        newMin = prev.min - expandBy;
+      }
+      
+      // Expand forward if we're close to the maximum
+      if (prev.max - selectedYear < buffer) {
+        newMax = prev.max + expandBy;
+      }
+      
+      // Only update if range actually changed
+      if (newMin !== prev.min || newMax !== prev.max) {
+        return { min: newMin, max: newMax };
+      }
+      
+      return prev;
+    });
+  }, []);
+
+  // Generate dynamic year range
   const yearOptions = useMemo((): WheelPickerOption[] => {
-    const currentYear = new Date().getFullYear();
     const years: WheelPickerOption[] = [];
 
-    for (let year = currentYear - 20; year <= currentYear + 20; year++) {
+    for (let year = yearRange.min; year <= yearRange.max; year++) {
       years.push({
         value: year.toString(),
         label: year.toString(),
       });
     }
     return years;
-  }, []);
+  }, [yearRange]);
 
   // Generate month options based on language
   const monthOptions = useMemo((): WheelPickerOption[] => {
@@ -112,6 +145,10 @@ export default function GregorianDatePicker({
   const handleYearChange = (value: string) => {
     const newYear = parseInt(value);
     setPickedYear(newYear);
+    
+    // Expand year range if needed
+    expandYearRange(newYear);
+    
     handleDateChange(newYear, pickedMonth, pickedDay);
   };
 

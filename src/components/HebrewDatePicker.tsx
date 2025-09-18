@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
@@ -38,6 +38,12 @@ export default function HebrewDatePicker({
   const [pickedYear, setPickedYear] = useState(selectedHebrew.year);
   const [pickedMonth, setPickedMonth] = useState(selectedHebrew.month);
   const [pickedDay, setPickedDay] = useState(selectedHebrew.day);
+  
+  // Dynamic year range state
+  const [yearRange, setYearRange] = useState(() => ({
+    min: selectedHebrew.year - 100,
+    max: selectedHebrew.year + 100,
+  }));
 
   // Update local state when selectedDate changes
   useEffect(() => {
@@ -46,12 +52,39 @@ export default function HebrewDatePicker({
     setPickedDay(selectedHebrew.day);
   }, [selectedHebrew]);
 
-  // Generate year range (±20 years from current)
+  // Expand year range when approaching limits
+  const expandYearRange = useCallback((selectedYear: number) => {
+    setYearRange(prev => {
+      const buffer = 50; // Years to keep on each side
+      const expandBy = 100; // Years to add when expanding
+      
+      let newMin = prev.min;
+      let newMax = prev.max;
+      
+      // Expand backward if we're close to the minimum
+      if (selectedYear - prev.min < buffer) {
+        newMin = prev.min - expandBy;
+      }
+      
+      // Expand forward if we're close to the maximum
+      if (prev.max - selectedYear < buffer) {
+        newMax = prev.max + expandBy;
+      }
+      
+      // Only update if range actually changed
+      if (newMin !== prev.min || newMax !== prev.max) {
+        return { min: newMin, max: newMax };
+      }
+      
+      return prev;
+    });
+  }, []);
+
+  // Generate dynamic year range
   const yearOptions = useMemo((): WheelPickerOption[] => {
-    const currentYear = new HDate().getFullYear();
     const years: WheelPickerOption[] = [];
 
-    for (let year = currentYear - 20; year <= currentYear + 20; year++) {
+    for (let year = yearRange.min; year <= yearRange.max; year++) {
       years.push({
         value: year.toString(),
         label: i18n.language === 'he' ? gematriya(year) : year.toString(),
@@ -59,7 +92,7 @@ export default function HebrewDatePicker({
     }
 
     return years;
-  }, [i18n.language]);
+  }, [yearRange, i18n.language]);
 
   // Generate month options for the selected year
   const monthOptions = useMemo((): WheelPickerOption[] => {
@@ -107,6 +140,9 @@ export default function HebrewDatePicker({
   const handleYearChange = (value: string) => {
     const newYear = parseInt(value);
     setPickedYear(newYear);
+    
+    // Expand year range if needed
+    expandYearRange(newYear);
 
     // Create new Hebrew date and notify parent
     try {

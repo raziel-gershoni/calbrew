@@ -40,6 +40,7 @@ const resources = {
       'Event saved successfully!': 'Event saved successfully!',
       'Failed to save event. Please try again.':
         'Failed to save event. Please try again.',
+      'Validation error': 'Validation error',
       more: 'more',
       Week: 'Week',
       Agenda: 'Agenda',
@@ -58,6 +59,7 @@ const resources = {
       English: 'English',
       Spanish: 'Spanish',
       Hebrew: 'Hebrew',
+      Russian: 'Russian',
       Language: 'Language',
       // Calendar type names
       Gregorian: 'Gregorian',
@@ -124,6 +126,7 @@ const resources = {
       'Event saved successfully!': 'האירוע נשמר בהצלחה!',
       'Failed to save event. Please try again.':
         'נכשל בשמירת האירוע. אנא נסה שוב.',
+      'Validation error': 'שגיאת אימות',
       more: 'עוד',
       Week: 'שבוע',
       Agenda: 'סדר יום',
@@ -142,6 +145,7 @@ const resources = {
       English: 'אנגלית',
       Spanish: 'ספרדית',
       Hebrew: 'עברית',
+      Russian: 'רוסית',
       Language: 'שפה',
       // Calendar type names
       Gregorian: 'לועזי',
@@ -208,6 +212,7 @@ const resources = {
       'Event saved successfully!': '¡Evento guardado exitosamente!',
       'Failed to save event. Please try again.':
         'Error al guardar evento. Por favor intenta de nuevo.',
+      'Validation error': 'Error de validación',
       more: 'más',
       Week: 'Semana',
       Agenda: 'Agenda',
@@ -226,6 +231,7 @@ const resources = {
       English: 'Inglés',
       Spanish: 'Español',
       Hebrew: 'Hebreo',
+      Russian: 'Ruso',
       Language: 'Idioma',
       // Calendar type names
       Gregorian: 'Gregoriano',
@@ -253,6 +259,93 @@ const resources = {
       'Go to Date': 'Ir a Fecha',
       'Edit Date': 'Editar Fecha',
       Confirm: 'Confirmar',
+    },
+  },
+  ru: {
+    translation: {
+      Edit: 'Редактировать',
+      Delete: 'Удалить',
+      Save: 'Сохранить',
+      Cancel: 'Отмена',
+      'Add Event': 'Добавить событие',
+      Events: 'События',
+      'Select an event to see the details':
+        'Выберите событие для просмотра деталей',
+      Today: 'Сегодня',
+      'Saving...': 'Сохранение...',
+      'Deleting...': 'Удаление...',
+      'Create New Event': 'Создать новое событие',
+      Title: 'Название',
+      Description: 'Описание',
+      Year: 'Год',
+      Month: 'Месяц',
+      Day: 'День',
+      Recurrence: 'Повторение',
+      Yearly: 'Ежегодно',
+      Monthly: 'Ежемесячно',
+      Weekly: 'Еженедельно',
+      'Creating...': 'Создание...',
+      Close: 'Закрыть',
+      'Sign Out': 'Выйти',
+      'Loading your events...': 'Загрузка ваших событий...',
+      'Failed to load events. Please try refreshing the page.':
+        'Не удалось загрузить события. Пожалуйста, обновите страницу.',
+      'Event created successfully!': 'Событие успешно создано!',
+      'Failed to create event. Please try again.':
+        'Не удалось создать событие. Пожалуйста, попробуйте еще раз.',
+      'Event deleted successfully!': 'Событие успешно удалено!',
+      'Failed to delete event. Please try again.':
+        'Не удалось удалить событие. Пожалуйста, попробуйте еще раз.',
+      'Event saved successfully!': 'Событие успешно сохранено!',
+      'Failed to save event. Please try again.':
+        'Не удалось сохранить событие. Пожалуйста, попробуйте еще раз.',
+      'Validation error': 'Ошибка валидации',
+      more: 'еще',
+      Week: 'Неделя',
+      Agenda: 'Повестка дня',
+      Time: 'Время',
+      'Event Details': 'Детали события',
+      'User Profile': 'Профиль пользователя',
+      Menu: 'Меню',
+      Name: 'Имя',
+      Email: 'Электронная почта',
+      'Account Provider': 'Поставщик аккаунта',
+      'Session Status': 'Статус сессии',
+      Active: 'Активен',
+      'User Avatar': 'Аватар пользователя',
+      'Loading...': 'Загрузка...',
+      // Language names
+      English: 'Английский',
+      Spanish: 'Испанский',
+      Hebrew: 'Иврит',
+      Russian: 'Русский',
+      Language: 'Язык',
+      // Calendar type names
+      Gregorian: 'Григорианский',
+      'Hebrew Calendar': 'Еврейский',
+      'Calendar View': 'Вид календаря',
+      User: 'Пользователь',
+      // Additional event list translations
+      'No events for this date': 'Нет событий на эту дату',
+      'Select a date to view events': 'Выберите дату для просмотра событий',
+      // Google Calendar sync translations
+      'Google Calendar': 'Google Календарь',
+      'Google Sync': 'Синхронизация Google',
+      'Sync with Google Calendar': 'Синхронизировать с Google Календарем',
+      'Synced with Google Calendar': 'Синхронизировано с Google Календарем',
+      'Not synced with Google Calendar': 'Не синхронизировано с Google Календарем',
+      'Checking sync status...': 'Проверка статуса синхронизации...',
+      'Start syncing with Google Calendar':
+        'Начать синхронизацию с Google Календарем',
+      'Syncing...': 'Синхронизация...',
+      // Hebrew Calendar Events
+      'Hebrew Calendar Events': 'События еврейского календаря',
+      'Your Events': 'Ваши события',
+      // Jump to Date functionality
+      'Jump to Date': 'Перейти к дате',
+      'Go to Date': 'Перейти к дате',
+      'Edit Date': 'Редактировать дату',
+      Confirm: 'Подтвердить',
     },
   },
 };

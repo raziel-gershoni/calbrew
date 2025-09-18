@@ -3,7 +3,7 @@
 import { HDate, gematriya, Locale } from '@hebcal/core';
 import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
-import { EventOccurrence, HebrewCalendarEvent } from '@/utils/hebrewDateUtils';
+import { EventOccurrence, HebrewCalendarEvent, formatEventTitle } from '@/utils/hebrewDateUtils';
 import { useCalendarMode } from '@/contexts/CalendarModeContext';
 import { PlusIcon, CalendarIcon } from '@heroicons/react/24/outline';
 
@@ -133,7 +133,7 @@ export default function DayEvents({
                         className='cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 p-3 rounded-md border border-gray-200 dark:border-gray-600 transition-colors'
                       >
                         <div className='font-medium text-gray-900 dark:text-gray-100'>
-                          {event.title}
+                          {formatEventTitle(event.title, event.anniversary || 0)}
                         </div>
                         {event.description && (
                           <div className='text-sm text-gray-500 dark:text-gray-400 mt-1 truncate'>

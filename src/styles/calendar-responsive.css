@@ -501,3 +501,37 @@
     min-height: 0;
   }
 }
+
+/* === RESPONSIVE MONTH HEADER USING CONTAINER QUERIES === */
+
+/* Base: Show all versions, but only display the appropriate one */
+.responsive-month-header {
+  container-type: inline-size;
+}
+
+.responsive-month-header .month-full,
+.responsive-month-header .month-short,
+.responsive-month-header .month-minimal {
+  display: none;
+}
+
+/* Large containers: Show full month with secondary calendar */
+@container (min-width: 400px) {
+  .responsive-month-header .month-full {
+    display: inline;
+  }
+}
+
+/* Medium containers: Show shortened version (3-letter months) */
+@container (min-width: 280px) and (max-width: 399px) {
+  .responsive-month-header .month-short {
+    display: inline;
+  }
+}
+
+/* Small containers: Show minimal version (primary calendar only) */
+@container (max-width: 279px) {
+  .responsive-month-header .month-minimal {
+    display: inline;
+  }
+}

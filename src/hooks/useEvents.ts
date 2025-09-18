@@ -107,7 +107,7 @@ export function useEvents(): UseEventsReturn {
                 .join(', ');
               showError(`${t('Validation error')}: ${validationMessages}`);
             } else {
-              showError(response.error);
+              showError(t('Failed to create event. Please try again.'));
             }
           } else {
             throw new Error(`Failed to create event: ${res.statusText}`);
@@ -118,9 +118,7 @@ export function useEvents(): UseEventsReturn {
         // Refetch events after successful creation
         await fetchEvents();
 
-        const successMessage =
-          response.success === true ? response.message : undefined;
-        showSuccess(successMessage || t('Event created successfully!'));
+        showSuccess(t('Event created successfully!'));
         return true;
       } catch (error) {
         console.error('Error creating event:', error);
@@ -160,7 +158,7 @@ export function useEvents(): UseEventsReturn {
                 .join(', ');
               showError(`${t('Validation error')}: ${validationMessages}`);
             } else {
-              showError(response.error);
+              showError(t('Failed to save event. Please try again.'));
             }
           } else {
             throw new Error(`Failed to save event: ${res.statusText}`);
@@ -171,9 +169,7 @@ export function useEvents(): UseEventsReturn {
         // Refetch events after successful update
         await fetchEvents();
 
-        const successMessage =
-          response.success === true ? response.message : undefined;
-        showSuccess(successMessage || t('Event saved successfully!'));
+        showSuccess(t('Event saved successfully!'));
         return true;
       } catch (error) {
         console.error('Error saving event:', error);
@@ -198,7 +194,7 @@ export function useEvents(): UseEventsReturn {
 
         if (!res.ok) {
           if (response.success === false) {
-            showError(response.error);
+            showError(t('Failed to delete event. Please try again.'));
           } else {
             throw new Error(`Failed to delete event: ${res.statusText}`);
           }
@@ -211,13 +207,11 @@ export function useEvents(): UseEventsReturn {
         // Check for warnings in the new format or legacy format
         const warning =
           response.success === true ? response.data?.warning : undefined;
-        const successMessage =
-          response.success === true ? response.message : undefined;
 
         if (warning) {
           showSuccess(`${t('Event deleted successfully!')} ${warning}`);
         } else {
-          showSuccess(successMessage || t('Event deleted successfully!'));
+          showSuccess(t('Event deleted successfully!'));
         }
         return true;
       } catch (error) {

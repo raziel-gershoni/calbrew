@@ -1,6 +1,12 @@
 import { google } from 'googleapis';
 import { query } from '@/lib/postgres';
 
+// Get environment-specific calendar name
+const getCalendarName = () => {
+  const isDev = process.env.NODE_ENV === 'development';
+  return isDev ? 'Calbrew-Dev' : 'Calbrew';
+};
+
 export interface CalendarCheckResult {
   calendarId: string | null;
   exists: boolean;
@@ -27,35 +33,42 @@ export async function ensureCalendarExists(
     oauth2Client.setCredentials({ access_token: accessToken });
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-    // First, check if the current calendar ID exists (if provided)
+    // First, check if the current calendar ID exists and has the right name (if provided)
+    const expectedCalendarName = getCalendarName();
     if (currentCalendarId) {
       try {
-        await calendar.calendars.get({ calendarId: currentCalendarId });
-        // Calendar exists, return it
-        return {
-          calendarId: currentCalendarId,
-          exists: true,
-          created: false,
-        };
+        const { data: currentCalendar } = await calendar.calendars.get({ calendarId: currentCalendarId });
+        // Check if calendar exists AND has the correct name for current environment
+        if (currentCalendar.summary === expectedCalendarName) {
+          return {
+            calendarId: currentCalendarId,
+            exists: true,
+            created: false,
+          };
+        } else {
+          console.info(
+            `Calendar ${currentCalendarId} exists but has wrong name "${currentCalendar.summary}", expected "${expectedCalendarName}". Will search for or create correct calendar.`,
+          );
+        }
       } catch {
         // Calendar not found or inaccessible, will search/create new one
         console.info(
-          `Calendar ${currentCalendarId} not accessible, will search for or create Calbrew calendar`,
+          `Calendar ${currentCalendarId} not accessible, will search for or create ${expectedCalendarName} calendar`,
         );
       }
     }
 
-    // Search for existing Calbrew calendar
+    // Search for existing calendar
     const { data: calendars } = await calendar.calendarList.list();
-    let calbrewCalendar = calendars.items?.find((c) => c.summary === 'Calbrew');
+    let calbrewCalendar = calendars.items?.find((c) => c.summary === expectedCalendarName);
 
     let created = false;
     if (!calbrewCalendar) {
       // Create new calendar
       const { data: newCalendar } = await calendar.calendars.insert({
         requestBody: {
-          summary: 'Calbrew',
-          description: 'Hebrew calendar events managed by Calbrew',
+          summary: expectedCalendarName,
+          description: `Hebrew calendar events managed by ${expectedCalendarName}`,
         },
       });
       calbrewCalendar = newCalendar;

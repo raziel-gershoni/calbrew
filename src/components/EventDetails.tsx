@@ -8,9 +8,10 @@ import {
   ExclamationTriangleIcon,
   CalendarIcon,
 } from '@heroicons/react/24/outline';
+import { formatEventTitle, EventOccurrence } from '@/utils/hebrewDateUtils';
 
 interface EventDetailsProps {
-  event: Event | null;
+  event: EventOccurrence | null;
   onDelete: (id: string) => void;
   onSave: (event: Event) => Promise<void>;
   isSaving: boolean;
@@ -148,7 +149,9 @@ export default function EventDetails({
         </div>
       ) : (
         <div>
-          <h2 className='text-2xl font-bold mb-2'>{event.title}</h2>
+          <h2 className='text-2xl font-bold mb-2'>
+            {formatEventTitle(event.title, event.anniversary || 0)}
+          </h2>
           <p className='mb-4'>{event.description}</p>
 
           {/* Sync Status Indicator */}

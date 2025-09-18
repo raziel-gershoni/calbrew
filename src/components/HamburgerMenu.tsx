@@ -70,7 +70,7 @@ export default function HamburgerMenu({
     }
   }, [isOpen]);
 
-  const handleLanguageSelect = (language: 'en' | 'es' | 'he') => {
+  const handleLanguageSelect = (language: 'en' | 'es' | 'he' | 'ru') => {
     changeLanguage(language);
     setIsOpen(false);
   };
@@ -156,6 +156,17 @@ export default function HamburgerMenu({
                   }`}
                 >
                   ES
+                </button>
+                <button
+                  onClick={() => handleLanguageSelect('ru')}
+                  disabled={isLanguageLoading}
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    i18n.language === 'ru'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                  }`}
+                >
+                  RU
                 </button>
                 <button
                   onClick={() => handleLanguageSelect('he')}

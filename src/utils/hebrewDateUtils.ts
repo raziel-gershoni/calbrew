@@ -112,9 +112,14 @@ export function generateEventOccurrences(
         const anniversary = calculateAnniversary(year, event.hebrew_year);
 
         occurrences.push({
-          ...event,
+          id: event.id,
+          title: event.title,
+          description: event.description,
+          hebrew_year: event.hebrew_year,
+          hebrew_month: event.hebrew_month,
+          hebrew_day: event.hebrew_day,
+          recurrence_rule: event.recurrence_rule,
           date: gregorianDate,
-          title: formatEventTitle(event.title, anniversary),
           anniversary,
         });
       }

@@ -7,6 +7,8 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
+import { useTranslation } from 'react-i18next';
+import { getTextDirection } from '@/i18n';
 
 interface Toast {
   id: string;
@@ -37,6 +39,8 @@ interface ToastProviderProps {
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const { i18n } = useTranslation();
+  const isRTL = getTextDirection(i18n.language) === 'rtl';
 
   const removeToast = (id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -97,19 +101,19 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
       {/* Toast Container */}
       {toasts.length > 0 && (
-        <div className='fixed top-4 right-4 z-50 space-y-2'>
+        <div className={`fixed top-4 z-50 space-y-2 ${isRTL ? 'left-4' : 'right-4'}`}>
           {toasts.map((toast) => (
             <div
               key={toast.id}
-              className={`${getToastStyles(toast.type)} animate-in slide-in-from-right duration-300`}
+              className={`${getToastStyles(toast.type)} animate-in duration-300 ${isRTL ? 'slide-in-from-left' : 'slide-in-from-right'}`}
             >
-              <div className='flex items-center space-x-3'>
+              <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-3' : 'space-x-3'}`}>
                 {getIcon(toast.type)}
                 <span className='text-sm font-medium'>{toast.message}</span>
               </div>
               <button
                 onClick={() => removeToast(toast.id)}
-                className='ml-4 text-current opacity-70 hover:opacity-100'
+                className={`text-current opacity-70 hover:opacity-100 ${isRTL ? 'mr-4' : 'ml-4'}`}
               >
                 <XMarkIcon className='h-4 w-4' />
               </button>
