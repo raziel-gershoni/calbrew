@@ -197,7 +197,7 @@ export default function HamburgerMenu({
                 <button
                   onClick={() => handleCalendarModeChange('hebrew')}
                   disabled={isCalendarModeLoading}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-center whitespace-nowrap overflow-hidden ${
                     calendarMode === 'hebrew'
                       ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
                       : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
@@ -208,7 +208,7 @@ export default function HamburgerMenu({
                 <button
                   onClick={() => handleCalendarModeChange('gregorian')}
                   disabled={isCalendarModeLoading}
-                  className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-center whitespace-nowrap overflow-hidden ${
                     calendarMode === 'gregorian'
                       ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
                       : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'

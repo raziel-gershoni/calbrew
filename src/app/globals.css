@@ -30,21 +30,24 @@ body {
 
 /* 1. MOBILE BASE: Start with mobile viewport handling */
 .mobile-viewport-container {
-  /* Mobile-first: Use 100dvh for mobile browser chrome handling */
-  height: 100dvh;
-  min-height: 100dvh;
-
   /* Fallback for older mobile browsers */
   height: 100vh;
   min-height: 100vh;
+
+  /* Modern mobile browsers: Use 100dvh for mobile browser chrome handling */
+  height: 100dvh;
+  min-height: 100dvh;
 }
 
 /* Ensure html and body respect mobile viewport from the start */
 html,
 body {
+  /* Fallback */
   height: 100%;
-  height: 100dvh;
   min-height: 100%;
+
+  /* Modern dynamic viewport */
+  height: 100dvh;
   min-height: 100dvh;
 }
 
@@ -52,13 +55,13 @@ body {
 @media (max-width: 768px) {
   /* Mobile viewport container optimizations */
   .mobile-viewport-container {
-    /* Ensure proper mobile browser chrome handling */
-    height: 100dvh;
-    min-height: 100dvh;
-
     /* Fallback for older mobile browsers */
     height: 100vh;
     min-height: 100vh;
+
+    /* Modern browsers: proper mobile browser chrome handling */
+    height: 100dvh;
+    min-height: 100dvh;
 
     /* Mobile-specific optimizations */
     -webkit-overflow-scrolling: touch;
@@ -75,7 +78,10 @@ body {
 @media (max-width: 768px) and (orientation: landscape) {
   /* Ensure proper mobile landscape behavior */
   body {
+    /* Fallback */
     min-height: 100vh;
+
+    /* Dynamic viewport for landscape */
     min-height: 100dvh;
   }
 
@@ -85,7 +91,23 @@ body {
   }
 }
 
-/* 4. PROGRESSIVE ENHANCEMENT: Fallback for browsers without dvh support */
+/* 4. ENHANCED MOBILE BROWSER CHROME HANDLING */
+@supports (height: 100dvh) {
+  /* Enhanced handling for Safari's dynamic viewport */
+  @media (max-width: 768px) {
+    .mobile-viewport-container {
+      /* Use dynamic viewport with safe area insets */
+      height: 100dvh;
+      min-height: 100dvh;
+
+      /* Account for safe areas on notched devices */
+      padding-top: env(safe-area-inset-top, 0);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+  }
+}
+
+/* 5. PROGRESSIVE ENHANCEMENT: Fallback for browsers without dvh support */
 @supports not (height: 100dvh) {
   .mobile-viewport-container {
     height: 100vh;

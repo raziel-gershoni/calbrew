@@ -37,7 +37,9 @@ export async function ensureCalendarExists(
     const expectedCalendarName = getCalendarName();
     if (currentCalendarId) {
       try {
-        const { data: currentCalendar } = await calendar.calendars.get({ calendarId: currentCalendarId });
+        const { data: currentCalendar } = await calendar.calendars.get({
+          calendarId: currentCalendarId,
+        });
         // Check if calendar exists AND has the correct name for current environment
         if (currentCalendar.summary === expectedCalendarName) {
           return {
@@ -60,7 +62,9 @@ export async function ensureCalendarExists(
 
     // Search for existing calendar
     const { data: calendars } = await calendar.calendarList.list();
-    let calbrewCalendar = calendars.items?.find((c) => c.summary === expectedCalendarName);
+    let calbrewCalendar = calendars.items?.find(
+      (c) => c.summary === expectedCalendarName,
+    );
 
     let created = false;
     if (!calbrewCalendar) {

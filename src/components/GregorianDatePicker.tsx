@@ -35,7 +35,7 @@ export default function GregorianDatePicker({
   const [pickedYear, setPickedYear] = useState(selectedGregorian.year);
   const [pickedMonth, setPickedMonth] = useState(selectedGregorian.month);
   const [pickedDay, setPickedDay] = useState(selectedGregorian.day);
-  
+
   // Dynamic year range state
   const [yearRange, setYearRange] = useState(() => ({
     min: selectedGregorian.year - 100,
@@ -51,28 +51,28 @@ export default function GregorianDatePicker({
 
   // Expand year range when approaching limits
   const expandYearRange = useCallback((selectedYear: number) => {
-    setYearRange(prev => {
+    setYearRange((prev) => {
       const buffer = 50; // Years to keep on each side
       const expandBy = 100; // Years to add when expanding
-      
+
       let newMin = prev.min;
       let newMax = prev.max;
-      
+
       // Expand backward if we're close to the minimum
       if (selectedYear - prev.min < buffer) {
         newMin = prev.min - expandBy;
       }
-      
+
       // Expand forward if we're close to the maximum
       if (prev.max - selectedYear < buffer) {
         newMax = prev.max + expandBy;
       }
-      
+
       // Only update if range actually changed
       if (newMin !== prev.min || newMax !== prev.max) {
         return { min: newMin, max: newMax };
       }
-      
+
       return prev;
     });
   }, []);
@@ -145,10 +145,10 @@ export default function GregorianDatePicker({
   const handleYearChange = (value: string) => {
     const newYear = parseInt(value);
     setPickedYear(newYear);
-    
+
     // Expand year range if needed
     expandYearRange(newYear);
-    
+
     handleDateChange(newYear, pickedMonth, pickedDay);
   };
 

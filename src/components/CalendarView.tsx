@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { HDate, gematriya, Locale } from '@hebcal/core';
+import { HDate, gematriya } from '@hebcal/core';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useCalendarMode } from '@/contexts/CalendarModeContext';
+import { getLocalizedHebrewMonthName } from '@/utils/hebrewMonthLocalization';
 import EventForm from './EventForm';
 import DayEvents from './DayEvents';
 import EventDetails from './EventDetails';
@@ -367,10 +368,13 @@ export default function CalendarView() {
     const monthName = hdate.getMonthName();
 
     if (i18n.language === 'he') {
-      const hebrewMonthName = Locale.gettext(monthName, 'he') || monthName;
+      const localizedMonthName = getLocalizedHebrewMonthName(
+        monthName,
+        i18n.language,
+      );
       return {
         day: gematriya(hdate.getDate()),
-        month: hebrewMonthName,
+        month: localizedMonthName,
         year: gematriya(hdate.getFullYear()),
       };
     } else {
@@ -394,10 +398,10 @@ export default function CalendarView() {
 
   const getCurrentMonthName = () => {
     if (actualCalendarMode === 'hebrew') {
-      const hebrewMonthName =
-        i18n.language === 'he'
-          ? Locale.gettext(hebrewMonth, 'he') || hebrewMonth
-          : hebrewMonth;
+      const hebrewMonthName = getLocalizedHebrewMonthName(
+        hebrewMonth,
+        i18n.language,
+      );
 
       const primaryYear =
         i18n.language === 'he' ? gematriya(hebrewYear) : hebrewYear;
@@ -410,7 +414,7 @@ export default function CalendarView() {
 
       return {
         primary: `${hebrewMonthName} ${primaryYear}`,
-        secondary: overlappingGregorianMonths
+        secondary: overlappingGregorianMonths,
       };
     } else {
       const date = new Date(gregorianYear, gregorianMonth, 1);
@@ -430,7 +434,7 @@ export default function CalendarView() {
       return {
         primary: `${monthName} ${gregorianYear}`,
         primaryShort: `${monthNameShort} ${gregorianYear}`,
-        secondary: overlappingHebrewMonths
+        secondary: overlappingHebrewMonths,
       };
     }
   };
@@ -729,7 +733,7 @@ export default function CalendarView() {
             style={{ flex: '2', minHeight: '0', minWidth: '0' }}
           >
             {/* Header - Compact design matching button height */}
-            <div 
+            <div
               className='flex items-center justify-between px-3 py-1.5 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 bg-gray-50 dark:bg-gray-900'
               style={{ containerType: 'inline-size' }}
             >
@@ -761,7 +765,7 @@ export default function CalendarView() {
                   <ChevronRightIcon className='w-4 h-4 rtl:rotate-180' />
                 </button>
               </div>
-              
+
               <div className='text-sm font-semibold text-gray-900 dark:text-gray-100 text-center flex-1 min-w-0 mx-2 responsive-month-header'>
                 {(() => {
                   const monthData = getCurrentMonthName();
@@ -771,27 +775,27 @@ export default function CalendarView() {
                       <span className='month-full'>
                         {monthData.primary} ({monthData.secondary})
                       </span>
-                      
+
                       {/* Short version (3-letter months for Gregorian) */}
                       <span className='month-short'>
-                        {actualCalendarMode === 'gregorian' && monthData.primaryShort 
+                        {actualCalendarMode === 'gregorian' &&
+                        monthData.primaryShort
                           ? `${monthData.primaryShort} (${monthData.secondary})`
-                          : `${monthData.primary} (${monthData.secondary})`
-                        }
+                          : `${monthData.primary} (${monthData.secondary})`}
                       </span>
-                      
+
                       {/* Minimal version (primary only) */}
                       <span className='month-minimal'>
-                        {actualCalendarMode === 'gregorian' && monthData.primaryShort 
+                        {actualCalendarMode === 'gregorian' &&
+                        monthData.primaryShort
                           ? monthData.primaryShort
-                          : monthData.primary
-                        }
+                          : monthData.primary}
                       </span>
                     </>
                   );
                 })()}
               </div>
-              
+
               <button
                 onClick={() => setIsJumpToDateModalOpen(true)}
                 className='px-2.5 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors'
@@ -954,7 +958,10 @@ export default function CalendarView() {
                                 handleEventClick(event);
                               }}
                             >
-                              {formatEventTitle(event.title, event.anniversary || 0)}
+                              {formatEventTitle(
+                                event.title,
+                                event.anniversary || 0,
+                              )}
                             </div>
                           ))}
 

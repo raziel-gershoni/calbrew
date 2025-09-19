@@ -101,13 +101,17 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
       {/* Toast Container */}
       {toasts.length > 0 && (
-        <div className={`fixed top-4 z-50 space-y-2 ${isRTL ? 'left-4' : 'right-4'}`}>
+        <div
+          className={`fixed top-4 z-50 space-y-2 ${isRTL ? 'left-4' : 'right-4'}`}
+        >
           {toasts.map((toast) => (
             <div
               key={toast.id}
               className={`${getToastStyles(toast.type)} animate-in duration-300 ${isRTL ? 'slide-in-from-left' : 'slide-in-from-right'}`}
             >
-              <div className={`flex items-center ${isRTL ? 'space-x-reverse space-x-3' : 'space-x-3'}`}>
+              <div
+                className={`flex items-center ${isRTL ? 'space-x-reverse space-x-3' : 'space-x-3'}`}
+              >
                 {getIcon(toast.type)}
                 <span className='text-sm font-medium'>{toast.message}</span>
               </div>

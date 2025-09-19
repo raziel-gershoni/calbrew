@@ -38,7 +38,9 @@ async function ensureCalbrewCalendar(
     );
 
     const calendarName = getCalendarName();
-    let calbrewCalendar = calendars.items?.find((c) => c.summary === calendarName);
+    let calbrewCalendar = calendars.items?.find(
+      (c) => c.summary === calendarName,
+    );
 
     if (!calbrewCalendar) {
       console.log(`📝 ${calendarName} calendar not found, creating new one...`);
@@ -49,9 +51,13 @@ async function ensureCalbrewCalendar(
         },
       });
       calbrewCalendar = newCalendar;
-      console.log(`✅ Created new ${calendarName} calendar: ${newCalendar?.id}`);
+      console.log(
+        `✅ Created new ${calendarName} calendar: ${newCalendar?.id}`,
+      );
     } else {
-      console.log(`✅ Found existing ${calendarName} calendar: ${calbrewCalendar.id}`);
+      console.log(
+        `✅ Found existing ${calendarName} calendar: ${calbrewCalendar.id}`,
+      );
     }
 
     return calbrewCalendar?.id || null;
