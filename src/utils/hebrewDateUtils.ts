@@ -358,10 +358,9 @@ export function getHebrewEventsForHebrewMonth(
 
     return events.map((event: Event, index: number) => {
       const hebrewDate = event.getDate();
-      let title =
-        language === 'he'
-          ? event.render('he') || event.renderBrief('he') || event.getDesc()
-          : event.getDesc(); // Already transliterated by default
+
+      // Use event.render() with the proper locale for direct translation
+      let title = event.render(language) || event.getDesc();
 
       // Convert Hebrew years to gematriya when displaying in Hebrew
       if (language === 'he' && title) {
@@ -405,10 +404,9 @@ export function getHebrewEventsForGregorianMonth(
 
     return events.map((event: Event, index: number) => {
       const hebrewDate = event.getDate();
-      let title =
-        language === 'he'
-          ? event.render('he') || event.renderBrief('he') || event.getDesc()
-          : event.getDesc(); // Already transliterated by default
+
+      // Use event.render() with the proper locale for direct translation
+      let title = event.render(language) || event.getDesc();
 
       // Convert Hebrew years to gematriya when displaying in Hebrew
       if (language === 'he' && title) {
@@ -451,10 +449,9 @@ function getHebrewEventsForDateRange(
 
     return events.map((event: Event, index: number) => {
       const hebrewDate = event.getDate();
-      let title =
-        language === 'he'
-          ? event.render('he') || event.renderBrief('he') || event.getDesc()
-          : event.getDesc(); // Already transliterated by default
+
+      // Use event.render() with the proper locale for direct translation
+      let title = event.render(language) || event.getDesc();
 
       // Convert Hebrew years to gematriya when displaying in Hebrew
       if (language === 'he' && title) {

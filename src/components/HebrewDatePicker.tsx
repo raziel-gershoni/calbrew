@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { HDate, gematriya, Locale } from '@hebcal/core';
+import { HDate, gematriya } from '@hebcal/core';
 import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
+import { getLocalizedHebrewMonthName } from '@/utils/hebrewMonthLocalization';
 import {
   WheelPicker,
   WheelPickerWrapper,
@@ -38,7 +39,7 @@ export default function HebrewDatePicker({
   const [pickedYear, setPickedYear] = useState(selectedHebrew.year);
   const [pickedMonth, setPickedMonth] = useState(selectedHebrew.month);
   const [pickedDay, setPickedDay] = useState(selectedHebrew.day);
-  
+
   // Dynamic year range state
   const [yearRange, setYearRange] = useState(() => ({
     min: selectedHebrew.year - 100,
@@ -54,28 +55,28 @@ export default function HebrewDatePicker({
 
   // Expand year range when approaching limits
   const expandYearRange = useCallback((selectedYear: number) => {
-    setYearRange(prev => {
+    setYearRange((prev) => {
       const buffer = 50; // Years to keep on each side
       const expandBy = 100; // Years to add when expanding
-      
+
       let newMin = prev.min;
       let newMax = prev.max;
-      
+
       // Expand backward if we're close to the minimum
       if (selectedYear - prev.min < buffer) {
         newMin = prev.min - expandBy;
       }
-      
+
       // Expand forward if we're close to the maximum
       if (prev.max - selectedYear < buffer) {
         newMax = prev.max + expandBy;
       }
-      
+
       // Only update if range actually changed
       if (newMin !== prev.min || newMax !== prev.max) {
         return { min: newMin, max: newMax };
       }
-      
+
       return prev;
     });
   }, []);
@@ -102,11 +103,14 @@ export default function HebrewDatePicker({
     for (let monthNum = 1; monthNum <= numMonths; monthNum++) {
       const hdate = new HDate(1, monthNum, pickedYear);
       const monthNameEn = hdate.getMonthName();
-      const monthNameHe = Locale.gettext(monthNameEn, 'he');
+      const localizedMonthName = getLocalizedHebrewMonthName(
+        monthNameEn,
+        i18n.language,
+      );
 
       months.push({
         value: monthNum.toString(),
-        label: i18n.language === 'he' ? monthNameHe : monthNameEn,
+        label: localizedMonthName,
       });
     }
 
@@ -140,7 +144,7 @@ export default function HebrewDatePicker({
   const handleYearChange = (value: string) => {
     const newYear = parseInt(value);
     setPickedYear(newYear);
-    
+
     // Expand year range if needed
     expandYearRange(newYear);
 

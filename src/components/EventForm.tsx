@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { HDate, Locale } from '@hebcal/core';
+import { HDate } from '@hebcal/core';
 import { Event } from '@/types/event';
 import { useTranslation } from 'react-i18next';
 import { useGcalSync } from '@/hooks/useGcalSync';
+import { getLocalizedHebrewMonthName } from '@/utils/hebrewMonthLocalization';
 import UnifiedDatePicker from './UnifiedDatePicker';
 
 interface EventFormProps {
@@ -68,10 +69,13 @@ export default function EventForm({
     const monthNum = i + 1;
     const hdate = new HDate(1, monthNum, hebrew_year);
     const monthNameEn = hdate.getMonthName();
-    const monthNameHe = Locale.gettext(monthNameEn, 'he');
+    const localizedMonthName = getLocalizedHebrewMonthName(
+      monthNameEn,
+      i18n.language,
+    );
     return {
       num: monthNum,
-      name: i18n.language === 'he' ? monthNameHe : monthNameEn,
+      name: localizedMonthName,
     };
   });
 

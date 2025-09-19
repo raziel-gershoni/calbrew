@@ -321,8 +321,8 @@ const resources = {
       Russian: 'Русский',
       Language: 'Язык',
       // Calendar type names
-      Gregorian: 'Григорианский',
-      'Hebrew Calendar': 'Еврейский',
+      Gregorian: 'Грег.',
+      'Hebrew Calendar': 'Евр.',
       'Calendar View': 'Вид календаря',
       User: 'Пользователь',
       // Additional event list translations
@@ -333,7 +333,8 @@ const resources = {
       'Google Sync': 'Синхронизация Google',
       'Sync with Google Calendar': 'Синхронизировать с Google Календарем',
       'Synced with Google Calendar': 'Синхронизировано с Google Календарем',
-      'Not synced with Google Calendar': 'Не синхронизировано с Google Календарем',
+      'Not synced with Google Calendar':
+        'Не синхронизировано с Google Календарем',
       'Checking sync status...': 'Проверка статуса синхронизации...',
       'Start syncing with Google Calendar':
         'Начать синхронизацию с Google Календарем',

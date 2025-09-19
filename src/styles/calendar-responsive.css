@@ -309,10 +309,19 @@
   }
 }
 
-/* Wide cells (> 75px width) - show secondary month */
-@container (min-width: 75px) {
+/* Wide cells (> 100px width) - show secondary month */
+@container (min-width: 100px) {
   .calendar-cell-secondary-month {
     @apply inline;
+  }
+}
+
+/* Mobile landscape: Be more conservative with secondary month display */
+@media (max-width: 768px) and (orientation: landscape) {
+  @container (max-width: 120px) {
+    .calendar-cell-secondary-month {
+      @apply hidden;
+    }
   }
 }
 
@@ -533,5 +542,28 @@
 @container (max-width: 279px) {
   .responsive-month-header .month-minimal {
     display: inline;
+  }
+}
+
+/* Mobile landscape: Use shorter month headers to save space */
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Force shorter headers in landscape mobile */
+  @container (max-width: 500px) {
+    .responsive-month-header .month-full {
+      display: none;
+    }
+    .responsive-month-header .month-short {
+      display: inline;
+    }
+  }
+
+  /* Very constrained landscape mobile */
+  @container (max-width: 350px) {
+    .responsive-month-header .month-short {
+      display: none;
+    }
+    .responsive-month-header .month-minimal {
+      display: inline;
+    }
   }
 }
