@@ -98,7 +98,9 @@ export async function initializeHebcalLocales(): Promise<void> {
 
   try {
     // Dynamic import of @hebcal/locales ES module
-    await import('@hebcal/locales' as any);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore - @hebcal/locales doesn't have TypeScript declarations
+    await import('@hebcal/locales');
     localesInitialized = true;
     console.log('Hebcal locales initialized successfully');
   } catch (error) {
