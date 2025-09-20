@@ -227,6 +227,19 @@ export default function CalendarView() {
     if (showAnyHebrewFeatures && combinedPreferences && !preferencesLoading) {
       // Create filtered preferences based on what's actually enabled
       const activePreferences = {
+        // Start with defaults to ensure all properties are defined
+        majorHolidays: false,
+        minorHolidays: false,
+        fastDays: false,
+        roshChodesh: false,
+        modernHolidays: false,
+        torahReadings: false,
+        specialShabbat: false,
+        omerCount: false,
+        dafYomi: false,
+        mishnaYomi: false,
+        yerushalmiYomi: false,
+        nachYomi: false,
         // Calendar events only if Hebrew events are enabled
         ...(showHebrewEvents ? calendarPreferences : {}),
         // Daily learning only if daily learning is enabled

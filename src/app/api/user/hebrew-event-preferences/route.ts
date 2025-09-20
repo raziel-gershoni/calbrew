@@ -73,7 +73,6 @@ export async function PUT(request: NextRequest): Promise<Response> {
       'mishnaYomi',
       'yerushalmiYomi',
       'nachYomi',
-      'chanukahCandles',
     ];
 
     for (const key of requiredKeys) {

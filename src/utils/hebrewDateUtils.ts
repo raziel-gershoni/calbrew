@@ -319,27 +319,45 @@ function shouldIncludeEvent(
   preferences: HebrewEventPreferences,
 ): boolean {
   // Check each preference type
-  if (eventFlags & flags.CHAG && preferences.majorHolidays) return true;
-  if (eventFlags & flags.MINOR_HOLIDAY && preferences.minorHolidays)
+  if (eventFlags & flags.CHAG && preferences.majorHolidays) {
     return true;
-  if (eventFlags & flags.MODERN_HOLIDAY && preferences.modernHolidays)
+  }
+  if (eventFlags & flags.MINOR_HOLIDAY && preferences.minorHolidays) {
     return true;
+  }
+  if (eventFlags & flags.MODERN_HOLIDAY && preferences.modernHolidays) {
+    return true;
+  }
   if (
     eventFlags & (flags.MAJOR_FAST | flags.MINOR_FAST) &&
     preferences.fastDays
-  )
+  ) {
     return true;
-  if (eventFlags & flags.ROSH_CHODESH && preferences.roshChodesh) return true;
-  if (eventFlags & flags.PARSHA_HASHAVUA && preferences.torahReadings)
+  }
+  if (eventFlags & flags.ROSH_CHODESH && preferences.roshChodesh) {
     return true;
-  if (eventFlags & flags.SPECIAL_SHABBAT && preferences.specialShabbat)
+  }
+  if (eventFlags & flags.PARSHA_HASHAVUA && preferences.torahReadings) {
     return true;
-  if (eventFlags & flags.OMER_COUNT && preferences.omerCount) return true;
-  if (eventFlags & flags.DAF_YOMI && preferences.dafYomi) return true;
-  if (eventFlags & flags.MISHNA_YOMI && preferences.mishnaYomi) return true;
-  if (eventFlags & flags.YERUSHALMI_YOMI && preferences.yerushalmiYomi)
+  }
+  if (eventFlags & flags.SPECIAL_SHABBAT && preferences.specialShabbat) {
     return true;
-  if (eventFlags & flags.NACH_YOMI && preferences.nachYomi) return true;
+  }
+  if (eventFlags & flags.OMER_COUNT && preferences.omerCount) {
+    return true;
+  }
+  if (eventFlags & flags.DAF_YOMI && preferences.dafYomi) {
+    return true;
+  }
+  if (eventFlags & flags.MISHNA_YOMI && preferences.mishnaYomi) {
+    return true;
+  }
+  if (eventFlags & flags.YERUSHALMI_YOMI && preferences.yerushalmiYomi) {
+    return true;
+  }
+  if (eventFlags & flags.NACH_YOMI && preferences.nachYomi) {
+    return true;
+  }
 
   return false;
 }
