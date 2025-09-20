@@ -33,7 +33,7 @@
 }
 
 .calendar-cell-hebrew-event {
-  @apply text-xs bg-purple-100 text-purple-800 p-0.5 mb-0.5 rounded truncate cursor-pointer hover:bg-purple-200;
+  @apply text-xs p-0.5 mb-0.5 rounded truncate cursor-pointer;
 }
 
 .calendar-cell-event-indicator {
@@ -196,7 +196,7 @@
   }
 
   .calendar-cell-hebrew-event {
-    @apply flex items-center text-xs bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded truncate max-h-4 leading-tight flex-shrink-0;
+    @apply flex items-center text-xs px-1.5 py-0.5 rounded truncate max-h-4 leading-tight flex-shrink-0;
   }
 
   /* Show all events - let them overflow */
@@ -248,7 +248,7 @@
   }
 
   .calendar-cell-hebrew-event {
-    @apply flex items-center text-sm bg-purple-100 text-purple-800 px-2 py-0.5 rounded truncate max-h-5 leading-tight flex-shrink-0;
+    @apply flex items-center text-sm px-2 py-0.5 rounded truncate max-h-5 leading-tight flex-shrink-0;
   }
 
   /* Show all events - let them overflow */

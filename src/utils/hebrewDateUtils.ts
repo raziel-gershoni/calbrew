@@ -6,6 +6,8 @@ import {
   Event,
   flags,
 } from '@hebcal/core';
+import '@hebcal/learning';
+import { HebrewEventPreferences } from '@/types/hebrewEventPreferences';
 
 export interface HebrewDateRange {
   startYear: number;
@@ -309,6 +311,39 @@ export interface HebrewCalendarEvent {
 /**
  * Get event type based on HebCal flags
  */
+/**
+ * Check if an event should be included based on user preferences
+ */
+function shouldIncludeEvent(
+  eventFlags: number,
+  preferences: HebrewEventPreferences,
+): boolean {
+  // Check each preference type
+  if (eventFlags & flags.CHAG && preferences.majorHolidays) return true;
+  if (eventFlags & flags.MINOR_HOLIDAY && preferences.minorHolidays)
+    return true;
+  if (eventFlags & flags.MODERN_HOLIDAY && preferences.modernHolidays)
+    return true;
+  if (
+    eventFlags & (flags.MAJOR_FAST | flags.MINOR_FAST) &&
+    preferences.fastDays
+  )
+    return true;
+  if (eventFlags & flags.ROSH_CHODESH && preferences.roshChodesh) return true;
+  if (eventFlags & flags.PARSHA_HASHAVUA && preferences.torahReadings)
+    return true;
+  if (eventFlags & flags.SPECIAL_SHABBAT && preferences.specialShabbat)
+    return true;
+  if (eventFlags & flags.OMER_COUNT && preferences.omerCount) return true;
+  if (eventFlags & flags.DAF_YOMI && preferences.dafYomi) return true;
+  if (eventFlags & flags.MISHNA_YOMI && preferences.mishnaYomi) return true;
+  if (eventFlags & flags.YERUSHALMI_YOMI && preferences.yerushalmiYomi)
+    return true;
+  if (eventFlags & flags.NACH_YOMI && preferences.nachYomi) return true;
+
+  return false;
+}
+
 function getEventType(eventFlags: number): HebrewCalendarEvent['type'] {
   if (eventFlags & flags.CHAG || eventFlags & flags.YOM_TOV_ENDS) {
     return 'holiday';
@@ -439,15 +474,35 @@ function getHebrewEventsForDateRange(
   startDate: Date,
   endDate: Date,
   language: string = 'en',
+  preferences?: HebrewEventPreferences,
 ): HebrewCalendarEvent[] {
   try {
     const events = HebrewCalendar.calendar({
       start: startDate,
       end: endDate,
       il: true, // Use Israeli schedule for holidays and Torah readings
+      sedrot: true, // Torah readings
+      omer: true, // Omer count
+      dailyLearning: {
+        dafYomi: true,
+        mishnaYomi: true,
+        yerushalmi: true,
+        nachYomi: true,
+        yerushalmiVilna: true,
+        perekYomi: true,
+        tanakhYomi: true,
+      },
     });
 
-    return events.map((event: Event, index: number) => {
+    // Filter events based on preferences if provided
+    let filteredEvents = events;
+    if (preferences) {
+      filteredEvents = events.filter((event: Event) =>
+        shouldIncludeEvent(event.getFlags(), preferences),
+      );
+    }
+
+    return filteredEvents.map((event: Event, index: number) => {
       const hebrewDate = event.getDate();
 
       // Use event.render() with the proper locale for direct translation
@@ -485,6 +540,45 @@ export function getHebrewEventsForCalendarRange(
   startDate: Date,
   endDate: Date,
   language: string = 'en',
+  preferences?: HebrewEventPreferences,
 ): HebrewCalendarEvent[] {
-  return getHebrewEventsForDateRange(startDate, endDate, language);
+  return getHebrewEventsForDateRange(startDate, endDate, language, preferences);
+}
+
+/**
+ * Determine if an event is a daily learning event based on flags
+ */
+export function isDailyLearningEvent(eventFlags: number): boolean {
+  return !!(
+    eventFlags &
+    (flags.DAF_YOMI |
+      flags.MISHNA_YOMI |
+      flags.YERUSHALMI_YOMI |
+      flags.NACH_YOMI)
+  );
+}
+
+/**
+ * Get color classes for Hebrew events vs Daily Learning events
+ */
+export function getHebrewEventColorCategory(eventFlags: number): {
+  background: string;
+  text: string;
+  border: string;
+} {
+  if (isDailyLearningEvent(eventFlags)) {
+    // Daily Learning events - Orange theme
+    return {
+      background: 'bg-orange-100 dark:bg-orange-900/20',
+      text: 'text-orange-800 dark:text-orange-200',
+      border: 'border-orange-200 dark:border-orange-600',
+    };
+  } else {
+    // Hebrew Calendar events - Purple theme (matches hamburger menu)
+    return {
+      background: 'bg-purple-100 dark:bg-purple-900/20',
+      text: 'text-purple-800 dark:text-purple-200',
+      border: 'border-purple-200 dark:border-purple-600',
+    };
+  }
 }

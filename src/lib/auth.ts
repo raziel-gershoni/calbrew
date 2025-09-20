@@ -1,7 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import { google } from 'googleapis';
-import { query, initializeDatabase } from '@/lib/postgres';
+import { query } from '@/lib/postgres';
 
 // Get environment-specific calendar name
 const getCalendarName = () => {
@@ -113,8 +113,7 @@ export const authOptions: NextAuthOptions = {
       try {
         console.log('🔐 Starting sign-in process for user:', user.id);
 
-        // Initialize database schema if needed
-        await initializeDatabase();
+        // Database initialization and migrations now happen automatically on startup
 
         // Check if user exists
         const userResult = await query<Record<string, unknown>>(

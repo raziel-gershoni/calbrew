@@ -48,6 +48,7 @@ export async function initializeDatabase(): Promise<void> {
   console.log('🔄 Initializing PostgreSQL database...');
 
   try {
+    // Migrations now run automatically on startup via instrumentation.ts
     // Create users table
     await query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -61,6 +62,7 @@ export async function initializeDatabase(): Promise<void> {
         calendar_mode TEXT DEFAULT 'hebrew',
         gcal_sync_enabled BOOLEAN DEFAULT TRUE,
         hebrew_events_enabled BOOLEAN DEFAULT TRUE,
+        hebrew_event_preferences JSONB DEFAULT '{"majorHolidays": true, "minorHolidays": true, "fastDays": true, "roshChodesh": true, "modernHolidays": false, "torahReadings": false, "specialShabbat": false, "omerCount": false, "dafYomi": false, "mishnaYomi": false, "yerushalmiYomi": false, "nachYomi": false, "chanukahCandles": false}',
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )

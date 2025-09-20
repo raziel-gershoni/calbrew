@@ -80,13 +80,33 @@ const resources = {
         'Start syncing with Google Calendar',
       'Syncing...': 'Syncing...',
       // Hebrew Calendar Events
-      'Hebrew Calendar Events': 'Hebrew Calendar Events',
+      'Hebrew Calendar Events': 'Hebrew Events',
+      'Daily Learning Schedules': 'Daily Learning',
       'Your Events': 'Your Events',
       // Jump to Date functionality
       'Jump to Date': 'Jump to Date',
       'Go to Date': 'Go to Date',
       'Edit Date': 'Edit Date',
       Confirm: 'Confirm',
+      // Hebrew Event Types
+      'Event Types': 'Event Types',
+      'Learning Types': 'Learning Types',
+      hebrew_events: {
+        major_holidays: 'Major Holidays',
+        minor_holidays: 'Minor Holidays',
+        fast_days: 'Fast Days',
+        rosh_chodesh: 'Rosh Chodesh',
+        modern_holidays: 'Modern Israeli Holidays',
+        torah_readings: 'Torah Readings',
+        special_shabbat: 'Special Shabbat',
+        omer_count: 'Omer Count',
+      },
+      daily_learning: {
+        daf_yomi: 'Daf Yomi',
+        mishna_yomi: 'Mishna Yomi',
+        yerushalmi_yomi: 'Yerushalmi Yomi',
+        nach_yomi: 'Nach Yomi',
+      },
     },
   },
   he: {
@@ -165,13 +185,33 @@ const resources = {
       'Start syncing with Google Calendar': 'התחל סינכרון עם יומן גוגל',
       'Syncing...': 'מסנכרן...',
       // Hebrew Calendar Events
-      'Hebrew Calendar Events': 'אירועי לוח עברי',
+      'Hebrew Calendar Events': 'אירועי עברי',
+      'Daily Learning Schedules': 'לימוד יומי',
       'Your Events': 'האירועים שלך',
       // Jump to Date functionality
       'Jump to Date': 'קפיצה לתאריך',
       'Go to Date': 'עבור לתאריך',
       'Edit Date': 'ערוך תאריך',
       Confirm: 'אשר',
+      // Hebrew Event Types
+      'Event Types': 'סוגי אירועים',
+      'Learning Types': 'סוגי לימוד',
+      hebrew_events: {
+        major_holidays: 'חגים גדולים',
+        minor_holidays: 'חגים קטנים',
+        fast_days: 'ימי צום',
+        rosh_chodesh: 'ראש חודש',
+        modern_holidays: 'חגים מודרניים',
+        torah_readings: 'קריאת התורה',
+        special_shabbat: 'שבתות מיוחדות',
+        omer_count: 'ספירת העומר',
+      },
+      daily_learning: {
+        daf_yomi: 'דף יומי',
+        mishna_yomi: 'משנה יומי',
+        yerushalmi_yomi: 'ירושלמי יומי',
+        nach_yomi: 'נ״ך יומי',
+      },
     },
   },
   es: {
@@ -252,13 +292,33 @@ const resources = {
         'Comenzar sincronización con Google Calendar',
       'Syncing...': 'Sincronizando...',
       // Hebrew Calendar Events
-      'Hebrew Calendar Events': 'Eventos del Calendario Hebreo',
+      'Hebrew Calendar Events': 'Eventos Hebreos',
+      'Daily Learning Schedules': 'Aprendizaje Diario',
       'Your Events': 'Tus Eventos',
       // Jump to Date functionality
       'Jump to Date': 'Saltar a Fecha',
       'Go to Date': 'Ir a Fecha',
       'Edit Date': 'Editar Fecha',
       Confirm: 'Confirmar',
+      // Hebrew Event Types
+      'Event Types': 'Tipos de Eventos',
+      'Learning Types': 'Tipos de Aprendizaje',
+      hebrew_events: {
+        major_holidays: 'Festividades Mayores',
+        minor_holidays: 'Festividades Menores',
+        fast_days: 'Días de Ayuno',
+        rosh_chodesh: 'Rosh Jódesh',
+        modern_holidays: 'Festividades Modernas de Israel',
+        torah_readings: 'Lecturas de la Torá',
+        special_shabbat: 'Shabat Especiales',
+        omer_count: 'Cuenta del Ómer',
+      },
+      daily_learning: {
+        daf_yomi: 'Daf Yomi',
+        mishna_yomi: 'Mishná Yomi',
+        yerushalmi_yomi: 'Yerushalmi Yomi',
+        nach_yomi: 'Nach Yomi',
+      },
     },
   },
   ru: {
@@ -340,13 +400,33 @@ const resources = {
         'Начать синхронизацию с Google Календарем',
       'Syncing...': 'Синхронизация...',
       // Hebrew Calendar Events
-      'Hebrew Calendar Events': 'События еврейского календаря',
+      'Hebrew Calendar Events': 'Еврейские события',
+      'Daily Learning Schedules': 'Ежедневное обучение',
       'Your Events': 'Ваши события',
       // Jump to Date functionality
       'Jump to Date': 'Перейти к дате',
       'Go to Date': 'Перейти к дате',
       'Edit Date': 'Редактировать дату',
       Confirm: 'Подтвердить',
+      // Hebrew Event Types
+      'Event Types': 'Типы событий',
+      'Learning Types': 'Типы изучения',
+      hebrew_events: {
+        major_holidays: 'Большие праздники',
+        minor_holidays: 'Малые праздники',
+        fast_days: 'Дни поста',
+        rosh_chodesh: 'Рош Ходеш',
+        modern_holidays: 'Современные израильские праздники',
+        torah_readings: 'Чтения Торы',
+        special_shabbat: 'Особые субботы',
+        omer_count: 'Счет Омера',
+      },
+      daily_learning: {
+        daf_yomi: 'Даф Йоми',
+        mishna_yomi: 'Мишна Йоми',
+        yerushalmi_yomi: 'Иерусалимский Йоми',
+        nach_yomi: 'Нах Йоми',
+      },
     },
   },
 };

@@ -11,6 +11,7 @@ import {
   EventOccurrence,
   HebrewCalendarEvent,
   formatEventTitle,
+  getHebrewEventColorCategory,
 } from '@/utils/hebrewDateUtils';
 import { useCalendarMode } from '@/contexts/CalendarModeContext';
 import { PlusIcon, CalendarIcon } from '@heroicons/react/24/outline';
@@ -113,19 +114,24 @@ export default function DayEvents({
                     {t('Hebrew Calendar')}
                   </h3>
                   <ul className='space-y-2'>
-                    {hebrewEvents.map((hebrewEvent) => (
-                      <li
-                        key={hebrewEvent.id}
-                        className='p-3 rounded-md border border-purple-200 dark:border-purple-600 bg-purple-50 dark:bg-purple-900/20'
-                      >
-                        <div className='font-medium text-purple-900 dark:text-purple-100'>
-                          {getLocalizedHolidayName(
-                            hebrewEvent.title,
-                            i18n.language,
-                          )}
-                        </div>
-                      </li>
-                    ))}
+                    {hebrewEvents.map((hebrewEvent) => {
+                      const colors = getHebrewEventColorCategory(
+                        hebrewEvent.flags,
+                      );
+                      return (
+                        <li
+                          key={hebrewEvent.id}
+                          className={`p-3 rounded-md border ${colors.border} ${colors.background}`}
+                        >
+                          <div className={`font-medium ${colors.text}`}>
+                            {getLocalizedHolidayName(
+                              hebrewEvent.title,
+                              i18n.language,
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               )}

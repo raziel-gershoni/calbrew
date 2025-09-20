@@ -10,6 +10,13 @@ import {
 } from '@/contexts/CalendarModeContext';
 import { useGcalSync } from '@/hooks/useGcalSync';
 import { useHebrewEvents } from '@/hooks/useHebrewEvents';
+import { useDailyLearning } from '@/hooks/useDailyLearning';
+import { useHebrewCalendarPreferences } from '@/hooks/useHebrewCalendarPreferences';
+import { useDailyLearningPreferences } from '@/hooks/useDailyLearningPreferences';
+import {
+  HEBREW_CALENDAR_EVENT_TYPE_KEYS,
+  DAILY_LEARNING_TYPE_KEYS,
+} from '@/types/hebrewEventPreferences';
 import {
   Bars3Icon,
   LanguageIcon,
@@ -18,6 +25,8 @@ import {
   ArrowPathIcon,
   UserIcon,
   ArrowRightOnRectangleIcon,
+  ChevronDownIcon,
+  CheckIcon,
 } from '@heroicons/react/24/outline';
 
 interface HamburgerMenuProps {
@@ -46,7 +55,24 @@ export default function HamburgerMenu({
     isLoading: isHebrewEventsLoading,
     updateShowHebrewEvents,
   } = useHebrewEvents();
+  const {
+    showDailyLearning,
+    isLoading: isDailyLearningLoading,
+    updateShowDailyLearning,
+  } = useDailyLearning();
+  const {
+    preferences: calendarPreferences,
+    isLoading: isCalendarPreferencesLoading,
+    updatePreference: updateCalendarPreference,
+  } = useHebrewCalendarPreferences();
+  const {
+    preferences: learningPreferences,
+    isLoading: isLearningPreferencesLoading,
+    updatePreference: updateLearningPreference,
+  } = useDailyLearningPreferences();
   const [isOpen, setIsOpen] = useState(false);
+  const [isHebrewEventsExpanded, setIsHebrewEventsExpanded] = useState(false);
+  const [isDailyLearningExpanded, setIsDailyLearningExpanded] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -93,6 +119,34 @@ export default function HamburgerMenu({
   const handleHebrewEventsToggle = async () => {
     await updateShowHebrewEvents(!showHebrewEvents);
     // Keep hamburger open so user can see the process
+  };
+
+  const handleDailyLearningToggle = async () => {
+    await updateShowDailyLearning(!showDailyLearning);
+    // Keep hamburger open so user can see the process
+  };
+
+  const handleHebrewEventsExpansionToggle = () => {
+    setIsHebrewEventsExpanded(!isHebrewEventsExpanded);
+  };
+
+  const handleCalendarEventTypeToggle = async (
+    eventType: keyof typeof calendarPreferences,
+  ) => {
+    await updateCalendarPreference(eventType, !calendarPreferences[eventType]);
+  };
+
+  const handleLearningTypeToggle = async (
+    learningType: keyof typeof learningPreferences,
+  ) => {
+    await updateLearningPreference(
+      learningType,
+      !learningPreferences[learningType],
+    );
+  };
+
+  const handleDailyLearningExpansionToggle = () => {
+    setIsDailyLearningExpanded(!isDailyLearningExpanded);
   };
 
   const handleOpenProfile = () => {
@@ -282,61 +336,225 @@ export default function HamburgerMenu({
             <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
 
             {/* Hebrew Calendar Events */}
-            <button
-              onClick={handleHebrewEventsToggle}
-              disabled={isHebrewEventsLoading}
-              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-colors duration-200'
-            >
-              <div className='flex items-center'>
-                <CalendarDateRangeIcon className='w-4 h-4 me-3' />
-                {t('Hebrew Calendar Events')}
-              </div>
-              <div className='relative'>
-                <input
-                  type='checkbox'
-                  checked={showHebrewEvents}
-                  onChange={() => {}} // Handled by button onClick
-                  className='sr-only'
-                />
-                <div
-                  className={`block w-8 h-4 rounded-full transition-all duration-200 ${
-                    isHebrewEventsLoading
-                      ? 'bg-purple-400 animate-pulse'
-                      : showHebrewEvents
-                        ? 'bg-purple-600'
-                        : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                ></div>
-                <div
-                  className={`absolute left-0 top-0 bg-white w-4 h-4 rounded-full transition-all duration-200 shadow flex items-center justify-center ${
-                    showHebrewEvents ? 'translate-x-4' : 'translate-x-0'
-                  }`}
-                >
-                  {isHebrewEventsLoading && (
-                    <svg
-                      className='animate-spin w-2 h-2 text-gray-400'
-                      xmlns='http://www.w3.org/2000/svg'
-                      fill='none'
-                      viewBox='0 0 24 24'
-                    >
-                      <circle
-                        className='opacity-25'
-                        cx='12'
-                        cy='12'
-                        r='10'
-                        stroke='currentColor'
-                        strokeWidth='4'
-                      />
-                      <path
-                        className='opacity-75'
-                        fill='currentColor'
-                        d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-                      />
-                    </svg>
-                  )}
+            <div>
+              {/* Main Hebrew Events Toggle */}
+              <button
+                onClick={handleHebrewEventsToggle}
+                disabled={isHebrewEventsLoading}
+                className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-colors duration-200'
+              >
+                <div className='flex items-center flex-1'>
+                  <CalendarDateRangeIcon className='w-4 h-4 me-3' />
+                  {t('Hebrew Calendar Events')}
                 </div>
-              </div>
-            </button>
+                <div className='relative'>
+                  <input
+                    type='checkbox'
+                    checked={showHebrewEvents}
+                    onChange={() => {}} // Handled by button onClick
+                    className='sr-only'
+                  />
+                  <div
+                    className={`block w-8 h-4 rounded-full transition-all duration-200 ${
+                      isHebrewEventsLoading
+                        ? 'bg-purple-400 animate-pulse'
+                        : showHebrewEvents
+                          ? 'bg-purple-600'
+                          : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  ></div>
+                  <div
+                    className={`absolute left-0 top-0 bg-white w-4 h-4 rounded-full transition-all duration-200 shadow flex items-center justify-center ${
+                      showHebrewEvents ? 'translate-x-4' : 'translate-x-0'
+                    }`}
+                  >
+                    {isHebrewEventsLoading && (
+                      <ArrowPathIcon className='w-2 h-2 animate-spin text-purple-600' />
+                    )}
+                  </div>
+                </div>
+              </button>
+
+              {/* Collapsible Event Types Sub-menu */}
+              {showHebrewEvents && (
+                <>
+                  <button
+                    onClick={handleHebrewEventsExpansionToggle}
+                    className='w-full text-left px-4 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-between transition-colors duration-200'
+                  >
+                    <span className='ms-7'>{t('Event Types')}</span>
+                    <ChevronDownIcon
+                      className={`w-3 h-3 transition-transform duration-200 ${
+                        isHebrewEventsExpanded ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* Calendar Event Type Checkboxes */}
+                  {isHebrewEventsExpanded && (
+                    <div className='bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600'>
+                      {Object.entries(HEBREW_CALENDAR_EVENT_TYPE_KEYS).map(
+                        ([key, translationKey]) => (
+                          <button
+                            key={key}
+                            onClick={() =>
+                              handleCalendarEventTypeToggle(
+                                key as keyof typeof calendarPreferences,
+                              )
+                            }
+                            disabled={isCalendarPreferencesLoading}
+                            className='w-full text-left px-4 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-colors duration-200'
+                          >
+                            <span className='ms-7'>{t(translationKey)}</span>
+                            <div className='relative'>
+                              <input
+                                type='checkbox'
+                                checked={
+                                  calendarPreferences[
+                                    key as keyof typeof calendarPreferences
+                                  ] || false
+                                }
+                                onChange={() => {}} // Handled by button onClick
+                                className='sr-only'
+                              />
+                              <div
+                                className={`w-3 h-3 rounded border transition-all duration-200 flex items-center justify-center ${
+                                  calendarPreferences[
+                                    key as keyof typeof calendarPreferences
+                                  ] || false
+                                    ? 'bg-purple-600 border-purple-600'
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500'
+                                }`}
+                              >
+                                {(calendarPreferences[
+                                  key as keyof typeof calendarPreferences
+                                ] ||
+                                  false) && (
+                                  <CheckIcon className='w-2 h-2 text-white' />
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
+
+            {/* Daily Learning Schedules */}
+            <div>
+              {/* Main Daily Learning Toggle */}
+              <button
+                onClick={handleDailyLearningToggle}
+                disabled={isDailyLearningLoading}
+                className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-colors duration-200'
+              >
+                <div className='flex items-center flex-1'>
+                  <CalendarDateRangeIcon className='w-4 h-4 me-3' />
+                  {t('Daily Learning Schedules')}
+                </div>
+                <div className='relative'>
+                  <input
+                    type='checkbox'
+                    checked={showDailyLearning || false}
+                    onChange={() => {}} // Handled by button onClick
+                    className='sr-only'
+                  />
+                  <div
+                    className={`block w-8 h-4 rounded-full transition-all duration-200 ${
+                      isDailyLearningLoading
+                        ? 'bg-orange-400 animate-pulse'
+                        : showDailyLearning || false
+                          ? 'bg-orange-600'
+                          : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  ></div>
+                  <div
+                    className={`absolute left-0 top-0 bg-white w-4 h-4 rounded-full transition-all duration-200 shadow flex items-center justify-center ${
+                      showDailyLearning || false
+                        ? 'translate-x-4'
+                        : 'translate-x-0'
+                    }`}
+                  >
+                    {isDailyLearningLoading && (
+                      <ArrowPathIcon className='w-2 h-2 animate-spin text-orange-600' />
+                    )}
+                  </div>
+                </div>
+              </button>
+
+              {/* Collapsible Learning Types Sub-menu */}
+              {(showDailyLearning || false) && (
+                <>
+                  <button
+                    onClick={handleDailyLearningExpansionToggle}
+                    className='w-full text-left px-4 py-1 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center justify-between transition-colors duration-200'
+                  >
+                    <span className='ms-7'>{t('Learning Types')}</span>
+                    <ChevronDownIcon
+                      className={`w-3 h-3 transition-transform duration-200 ${
+                        isDailyLearningExpanded ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {/* Learning Type Checkboxes */}
+                  {isDailyLearningExpanded && (
+                    <div className='bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-600'>
+                      {Object.entries(DAILY_LEARNING_TYPE_KEYS).map(
+                        ([key, translationKey]) => (
+                          <button
+                            key={key}
+                            onClick={() =>
+                              handleLearningTypeToggle(
+                                key as keyof typeof learningPreferences,
+                              )
+                            }
+                            disabled={isLearningPreferencesLoading}
+                            className='w-full text-left px-4 py-2 text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-between transition-colors duration-200'
+                          >
+                            <span className='ms-7'>{t(translationKey)}</span>
+                            <div className='relative'>
+                              <input
+                                type='checkbox'
+                                checked={
+                                  learningPreferences[
+                                    key as keyof typeof learningPreferences
+                                  ] || false
+                                }
+                                onChange={() => {}} // Handled by button onClick
+                                className='sr-only'
+                              />
+                              <div
+                                className={`w-3 h-3 rounded border transition-all duration-200 flex items-center justify-center ${
+                                  learningPreferences[
+                                    key as keyof typeof learningPreferences
+                                  ] || false
+                                    ? 'bg-orange-600 border-orange-600'
+                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500'
+                                }`}
+                              >
+                                {(learningPreferences[
+                                  key as keyof typeof learningPreferences
+                                ] ||
+                                  false) && (
+                                  <CheckIcon className='w-2 h-2 text-white' />
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
 
             {/* Divider */}
             <div className='border-t border-gray-200 dark:border-gray-700 my-1' />

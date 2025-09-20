@@ -15,6 +15,9 @@ import { useTranslation } from 'react-i18next';
 import { getTextDirection } from '@/i18n';
 import { useEvents } from '@/hooks/useEvents';
 import { useHebrewEvents } from '@/hooks/useHebrewEvents';
+import { useHebrewCalendarPreferences } from '@/hooks/useHebrewCalendarPreferences';
+import { useDailyLearningPreferences } from '@/hooks/useDailyLearningPreferences';
+import { useDailyLearning } from '@/hooks/useDailyLearning';
 import {
   generateEventOccurrences,
   EventOccurrence,
@@ -23,6 +26,7 @@ import {
   getHebrewEventsForCalendarRange,
   HebrewCalendarEvent,
   formatEventTitle,
+  getHebrewEventColorCategory,
 } from '@/utils/hebrewDateUtils';
 
 // Types
@@ -59,6 +63,27 @@ export default function CalendarView() {
   const { calendarMode } = useCalendarMode();
   const actualCalendarMode = calendarMode;
   const { showHebrewEvents } = useHebrewEvents();
+  const { showDailyLearning } = useDailyLearning();
+  const {
+    preferences: calendarPreferences,
+    isLoading: calendarPreferencesLoading,
+  } = useHebrewCalendarPreferences();
+  const {
+    preferences: learningPreferences,
+    isLoading: learningPreferencesLoading,
+  } = useDailyLearningPreferences();
+
+  // Combine preferences for Hebrew events - show if either calendar events OR daily learning is enabled and has loaded preferences
+  const combinedPreferences = useMemo(() => {
+    return {
+      ...calendarPreferences,
+      ...learningPreferences,
+    };
+  }, [calendarPreferences, learningPreferences]);
+
+  const preferencesLoading =
+    calendarPreferencesLoading || learningPreferencesLoading;
+  const showAnyHebrewFeatures = showHebrewEvents || showDailyLearning;
 
   const {
     events: masterEvents,
@@ -198,17 +223,37 @@ export default function CalendarView() {
 
   // Fetch Hebrew calendar events for the entire calendar view range
   useEffect(() => {
-    if (showHebrewEvents) {
+    // Either Hebrew events OR daily learning must be ON and preferences must be loaded
+    if (showAnyHebrewFeatures && combinedPreferences && !preferencesLoading) {
+      // Create filtered preferences based on what's actually enabled
+      const activePreferences = {
+        // Calendar events only if Hebrew events are enabled
+        ...(showHebrewEvents ? calendarPreferences : {}),
+        // Daily learning only if daily learning is enabled
+        ...(showDailyLearning ? learningPreferences : {}),
+      };
+
       const events = getHebrewEventsForCalendarRange(
         calendarViewRange.start,
         calendarViewRange.end,
         i18n.language,
+        activePreferences,
       );
       setHebrewEvents(events);
     } else {
       setHebrewEvents([]);
     }
-  }, [showHebrewEvents, calendarViewRange, i18n.language]);
+  }, [
+    showHebrewEvents,
+    showDailyLearning,
+    showAnyHebrewFeatures,
+    combinedPreferences,
+    calendarPreferences,
+    learningPreferences,
+    preferencesLoading,
+    calendarViewRange,
+    i18n.language,
+  ]);
 
   // Generate Hebrew month view with overlapping days
   const hebrewCalendarGrid = useMemo(() => {
@@ -452,6 +497,7 @@ export default function CalendarView() {
 
   const hebrewEventsForSelectedDate = useMemo(() => {
     const currentDate = selectedDateRef.current;
+
     return currentDate && showHebrewEvents
       ? hebrewEvents.filter((hebrewEvent) => {
           const eventDate = hebrewEvent.date;
@@ -935,18 +981,23 @@ export default function CalendarView() {
                         {/* Events column (right in LTR, left in RTL) */}
                         <div className='calendar-cell-events'>
                           {/* Hebrew Calendar Event titles (shown first/on top in larger cells via CSS) */}
-                          {dayHebrewEvents.map((hebrewEvent, idx) => (
-                            <div
-                              key={`hebrew-${idx}`}
-                              className='calendar-cell-hebrew-event'
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDayClick(dateToCheck || new Date());
-                              }}
-                            >
-                              {hebrewEvent.title}
-                            </div>
-                          ))}
+                          {dayHebrewEvents.map((hebrewEvent, idx) => {
+                            const colors = getHebrewEventColorCategory(
+                              hebrewEvent.flags,
+                            );
+                            return (
+                              <div
+                                key={`hebrew-${idx}`}
+                                className={`calendar-cell-hebrew-event ${colors.background} ${colors.text} ${colors.border}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDayClick(dateToCheck || new Date());
+                                }}
+                              >
+                                {hebrewEvent.title}
+                              </div>
+                            );
+                          })}
 
                           {/* User Event titles (shown after Hebrew events in larger cells via CSS) */}
                           {dayEvents.map((event, idx) => (
