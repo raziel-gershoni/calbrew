@@ -67,7 +67,9 @@ export const useLanguage = () => {
     }
   }, [session?.user?.id, i18n, fetchUserLanguage, session]);
 
-  const changeLanguage = async (newLanguage: 'en' | 'he' | 'es' | 'ru') => {
+  const changeLanguage = async (
+    newLanguage: 'en' | 'he' | 'es' | 'ru' | 'de',
+  ) => {
     setIsLoading(true);
 
     try {
@@ -99,7 +101,7 @@ export const useLanguage = () => {
   };
 
   return {
-    currentLanguage: i18n.language as 'en' | 'he' | 'es' | 'ru',
+    currentLanguage: i18n.language as 'en' | 'he' | 'es' | 'ru' | 'de',
     changeLanguage,
     isLoading,
   };
