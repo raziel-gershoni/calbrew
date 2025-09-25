@@ -96,7 +96,7 @@ export default function HamburgerMenu({
     }
   }, [isOpen]);
 
-  const handleLanguageSelect = (language: 'en' | 'es' | 'he' | 'ru') => {
+  const handleLanguageSelect = (language: 'en' | 'es' | 'he' | 'ru' | 'de') => {
     changeLanguage(language);
     setIsOpen(false);
   };
@@ -188,14 +188,15 @@ export default function HamburgerMenu({
                   {t('Language')}
                 </div>
               </div>
-              <div className='flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1'>
+              {/* Language Button Grid - 3×2 with missing bottom-right */}
+              <div className='grid grid-cols-3 gap-1'>
                 <button
                   onClick={() => handleLanguageSelect('en')}
                   disabled={isLanguageLoading}
-                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`px-2 py-1.5 text-xs font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md ${
                     i18n.language === 'en'
-                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   EN
@@ -203,10 +204,10 @@ export default function HamburgerMenu({
                 <button
                   onClick={() => handleLanguageSelect('es')}
                   disabled={isLanguageLoading}
-                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`px-2 py-1.5 text-xs font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md ${
                     i18n.language === 'es'
-                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   ES
@@ -214,25 +215,38 @@ export default function HamburgerMenu({
                 <button
                   onClick={() => handleLanguageSelect('ru')}
                   disabled={isLanguageLoading}
-                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`px-2 py-1.5 text-xs font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md ${
                     i18n.language === 'ru'
-                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   RU
                 </button>
                 <button
+                  onClick={() => handleLanguageSelect('de')}
+                  disabled={isLanguageLoading}
+                  className={`px-2 py-1.5 text-xs font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md ${
+                    i18n.language === 'de'
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  DE
+                </button>
+                <button
                   onClick={() => handleLanguageSelect('he')}
                   disabled={isLanguageLoading}
-                  className={`flex-1 px-2 py-1.5 text-xs font-medium rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`px-2 py-1.5 text-xs font-medium transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-md ${
                     i18n.language === 'he'
-                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                      ? 'bg-blue-600 dark:bg-blue-500 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
                   HE
                 </button>
+                {/* Empty grid cell for balanced 3×2 layout */}
+                <div></div>
               </div>
             </div>
 
