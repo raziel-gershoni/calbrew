@@ -4,7 +4,7 @@
  */
 
 import '@testing-library/jest-dom';
-import { expect, afterEach, vi } from 'vitest';
+import { afterEach, vi } from 'vitest';
 import { cleanup } from '@testing-library/react';
 
 // Cleanup after each test
@@ -13,11 +13,11 @@ afterEach(() => {
 });
 
 // Mock environment variables
-process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test';
-process.env.NEXTAUTH_SECRET = 'test-secret';
-process.env.GOOGLE_CLIENT_ID = 'test-client-id';
-process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
+vi.stubEnv('NODE_ENV', 'test');
+vi.stubEnv('DATABASE_URL', 'postgresql://test:test@localhost:5432/test');
+vi.stubEnv('NEXTAUTH_SECRET', 'test-secret');
+vi.stubEnv('GOOGLE_CLIENT_ID', 'test-client-id');
+vi.stubEnv('GOOGLE_CLIENT_SECRET', 'test-client-secret');
 
 // Mock console methods to reduce noise in tests (optional)
 global.console = {

@@ -79,7 +79,7 @@ describe('Validation Schemas', () => {
     });
 
     it('should accept optional description', () => {
-      const { description, ...eventWithoutDesc } = validEvent;
+      const { description: _description, ...eventWithoutDesc } = validEvent;
       const result = CreateEventSchema.safeParse(eventWithoutDesc);
       expect(result.success).toBe(true);
     });
@@ -198,7 +198,8 @@ describe('Validation Schemas', () => {
     });
 
     it('should default sync_with_gcal to true when not provided', () => {
-      const { sync_with_gcal, ...eventWithoutSync } = validEvent;
+      const { sync_with_gcal: _sync_with_gcal, ...eventWithoutSync } =
+        validEvent;
       const result = CreateEventSchema.safeParse(eventWithoutSync);
       expect(result.success).toBe(true);
       if (result.success) {
@@ -258,7 +259,7 @@ describe('Validation Schemas', () => {
     });
 
     it('should reject missing id field', () => {
-      const { id, ...updateWithoutId } = validUpdate;
+      const { id: _id, ...updateWithoutId } = validUpdate;
       const result = UpdateEventSchema.safeParse(updateWithoutId);
       expect(result.success).toBe(false);
     });
@@ -401,7 +402,10 @@ describe('Validation Schemas', () => {
       });
 
       it('should create success response with message', () => {
-        const response = createSuccessResponse(undefined, 'Operation completed');
+        const response = createSuccessResponse(
+          undefined,
+          'Operation completed',
+        );
         expect(response.success).toBe(true);
         expect(response.message).toBe('Operation completed');
       });
@@ -446,7 +450,11 @@ describe('Validation Schemas', () => {
           { field: 'title', message: 'Required' },
           { field: 'year', message: 'Invalid' },
         ];
-        const response = createErrorResponse('Validation failed', 'VALIDATION_ERROR', details);
+        const response = createErrorResponse(
+          'Validation failed',
+          'VALIDATION_ERROR',
+          details,
+        );
         expect(response.success).toBe(false);
         expect(response.details).toEqual(details);
       });
@@ -456,7 +464,11 @@ describe('Validation Schemas', () => {
           title: 'Required',
           year: 'Invalid',
         };
-        const response = createErrorResponse('Validation failed', undefined, detailsObject);
+        const response = createErrorResponse(
+          'Validation failed',
+          undefined,
+          detailsObject,
+        );
         expect(response.success).toBe(false);
         expect(response.details).toEqual([
           { field: 'title', message: 'Required' },
