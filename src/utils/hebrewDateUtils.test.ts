@@ -96,7 +96,8 @@ describe('hebrewToGregorian', () => {
 
     expect(firstDay5785.getTime()).toBeGreaterThan(lastDay5784.getTime());
     // Should be consecutive days
-    const daysDiff = (firstDay5785.getTime() - lastDay5784.getTime()) / (1000 * 60 * 60 * 24);
+    const daysDiff =
+      (firstDay5785.getTime() - lastDay5784.getTime()) / (1000 * 60 * 60 * 24);
     expect(daysDiff).toBeCloseTo(1, 0);
   });
 });
@@ -178,7 +179,9 @@ describe('formatEventTitle', () => {
   });
 
   it('should preserve emoji and special characters', () => {
-    expect(formatEventTitle('🎂 Birthday Party! 🎉', 5)).toBe('(5) 🎂 Birthday Party! 🎉');
+    expect(formatEventTitle('🎂 Birthday Party! 🎉', 5)).toBe(
+      '(5) 🎂 Birthday Party! 🎉',
+    );
   });
 });
 
@@ -188,15 +191,17 @@ describe('generateEventOccurrences', () => {
   });
 
   it('should generate occurrences for yearly recurring event', () => {
-    const events = [{
-      id: '1',
-      title: 'Birthday',
-      description: 'My birthday',
-      hebrew_year: 5784,
-      hebrew_month: 7, // Tishrei is month 7
-      hebrew_day: 15,
-      recurrence_rule: 'yearly',
-    }];
+    const events = [
+      {
+        id: '1',
+        title: 'Birthday',
+        description: 'My birthday',
+        hebrew_year: 5784,
+        hebrew_month: 7, // Tishrei is month 7
+        hebrew_day: 15,
+        recurrence_rule: 'yearly',
+      },
+    ];
 
     // Range covering multiple Hebrew years (Sept 2023 - Oct 2025)
     const start = new Date('2023-09-01');
@@ -210,15 +215,17 @@ describe('generateEventOccurrences', () => {
   });
 
   it('should not generate occurrences before event creation year', () => {
-    const events = [{
-      id: '1',
-      title: 'Future Event',
-      description: 'Created in 5785',
-      hebrew_year: 5785,
-      hebrew_month: 7, // Tishrei
-      hebrew_day: 1,
-      recurrence_rule: 'yearly',
-    }];
+    const events = [
+      {
+        id: '1',
+        title: 'Future Event',
+        description: 'Created in 5785',
+        hebrew_year: 5785,
+        hebrew_month: 7, // Tishrei
+        hebrew_day: 1,
+        recurrence_rule: 'yearly',
+      },
+    ];
 
     // Range in 5784 (before event was created)
     const start = new Date('2023-09-01');
@@ -230,15 +237,17 @@ describe('generateEventOccurrences', () => {
   });
 
   it('should calculate correct anniversary numbers', () => {
-    const events = [{
-      id: '1',
-      title: 'Anniversary',
-      description: 'Test',
-      hebrew_year: 5780,
-      hebrew_month: 1, // Nisan
-      hebrew_day: 15,
-      recurrence_rule: 'yearly',
-    }];
+    const events = [
+      {
+        id: '1',
+        title: 'Anniversary',
+        description: 'Test',
+        hebrew_year: 5780,
+        hebrew_month: 1, // Nisan
+        hebrew_day: 15,
+        recurrence_rule: 'yearly',
+      },
+    ];
 
     const start = new Date('2024-01-01');
     const end = new Date('2025-12-31');
@@ -247,20 +256,24 @@ describe('generateEventOccurrences', () => {
 
     expect(occurrences.length).toBeGreaterThan(0);
     // Should have anniversary of 4 or 5 depending on exact dates
-    const anniversaries = occurrences.map(o => o.anniversary);
+    const anniversaries = occurrences
+      .map((o) => o.anniversary)
+      .filter((a): a is number => a !== undefined);
     expect(Math.min(...anniversaries)).toBeGreaterThanOrEqual(4);
   });
 
   it('should only include dates within Gregorian range', () => {
-    const events = [{
-      id: '1',
-      title: 'Event',
-      description: 'Test',
-      hebrew_year: 5784,
-      hebrew_month: 7, // Tishrei
-      hebrew_day: 1,
-      recurrence_rule: 'yearly',
-    }];
+    const events = [
+      {
+        id: '1',
+        title: 'Event',
+        description: 'Test',
+        hebrew_year: 5784,
+        hebrew_month: 7, // Tishrei
+        hebrew_day: 1,
+        recurrence_rule: 'yearly',
+      },
+    ];
 
     const start = new Date('2024-10-01');
     const end = new Date('2024-10-05');
@@ -268,7 +281,7 @@ describe('generateEventOccurrences', () => {
     const occurrences = generateEventOccurrences(events, start, end);
 
     // All occurrences should be within the range
-    occurrences.forEach(occurrence => {
+    occurrences.forEach((occurrence) => {
       expect(occurrence.date.getTime()).toBeGreaterThanOrEqual(start.getTime());
       expect(occurrence.date.getTime()).toBeLessThanOrEqual(end.getTime());
     });
@@ -302,22 +315,24 @@ describe('generateEventOccurrences', () => {
     const occurrences = generateEventOccurrences(events, start, end);
 
     expect(occurrences.length).toBeGreaterThan(2);
-    const event1Occurrences = occurrences.filter(o => o.id === '1');
-    const event2Occurrences = occurrences.filter(o => o.id === '2');
+    const event1Occurrences = occurrences.filter((o) => o.id === '1');
+    const event2Occurrences = occurrences.filter((o) => o.id === '2');
     expect(event1Occurrences.length).toBeGreaterThan(0);
     expect(event2Occurrences.length).toBeGreaterThan(0);
   });
 
   it('should preserve all event properties in occurrences', () => {
-    const events = [{
-      id: 'test-id',
-      title: 'Test Event',
-      description: 'Test Description',
-      hebrew_year: 5784,
-      hebrew_month: 7, // Tishrei
-      hebrew_day: 15,
-      recurrence_rule: 'yearly',
-    }];
+    const events = [
+      {
+        id: 'test-id',
+        title: 'Test Event',
+        description: 'Test Description',
+        hebrew_year: 5784,
+        hebrew_month: 7, // Tishrei
+        hebrew_day: 15,
+        recurrence_rule: 'yearly',
+      },
+    ];
 
     const start = new Date('2024-01-01');
     const end = new Date('2025-12-31');
