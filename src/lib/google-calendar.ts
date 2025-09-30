@@ -1,5 +1,9 @@
 import { google } from 'googleapis';
 import { query } from '@/lib/postgres';
+import { componentLoggers } from '@/lib/logger';
+import * as SentryHelper from '@/lib/logger/sentry';
+
+const logger = componentLoggers.googleApi;
 
 // Get environment-specific calendar name
 const getCalendarName = () => {
@@ -24,7 +28,9 @@ export async function ensureCalendarExists(
   userId: string,
   currentCalendarId?: string,
 ): Promise<CalendarCheckResult> {
+  const startTime = Date.now();
   try {
+    logger.info({ userId, currentCalendarId }, 'Ensuring calendar exists');
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -42,20 +48,39 @@ export async function ensureCalendarExists(
         });
         // Check if calendar exists AND has the correct name for current environment
         if (currentCalendar.summary === expectedCalendarName) {
+          logger.info(
+            {
+              userId,
+              calendarId: currentCalendarId,
+              durationMs: Date.now() - startTime,
+            },
+            'Calendar already exists with correct name',
+          );
           return {
             calendarId: currentCalendarId,
             exists: true,
             created: false,
           };
         } else {
-          console.info(
-            `Calendar ${currentCalendarId} exists but has wrong name "${currentCalendar.summary}", expected "${expectedCalendarName}". Will search for or create correct calendar.`,
+          logger.info(
+            {
+              userId,
+              calendarId: currentCalendarId,
+              currentName: currentCalendar.summary,
+              expectedName: expectedCalendarName,
+            },
+            'Calendar exists but has wrong name, will search for correct one',
           );
         }
       } catch {
         // Calendar not found or inaccessible, will search/create new one
-        console.info(
-          `Calendar ${currentCalendarId} not accessible, will search for or create ${expectedCalendarName} calendar`,
+        logger.info(
+          {
+            userId,
+            calendarId: currentCalendarId,
+            expectedName: expectedCalendarName,
+          },
+          'Calendar not accessible, will search or create',
         );
       }
     }
@@ -69,6 +94,10 @@ export async function ensureCalendarExists(
     let created = false;
     if (!calbrewCalendar) {
       // Create new calendar
+      logger.info(
+        { userId, calendarName: expectedCalendarName },
+        'Creating new calendar',
+      );
       const { data: newCalendar } = await calendar.calendars.insert({
         requestBody: {
           summary: expectedCalendarName,
@@ -77,11 +106,20 @@ export async function ensureCalendarExists(
       });
       calbrewCalendar = newCalendar;
       created = true;
+      logger.info(
+        {
+          userId,
+          calendarId: newCalendar?.id,
+          calendarName: expectedCalendarName,
+        },
+        'Successfully created new calendar',
+      );
     }
 
     const calendarId = calbrewCalendar?.id;
 
     if (!calendarId) {
+      logger.error({ userId }, 'Failed to get calendar ID from response');
       return {
         calendarId: null,
         exists: false,
@@ -97,22 +135,37 @@ export async function ensureCalendarExists(
           calendarId,
           userId,
         ]);
+        logger.info(
+          { userId, calendarId },
+          'Updated user calendar ID in database',
+        );
       } catch (dbError) {
-        console.error(
-          'Failed to update user calendar ID in database:',
-          dbError,
+        logger.error(
+          { userId, calendarId, error: dbError },
+          'Failed to update user calendar ID in database',
         );
         // Don't fail the operation for database update issues
       }
     }
 
+    logger.info(
+      { userId, calendarId, created, durationMs: Date.now() - startTime },
+      'Successfully ensured calendar exists',
+    );
     return {
       calendarId,
       exists: !created,
       created,
     };
   } catch (error) {
-    console.error('Failed to ensure calendar exists:', error);
+    logger.error(
+      { userId, error, durationMs: Date.now() - startTime },
+      'Failed to ensure calendar exists',
+    );
+    SentryHelper.captureException(error, {
+      tags: { operation: 'ensure-calendar-exists', userId },
+      level: 'error',
+    });
     return {
       calendarId: null,
       exists: false,

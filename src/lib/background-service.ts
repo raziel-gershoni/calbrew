@@ -6,6 +6,10 @@
 import { query } from './postgres';
 import { processUserYearProgression } from './year-progression';
 import { getValidAccessToken } from './token-refresh';
+import { componentLoggers } from './logger';
+import * as SentryHelper from './logger/sentry';
+
+const logger = componentLoggers.backgroundService;
 
 export interface BackgroundServiceConfig {
   enabled: boolean;
@@ -40,18 +44,26 @@ class YearProgressionService {
    */
   start(): void {
     if (!this.config.enabled) {
-      console.log('Year progression background service is disabled');
+      logger.info('Year progression background service is disabled');
       return;
     }
 
     if (this.intervalId) {
-      console.log('Year progression background service is already running');
+      logger.warn('Year progression background service is already running');
       return;
     }
 
-    console.log(
-      `Starting year progression background service (interval: ${this.config.checkIntervalMs}ms)`,
+    logger.info(
+      { intervalMs: this.config.checkIntervalMs },
+      'Starting year progression background service',
     );
+
+    SentryHelper.addBreadcrumb({
+      message: 'Background service started',
+      category: 'service',
+      level: 'info',
+      data: { intervalMs: this.config.checkIntervalMs },
+    });
 
     this.intervalId = setInterval(async () => {
       await this.runYearProgressionCheck();
@@ -68,7 +80,13 @@ class YearProgressionService {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      console.log('Year progression background service stopped');
+      logger.info('Year progression background service stopped');
+
+      SentryHelper.addBreadcrumb({
+        message: 'Background service stopped',
+        category: 'service',
+        level: 'info',
+      });
     }
   }
 
@@ -96,7 +114,7 @@ class YearProgressionService {
    */
   private async runYearProgressionCheck(): Promise<void> {
     if (this.isRunning) {
-      console.log('Year progression check already running, skipping');
+      logger.warn('Year progression check already running, skipping');
       return;
     }
 
@@ -104,13 +122,23 @@ class YearProgressionService {
     this.lastRun = new Date();
     this.runCount++;
 
+    const transaction = SentryHelper.startTransaction(
+      'year-progression-check',
+      'background.job',
+      { tags: { runCount: String(this.runCount) } },
+    );
+
     try {
-      console.log(`Starting year progression check #${this.runCount}`);
+      logger.info(
+        { runCount: this.runCount },
+        'Starting year progression check',
+      );
 
       // Get all users with Google Calendar sync enabled
       const users = await this.getUsersWithGcalSync();
-      console.log(
-        `Found ${users.length} users with Google Calendar sync enabled`,
+      logger.info(
+        { userCount: users.length, runCount: this.runCount },
+        'Found users with Google Calendar sync enabled',
       );
 
       // Process users in batches to avoid overwhelming the system
@@ -127,13 +155,27 @@ class YearProgressionService {
         }
       }
 
-      console.log(
-        `Year progression check #${this.runCount} completed successfully`,
+      logger.info(
+        { runCount: this.runCount, userCount: users.length },
+        'Year progression check completed successfully',
       );
+      transaction.setStatus('ok');
     } catch (error) {
       this.errorCount++;
-      console.error(`Year progression check #${this.runCount} failed:`, error);
+      logger.error(
+        { runCount: this.runCount, error, errorCount: this.errorCount },
+        'Year progression check failed',
+      );
+      transaction.setStatus('internal_error');
+      SentryHelper.captureException(error, {
+        tags: {
+          operation: 'year-progression-check',
+          runCount: String(this.runCount),
+        },
+        level: 'error',
+      });
     } finally {
+      transaction.finish();
       this.isRunning = false;
     }
   }
@@ -157,15 +199,19 @@ class YearProgressionService {
         calbrew_calendar_id: string;
       }>(`
         SELECT id, access_token, refresh_token, calbrew_calendar_id
-        FROM users 
-        WHERE access_token IS NOT NULL 
+        FROM users
+        WHERE access_token IS NOT NULL
         AND calbrew_calendar_id IS NOT NULL
         AND gcal_sync_enabled = true
       `);
 
       return result.rows;
     } catch (error) {
-      console.error('Error getting users with Google Calendar sync:', error);
+      logger.error({ error }, 'Error getting users with Google Calendar sync');
+      SentryHelper.captureException(error, {
+        tags: { operation: 'get-users-gcal-sync' },
+        level: 'error',
+      });
       return [];
     }
   }
@@ -180,14 +226,19 @@ class YearProgressionService {
     calbrew_calendar_id: string;
   }): Promise<void> {
     try {
-      console.log(`Processing year progression for user ${user.id}`);
+      logger.info({ userId: user.id }, 'Processing year progression for user');
 
       // Get a valid access token (will refresh if needed)
       const accessToken = await getValidAccessToken(user.id);
       if (!accessToken) {
-        console.error(
-          `Failed to get valid access token for user ${user.id}, skipping`,
+        logger.error(
+          { userId: user.id },
+          'Failed to get valid access token, skipping user',
         );
+        SentryHelper.captureMessage('Failed to get valid access token', {
+          level: 'error',
+          tags: { operation: 'process-user-year-progression', userId: user.id },
+        });
         return;
       }
 
@@ -198,35 +249,47 @@ class YearProgressionService {
       );
 
       if (result.eventsUpdated > 0) {
-        console.log(
-          `Updated ${result.eventsUpdated} events for user ${user.id}`,
+        logger.info(
+          {
+            userId: user.id,
+            eventsUpdated: result.eventsUpdated,
+            updatedEvents: result.updatedEvents.map((e) => ({
+              title: e.title,
+              years: e.yearsNeedingSync,
+            })),
+          },
+          'Updated events for user',
         );
-
-        // Log updated events
-        result.updatedEvents.forEach((event) => {
-          console.log(
-            `  - ${event.title}: synced years ${event.yearsNeedingSync.join(', ')}`,
-          );
-        });
       }
 
       if (result.eventsFailed > 0) {
-        console.warn(
-          `Failed to update ${result.eventsFailed} events for user ${user.id}`,
+        logger.warn(
+          {
+            userId: user.id,
+            eventsFailed: result.eventsFailed,
+            errors: result.errors,
+          },
+          'Failed to update some events for user',
         );
-        result.errors.forEach((error) => {
-          console.warn(`  - ${error}`);
+        SentryHelper.captureMessage('Some events failed to update', {
+          level: 'warning',
+          tags: { operation: 'process-user-year-progression', userId: user.id },
+          extra: { errors: result.errors, eventsFailed: result.eventsFailed },
         });
       }
 
       if (result.eventsUpdated === 0 && result.eventsFailed === 0) {
-        console.log(`No events needed updating for user ${user.id}`);
+        logger.info({ userId: user.id }, 'No events needed updating for user');
       }
     } catch (error) {
-      console.error(
-        `Error processing year progression for user ${user.id}:`,
-        error,
+      logger.error(
+        { userId: user.id, error },
+        'Error processing year progression for user',
       );
+      SentryHelper.captureException(error, {
+        tags: { operation: 'process-user-year-progression', userId: user.id },
+        level: 'error',
+      });
     }
   }
 

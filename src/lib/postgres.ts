@@ -1,4 +1,8 @@
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import { componentLoggers } from './logger';
+import * as SentryHelper from './logger/sentry';
+
+const logger = componentLoggers.database;
 
 // Create connection pool
 const pool = new Pool({
@@ -45,7 +49,7 @@ export async function transaction<T>(
 
 // Initialize database schema
 export async function initializeDatabase(): Promise<void> {
-  console.log('🔄 Initializing PostgreSQL database...');
+  logger.info('Initializing PostgreSQL database');
 
   try {
     // Migrations now run automatically on startup via instrumentation.ts
@@ -67,7 +71,7 @@ export async function initializeDatabase(): Promise<void> {
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Users table created/verified');
+    logger.info('Users table created/verified');
 
     // Create events table
     await query(`
@@ -85,7 +89,7 @@ export async function initializeDatabase(): Promise<void> {
         updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Events table created/verified');
+    logger.info('Events table created/verified');
 
     // Create event_occurrences table
     await query(`
@@ -97,7 +101,7 @@ export async function initializeDatabase(): Promise<void> {
         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    console.log('✅ Event occurrences table created/verified');
+    logger.info('Event occurrences table created/verified');
 
     // Create indexes for better performance
     await query(
@@ -109,11 +113,15 @@ export async function initializeDatabase(): Promise<void> {
     await query(
       'CREATE INDEX IF NOT EXISTS idx_event_occurrences_date ON event_occurrences(gregorian_date)',
     );
-    console.log('✅ Database indexes created/verified');
+    logger.info('Database indexes created/verified');
 
-    console.log('🎉 PostgreSQL database initialization complete!');
+    logger.info('PostgreSQL database initialization complete');
   } catch (error) {
-    console.error('❌ Database initialization failed:', error);
+    logger.error({ error }, 'Database initialization failed');
+    SentryHelper.captureException(error, {
+      tags: { operation: 'database-initialization' },
+      level: 'error',
+    });
     throw error;
   }
 }
