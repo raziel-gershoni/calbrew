@@ -18,6 +18,7 @@ import { useHebrewEvents } from '@/hooks/useHebrewEvents';
 import { useHebrewCalendarPreferences } from '@/hooks/useHebrewCalendarPreferences';
 import { useDailyLearningPreferences } from '@/hooks/useDailyLearningPreferences';
 import { useDailyLearning } from '@/hooks/useDailyLearning';
+import { useYearProgression } from '@/hooks/useYearProgression';
 import {
   generateEventOccurrences,
   EventOccurrence,
@@ -96,6 +97,9 @@ export default function CalendarView() {
     updateEvent,
     deleteEvent,
   } = useEvents();
+
+  // Year progression management
+  const { fetchSummary: checkYearProgression } = useYearProgression();
 
   // Get localized weekday names
   const weekdays = useMemo(() => {
@@ -220,6 +224,13 @@ export default function CalendarView() {
     );
     setOccurrences(newOccurrences);
   }, [masterEvents, calendarViewRange]);
+
+  // Check year progression when calendar loads or navigates
+  useEffect(() => {
+    if (masterEvents.length > 0) {
+      checkYearProgression();
+    }
+  }, [masterEvents.length, checkYearProgression]);
 
   // Fetch Hebrew calendar events for the entire calendar view range
   useEffect(() => {

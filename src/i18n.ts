@@ -80,10 +80,37 @@ const resources = {
       'Start syncing with Google Calendar':
         'Start syncing with Google Calendar',
       'Syncing...': 'Syncing...',
+      Sync: 'Sync',
       // Hebrew Calendar Events
       'Hebrew Calendar Events': 'Hebrew Events',
       'Daily Learning Schedules': 'Daily Learning',
       'Your Events': 'Your Events',
+      // Year Progression
+      'Year Progression Status': 'Year Progression Status',
+      'Checking year progression...': 'Checking year progression...',
+      'Error checking year progression': 'Error checking year progression',
+      'Try again': 'Try again',
+      'Refresh status': 'Refresh status',
+      'All events are up to date': 'All events are up to date',
+      '{{count}} events need year progression updates':
+        '{{count}} events need year progression updates',
+      'No events found': 'No events found',
+      '{{total}} total events, {{upToDate}} up to date':
+        '{{total}} total events, {{upToDate}} up to date',
+      'Sync All Events': 'Sync All Events',
+      'Last checked: {{time}}': 'Last checked: {{time}}',
+      'Sync Event Years': 'Sync Event Years',
+      'Check for new years': 'Check for new years',
+      'Event is up to date': 'Event is up to date',
+      'New years available: {{years}}': 'New years available: {{years}}',
+      'Sync new years': 'Sync new years',
+      'Years synced successfully': 'Years synced successfully',
+      'Failed to sync years': 'Failed to sync years',
+      '{{count}} events updated with new years':
+        '{{count}} events updated with new years',
+      'No year progression updates needed':
+        'No year progression updates needed',
+      'Event years have been updated': 'Event years have been updated',
       // Jump to Date functionality
       'Jump to Date': 'Jump to Date',
       'Go to Date': 'Go to Date',
@@ -186,10 +213,36 @@ const resources = {
       'Checking sync status...': 'בודק סטטוס סינכרון...',
       'Start syncing with Google Calendar': 'התחל סינכרון עם יומן גוגל',
       'Syncing...': 'מסנכרן...',
+      Sync: 'סנכרן',
       // Hebrew Calendar Events
       'Hebrew Calendar Events': 'אירועי עברי',
       'Daily Learning Schedules': 'לימוד יומי',
       'Your Events': 'האירועים שלך',
+      // Year Progression
+      'Year Progression Status': 'מצב התקדמות שנים',
+      'Checking year progression...': 'בודק התקדמות שנים...',
+      'Error checking year progression': 'שגיאה בבדיקת התקדמות שנים',
+      'Try again': 'נסה שוב',
+      'Refresh status': 'רענן מצב',
+      'All events are up to date': 'כל האירועים מעודכנים',
+      '{{count}} events need year progression updates':
+        '{{count}} אירועים זקוקים לעדכון שנים',
+      'No events found': 'לא נמצאו אירועים',
+      '{{total}} total events, {{upToDate}} up to date':
+        '{{total}} אירועים בסך הכל, {{upToDate}} מעודכנים',
+      'Sync All Events': 'סנכרן את כל האירועים',
+      'Last checked: {{time}}': 'נבדק לאחרונה: {{time}}',
+      'Sync Event Years': 'סנכרן שנות אירוע',
+      'Check for new years': 'בדוק שנים חדשות',
+      'Event is up to date': 'האירוע מעודכן',
+      'New years available: {{years}}': 'שנים חדשות זמינות: {{years}}',
+      'Sync new years': 'סנכרן שנים חדשות',
+      'Years synced successfully': 'השנים סונכרנו בהצלחה',
+      'Failed to sync years': 'נכשל בסנכרון שנים',
+      '{{count}} events updated with new years':
+        '{{count}} אירועים עודכנו עם שנים חדשות',
+      'No year progression updates needed': 'אין צורך בעדכוני התקדמות שנים',
+      'Event years have been updated': 'שנות האירוע עודכנו',
       // Jump to Date functionality
       'Jump to Date': 'קפיצה לתאריך',
       'Go to Date': 'עבור לתאריך',
@@ -294,10 +347,39 @@ const resources = {
       'Start syncing with Google Calendar':
         'Comenzar sincronización con Google Calendar',
       'Syncing...': 'Sincronizando...',
+      Sync: 'Sincronizar',
       // Hebrew Calendar Events
       'Hebrew Calendar Events': 'Eventos Hebreos',
       'Daily Learning Schedules': 'Aprendizaje Diario',
       'Your Events': 'Tus Eventos',
+      // Year Progression
+      'Year Progression Status': 'Estado de Progresión de Años',
+      'Checking year progression...': 'Verificando progresión de años...',
+      'Error checking year progression':
+        'Error al verificar progresión de años',
+      'Try again': 'Intentar de nuevo',
+      'Refresh status': 'Actualizar estado',
+      'All events are up to date': 'Todos los eventos están actualizados',
+      '{{count}} events need year progression updates':
+        '{{count}} eventos necesitan actualizaciones de años',
+      'No events found': 'No se encontraron eventos',
+      '{{total}} total events, {{upToDate}} up to date':
+        '{{total}} eventos totales, {{upToDate}} actualizados',
+      'Sync All Events': 'Sincronizar Todos los Eventos',
+      'Last checked: {{time}}': 'Última verificación: {{time}}',
+      'Sync Event Years': 'Sincronizar Años de Evento',
+      'Check for new years': 'Verificar nuevos años',
+      'Event is up to date': 'El evento está actualizado',
+      'New years available: {{years}}': 'Nuevos años disponibles: {{years}}',
+      'Sync new years': 'Sincronizar nuevos años',
+      'Years synced successfully': 'Años sincronizados exitosamente',
+      'Failed to sync years': 'Error al sincronizar años',
+      '{{count}} events updated with new years':
+        '{{count}} eventos actualizados con nuevos años',
+      'No year progression updates needed':
+        'No se necesitan actualizaciones de progresión de años',
+      'Event years have been updated':
+        'Los años del evento han sido actualizados',
       // Jump to Date functionality
       'Jump to Date': 'Saltar a Fecha',
       'Go to Date': 'Ir a Fecha',
@@ -403,10 +485,37 @@ const resources = {
       'Start syncing with Google Calendar':
         'Начать синхронизацию с Google Календарем',
       'Syncing...': 'Синхронизация...',
+      Sync: 'Синхронизировать',
       // Hebrew Calendar Events
       'Hebrew Calendar Events': 'Еврейские события',
       'Daily Learning Schedules': 'Ежедневное обучение',
       'Your Events': 'Ваши события',
+      // Year Progression
+      'Year Progression Status': 'Статус продвижения годов',
+      'Checking year progression...': 'Проверка продвижения годов...',
+      'Error checking year progression': 'Ошибка проверки продвижения годов',
+      'Try again': 'Попробовать снова',
+      'Refresh status': 'Обновить статус',
+      'All events are up to date': 'Все события актуальны',
+      '{{count}} events need year progression updates':
+        '{{count}} событий требуют обновления годов',
+      'No events found': 'События не найдены',
+      '{{total}} total events, {{upToDate}} up to date':
+        '{{total}} всего событий, {{upToDate}} актуальных',
+      'Sync All Events': 'Синхронизировать все события',
+      'Last checked: {{time}}': 'Последняя проверка: {{time}}',
+      'Sync Event Years': 'Синхронизировать годы события',
+      'Check for new years': 'Проверить новые годы',
+      'Event is up to date': 'Событие актуально',
+      'New years available: {{years}}': 'Доступны новые годы: {{years}}',
+      'Sync new years': 'Синхронизировать новые годы',
+      'Years synced successfully': 'Годы успешно синхронизированы',
+      'Failed to sync years': 'Не удалось синхронизировать годы',
+      '{{count}} events updated with new years':
+        '{{count}} событий обновлено с новыми годами',
+      'No year progression updates needed':
+        'Обновления продвижения годов не требуются',
+      'Event years have been updated': 'Годы события были обновлены',
       // Jump to Date functionality
       'Jump to Date': 'Перейти к дате',
       'Go to Date': 'Перейти к дате',
@@ -513,10 +622,39 @@ const resources = {
       'Start syncing with Google Calendar':
         'Beginne Synchronisation mit Google Kalender',
       'Syncing...': 'Synchronisierung...',
+      Sync: 'Synchronisieren',
       // Hebrew Calendar Events
       'Hebrew Calendar Events': 'Hebräische Ereignisse',
       'Daily Learning Schedules': 'Tägliches Lernen',
       'Your Events': 'Deine Ereignisse',
+      // Year Progression
+      'Year Progression Status': 'Jahresfortschrittsstatus',
+      'Checking year progression...': 'Jahresfortschritt wird überprüft...',
+      'Error checking year progression':
+        'Fehler beim Überprüfen des Jahresfortschritts',
+      'Try again': 'Erneut versuchen',
+      'Refresh status': 'Status aktualisieren',
+      'All events are up to date':
+        'Alle Ereignisse sind auf dem neuesten Stand',
+      '{{count}} events need year progression updates':
+        '{{count}} Ereignisse benötigen Jahresaktualisierungen',
+      'No events found': 'Keine Ereignisse gefunden',
+      '{{total}} total events, {{upToDate}} up to date':
+        '{{total}} Ereignisse insgesamt, {{upToDate}} aktuell',
+      'Sync All Events': 'Alle Ereignisse synchronisieren',
+      'Last checked: {{time}}': 'Zuletzt überprüft: {{time}}',
+      'Sync Event Years': 'Ereignisjahre synchronisieren',
+      'Check for new years': 'Nach neuen Jahren suchen',
+      'Event is up to date': 'Ereignis ist aktuell',
+      'New years available: {{years}}': 'Neue Jahre verfügbar: {{years}}',
+      'Sync new years': 'Neue Jahre synchronisieren',
+      'Years synced successfully': 'Jahre erfolgreich synchronisiert',
+      'Failed to sync years': 'Synchronisierung der Jahre fehlgeschlagen',
+      '{{count}} events updated with new years':
+        '{{count}} Ereignisse mit neuen Jahren aktualisiert',
+      'No year progression updates needed':
+        'Keine Jahresfortschritt-Updates erforderlich',
+      'Event years have been updated': 'Ereignisjahre wurden aktualisiert',
       // Jump to Date functionality
       'Jump to Date': 'Zu Datum springen',
       'Go to Date': 'Zu Datum gehen',

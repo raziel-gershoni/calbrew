@@ -8,6 +8,7 @@ import ErrorBoundary from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/Toast';
 import { Analytics } from '@vercel/analytics/next';
 import HebcalLocalesProvider from '@/components/HebcalLocalesProvider';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -92,9 +93,11 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               <HebcalLocalesProvider>
-                <ToastProvider>
-                  <Providers>{children}</Providers>
-                </ToastProvider>
+                <NotificationProvider>
+                  <ToastProvider>
+                    <Providers>{children}</Providers>
+                  </ToastProvider>
+                </NotificationProvider>
               </HebcalLocalesProvider>
             </ThemeProvider>
           </LanguageProvider>

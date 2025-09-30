@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useRef } from 'react';
+import YearProgressionStatus from './YearProgressionStatus';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -159,6 +160,11 @@ export default function UserProfileModal({
                     {t('Active')}
                   </div>
                 </div>
+              </div>
+
+              {/* Year Progression Status */}
+              <div className='mt-6'>
+                <YearProgressionStatus showDetails={true} />
               </div>
             </div>
           )}

@@ -15,6 +15,11 @@ export function register(): void {
         await postgres.initializeDatabase();
         await migrations.runMigrations();
       })
+      .then(async () => {
+        // Start background services
+        const backgroundService = await import('./lib/background-service');
+        backgroundService.startYearProgressionService();
+      })
       .catch((error) => {
         console.error('Database initialization failed:', error);
       });

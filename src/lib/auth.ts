@@ -177,6 +177,26 @@ export const authOptions: NextAuthOptions = {
         token.expiresAt = account.expires_at;
         token.id = user.id;
 
+        // Store tokens in database for background service access
+        try {
+          await query(
+            `UPDATE users
+             SET access_token = $1,
+                 refresh_token = $2,
+                 token_expires_at = $3,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4`,
+            [
+              account.access_token,
+              account.refresh_token,
+              account.expires_at,
+              user.id,
+            ],
+          );
+        } catch (error) {
+          console.error('Failed to store tokens in database:', error);
+        }
+
         try {
           const userResult = await query<{ calbrew_calendar_id: string }>(
             'SELECT calbrew_calendar_id FROM users WHERE id = $1',
@@ -237,12 +257,37 @@ export const authOptions: NextAuthOptions = {
           throw refreshedTokens;
         }
 
-        return {
+        const newToken = {
           ...token,
           accessToken: refreshedTokens.access_token,
           expiresAt: Math.floor(Date.now() / 1000 + refreshedTokens.expires_in),
           refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
         };
+
+        // Update tokens in database for background service
+        try {
+          await query(
+            `UPDATE users
+             SET access_token = $1,
+                 refresh_token = $2,
+                 token_expires_at = $3,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $4`,
+            [
+              newToken.accessToken,
+              newToken.refreshToken,
+              newToken.expiresAt,
+              token.id,
+            ],
+          );
+        } catch (error) {
+          console.error(
+            'Failed to update refreshed tokens in database:',
+            error,
+          );
+        }
+
+        return newToken;
       } catch (error) {
         console.error('Error refreshing access token:', error);
         // Add more detailed logging for debugging

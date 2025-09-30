@@ -18,11 +18,11 @@ const migrations: Migration[] = [
     version: 1,
     name: 'add_hebrew_event_preferences',
     up: `
-      ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS hebrew_event_preferences JSONB 
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS hebrew_event_preferences JSONB
       DEFAULT '{"majorHolidays": true, "minorHolidays": true, "fastDays": true, "roshChodesh": true, "modernHolidays": false, "torahReadings": false, "specialShabbat": false, "omerCount": false, "dafYomi": false, "mishnaYomi": false, "yerushalmiYomi": false, "nachYomi": false, "chanukahCandles": false}';
-      
-      UPDATE users 
+
+      UPDATE users
       SET hebrew_event_preferences = '{"majorHolidays": true, "minorHolidays": true, "fastDays": true, "roshChodesh": true, "modernHolidays": false, "torahReadings": false, "specialShabbat": false, "omerCount": false, "dafYomi": false, "mishnaYomi": false, "yerushalmiYomi": false, "nachYomi": false, "chanukahCandles": false}'
       WHERE hebrew_event_preferences IS NULL;
     `,
@@ -35,20 +35,20 @@ const migrations: Migration[] = [
     name: 'add_daily_learning_preferences',
     up: `
       -- Add new columns for separated preferences
-      ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS hebrew_calendar_preferences JSONB 
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS hebrew_calendar_preferences JSONB
       DEFAULT '{"majorHolidays": true, "minorHolidays": true, "fastDays": true, "roshChodesh": true, "modernHolidays": false, "torahReadings": false, "specialShabbat": false, "omerCount": false}';
-      
-      ALTER TABLE users 
-      ADD COLUMN IF NOT EXISTS daily_learning_preferences JSONB 
+
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS daily_learning_preferences JSONB
       DEFAULT '{"dafYomi": false, "mishnaYomi": false, "yerushalmiYomi": false, "nachYomi": false}';
-      
-      ALTER TABLE users 
+
+      ALTER TABLE users
       ADD COLUMN IF NOT EXISTS daily_learning_enabled BOOLEAN DEFAULT TRUE;
-      
+
       -- Migrate existing hebrew_event_preferences to new separated structure
-      UPDATE users 
-      SET 
+      UPDATE users
+      SET
         hebrew_calendar_preferences = jsonb_build_object(
           'majorHolidays', COALESCE(hebrew_event_preferences->>'majorHolidays', 'true')::boolean,
           'minorHolidays', COALESCE(hebrew_event_preferences->>'minorHolidays', 'true')::boolean,
@@ -71,6 +71,43 @@ const migrations: Migration[] = [
       ALTER TABLE users DROP COLUMN IF EXISTS hebrew_calendar_preferences;
       ALTER TABLE users DROP COLUMN IF EXISTS daily_learning_preferences;
       ALTER TABLE users DROP COLUMN IF EXISTS daily_learning_enabled;
+    `,
+  },
+  {
+    version: 3,
+    name: 'add_year_progression_index',
+    up: `
+      -- Create index for faster year progression queries
+      CREATE INDEX IF NOT EXISTS idx_events_last_synced_hebrew_year
+      ON events(last_synced_hebrew_year);
+    `,
+    down: `
+      DROP INDEX IF EXISTS idx_events_last_synced_hebrew_year;
+    `,
+  },
+  {
+    version: 4,
+    name: 'add_oauth_tokens_to_users',
+    up: `
+      -- Add OAuth token columns for background service access
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS access_token TEXT;
+
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS refresh_token TEXT;
+
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS token_expires_at BIGINT;
+
+      -- Create index for token expiry checks
+      CREATE INDEX IF NOT EXISTS idx_users_token_expires_at
+      ON users(token_expires_at);
+    `,
+    down: `
+      DROP INDEX IF EXISTS idx_users_token_expires_at;
+      ALTER TABLE users DROP COLUMN IF EXISTS access_token;
+      ALTER TABLE users DROP COLUMN IF EXISTS refresh_token;
+      ALTER TABLE users DROP COLUMN IF EXISTS token_expires_at;
     `,
   },
   // Add future migrations here with incrementing version numbers

@@ -9,6 +9,7 @@ import {
   CalendarIcon,
 } from '@heroicons/react/24/outline';
 import { formatEventTitle, EventOccurrence } from '@/utils/hebrewDateUtils';
+import EventYearProgression from './EventYearProgression';
 
 interface EventDetailsProps {
   event: EventOccurrence | null;
@@ -190,6 +191,11 @@ export default function EventDetails({
                 {t('Not synced with Google Calendar')}
               </span>
             )}
+          </div>
+
+          {/* Year Progression Status */}
+          <div className='mb-4'>
+            <EventYearProgression eventId={event.id} />
           </div>
 
           <div className='flex gap-2 justify-start flex-wrap'>
