@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { HDate } from '@hebcal/core';
 import { webcrypto } from 'crypto';
+import type { NextRequest } from 'next/server';
 
 // Ensure global crypto is available for the route module
 if (!globalThis.crypto) {
@@ -41,19 +42,13 @@ const mocks = vi.hoisted(() => ({
   createErrorResponseMock: vi.fn((message: unknown) => ({ error: message })),
   insertMock: vi.fn(),
   setCredentialsMock: vi.fn(),
-  withGoogleCalendarRetryMock: vi.fn(async (callback: () => Promise<unknown>) => {
-    return await callback();
-  }),
 }));
 
 const {
   dbCreateEventMock,
   createEventOccurrencesBatchMock,
   getCurrentCalendarIdMock,
-  getEventsByUserIdMock,
   validateRequestMock,
-  createSuccessResponseMock,
-  createErrorResponseMock,
   insertMock,
   setCredentialsMock,
 } = mocks;
@@ -141,14 +136,15 @@ describe('POST /api/events', () => {
     let insertCounter = 0;
     insertMock.mockImplementation(async ({ requestBody }) => {
       insertCounter += 1;
+      expect(requestBody.summary).toBeDefined();
       return { data: { id: `gcal-${insertCounter}` } };
     });
 
     const req = {
       json: vi.fn().mockResolvedValue(requestPayload),
-    };
+    } satisfies Pick<NextRequest, 'json'>;
 
-    await POST(req as any);
+    await POST(req as unknown as NextRequest);
 
     const expectedStart = currentHebrewYear - 10;
     const expectedEnd = currentHebrewYear + 10;
@@ -161,5 +157,7 @@ describe('POST /api/events', () => {
     expect(new Set(occurrences.map((occ: { google_event_id: string }) => occ.google_event_id)).size).toBe(
       expectedOccurrences,
     );
+    expect(setCredentialsMock).toHaveBeenCalledWith({ access_token: 'access-token' });
+    expect(withGoogleCalendarRetryMock).toHaveBeenCalledTimes(expectedOccurrences);
   });
 });
