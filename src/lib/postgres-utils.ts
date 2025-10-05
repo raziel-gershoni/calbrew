@@ -195,18 +195,32 @@ export async function createEventOccurrencesBatch(
     google_event_id: string;
   }>,
 ): Promise<void> {
+  if (occurrences.length === 0) {
+    return;
+  }
+
   await transaction(async (client: PoolClient) => {
-    for (const occurrence of occurrences) {
-      await client.query(
-        'INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id) VALUES ($1, $2, $3, $4)',
-        [
-          occurrence.id,
-          occurrence.event_id,
-          occurrence.gregorian_date,
-          occurrence.google_event_id,
-        ],
+    const values: unknown[] = [];
+    const placeholders: string[] = [];
+
+    occurrences.forEach((occurrence, index) => {
+      const offset = index * 4;
+      placeholders.push(
+        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4})`,
       );
-    }
+      values.push(
+        occurrence.id,
+        occurrence.event_id,
+        occurrence.gregorian_date,
+        occurrence.google_event_id,
+      );
+    });
+
+    await client.query(
+      `INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id)
+       VALUES ${placeholders.join(', ')}`,
+      values,
+    );
   });
 }
 
