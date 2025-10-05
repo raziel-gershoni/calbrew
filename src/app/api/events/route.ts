@@ -14,7 +14,7 @@ import {
   getEventsByUserId,
   getCurrentCalendarId,
   createEvent as dbCreateEvent,
-  createEventOccurrence,
+  createEventOccurrencesBatch,
 } from '@/lib/postgres-utils';
 import { withGoogleCalendarRetry, AppError } from '@/lib/retry';
 
@@ -278,10 +278,7 @@ export async function POST(req: NextRequest) {
 
       // Batch insert event occurrences for better performance
       if (createdOccurrences.length > 0) {
-        await createEventOccurrence(createdOccurrences[0]);
-        for (let i = 1; i < createdOccurrences.length; i++) {
-          await createEventOccurrence(createdOccurrences[i]);
-        }
+        await createEventOccurrencesBatch(createdOccurrences);
       }
     }
 
