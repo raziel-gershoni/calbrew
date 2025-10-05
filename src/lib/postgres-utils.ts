@@ -216,6 +216,10 @@ export async function createEventOccurrencesBatch(
       );
     });
 
+    // Execute a single INSERT using the transaction-scoped client. Each entry in
+    // `placeholders` already represents a value tuple like "($1, $2, $3, $4)", so
+    // joining them with commas forms the VALUES list while `values` supplies the
+    // flattened parameter set in the corresponding order.
     await client.query(
       `INSERT INTO event_occurrences (id, event_id, gregorian_date, google_event_id)
        VALUES ${placeholders.join(', ')}`,
