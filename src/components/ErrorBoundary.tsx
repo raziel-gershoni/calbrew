@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import * as Sentry from '@sentry/nextjs';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -37,10 +38,18 @@ class ErrorBoundary extends React.Component<
       errorInfo,
     });
 
-    // TODO: Send error to logging service in production
-    if (process.env.NODE_ENV === 'production') {
-      // Example: logErrorToService(error, errorInfo);
-    }
+    // Send error to Sentry
+    Sentry.captureException(error, {
+      tags: {
+        component: 'error-boundary',
+      },
+      level: 'error',
+      contexts: {
+        react: {
+          componentStack: errorInfo.componentStack,
+        },
+      },
+    });
   }
 
   resetError = () => {
