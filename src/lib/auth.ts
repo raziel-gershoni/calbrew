@@ -221,213 +221,251 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async jwt({ token, account, user, trigger }) {
-      // Initial sign-in
-      if (account && user) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-        token.expiresAt = account.expires_at;
-        token.id = user.id;
+      try {
+        // Initial sign-in
+        if (account && user) {
+          token.accessToken = account.access_token;
+          token.refreshToken = account.refresh_token;
+          token.expiresAt = account.expires_at;
+          token.id = user.id;
 
-        // Store tokens in database for background service access
-        try {
-          await query(
-            `UPDATE users
-             SET access_token = $1,
-                 refresh_token = $2,
-                 token_expires_at = $3,
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4`,
-            [
-              account.access_token,
-              account.refresh_token,
-              account.expires_at,
-              user.id,
-            ],
-          );
-          logger.info({ userId: user.id }, 'Stored tokens in database');
-        } catch (error) {
+          // Store tokens in database for background service access
+          try {
+            await query(
+              `UPDATE users
+               SET access_token = $1,
+                   refresh_token = $2,
+                   token_expires_at = $3,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE id = $4`,
+              [
+                account.access_token,
+                account.refresh_token,
+                account.expires_at,
+                user.id,
+              ],
+            );
+            logger.info({ userId: user.id }, 'Stored tokens in database');
+          } catch (error) {
+            logger.error(
+              { userId: user.id, error },
+              'Failed to store tokens in database',
+            );
+            SentryHelper.captureException(error, {
+              tags: {
+                operation: 'jwt-callback',
+                step: 'store-tokens',
+                userId: user.id,
+              },
+              level: 'error',
+            });
+          }
+
+          try {
+            const userResult = await query<{ calbrew_calendar_id: string }>(
+              'SELECT calbrew_calendar_id FROM users WHERE id = $1',
+              [user.id],
+            );
+            token.calbrew_calendar_id =
+              userResult.rows[0]?.calbrew_calendar_id;
+          } catch (error) {
+            logger.error(
+              { userId: user.id, error },
+              'Failed to fetch user calendar ID',
+            );
+            // Continue without calendar ID - will be resolved on next request
+          }
+
+          return token;
+        }
+
+        // On update trigger (when session is manually updated), refresh calendar ID
+        if (trigger === 'update' && token.id) {
+          try {
+            const userResult = await query<{ calbrew_calendar_id: string }>(
+              'SELECT calbrew_calendar_id FROM users WHERE id = $1',
+              [token.id as string],
+            );
+            token.calbrew_calendar_id =
+              userResult.rows[0]?.calbrew_calendar_id;
+          } catch (error) {
+            logger.error(
+              { userId: token.id, error },
+              'Failed to refresh calendar ID from database',
+            );
+          }
+          return token;
+        }
+
+        // Return previous token if the access token has not expired yet
+        if (Date.now() < (token.expiresAt as number) * 1000) {
+          return token;
+        }
+
+        // Access token has expired, try to update it
+        if (!token.refreshToken) {
           logger.error(
-            { userId: user.id, error },
-            'Failed to store tokens in database',
+            { userId: token.id },
+            'No refresh token available for token refresh',
           );
-          SentryHelper.captureException(error, {
+          SentryHelper.captureMessage('No refresh token available', {
+            level: 'error',
             tags: {
               operation: 'jwt-callback',
-              step: 'store-tokens',
-              userId: user.id,
+              step: 'refresh-token',
+              userId: token.id as string,
             },
-            level: 'error',
           });
+          return { ...token, error: 'RefreshAccessTokenError' as const };
         }
 
         try {
-          const userResult = await query<{ calbrew_calendar_id: string }>(
-            'SELECT calbrew_calendar_id FROM users WHERE id = $1',
-            [user.id],
-          );
-          token.calbrew_calendar_id = userResult.rows[0]?.calbrew_calendar_id;
-        } catch (error) {
-          logger.error(
-            { userId: user.id, error },
-            'Failed to fetch user calendar ID',
-          );
-          // Continue without calendar ID - will be resolved on next request
-        }
-
-        return token;
-      }
-
-      // On update trigger (when session is manually updated), refresh calendar ID
-      if (trigger === 'update' && token.id) {
-        try {
-          const userResult = await query<{ calbrew_calendar_id: string }>(
-            'SELECT calbrew_calendar_id FROM users WHERE id = $1',
-            [token.id as string],
-          );
-          token.calbrew_calendar_id = userResult.rows[0]?.calbrew_calendar_id;
-        } catch (error) {
-          logger.error(
-            { userId: token.id, error },
-            'Failed to refresh calendar ID from database',
-          );
-        }
-        return token;
-      }
-
-      // Return previous token if the access token has not expired yet
-      if (Date.now() < (token.expiresAt as number) * 1000) {
-        return token;
-      }
-
-      // Access token has expired, try to update it
-      if (!token.refreshToken) {
-        logger.error(
-          { userId: token.id },
-          'No refresh token available for token refresh',
-        );
-        SentryHelper.captureMessage('No refresh token available', {
-          level: 'error',
-          tags: {
-            operation: 'jwt-callback',
-            step: 'refresh-token',
-            userId: token.id as string,
-          },
-        });
-        return { ...token, error: 'RefreshAccessTokenError' as const };
-      }
-
-      try {
-        logger.info({ userId: token.id }, 'Attempting to refresh access token');
-        const response = await fetch('https://oauth2.googleapis.com/token', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            client_id: process.env.GOOGLE_CLIENT_ID!,
-            client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-            grant_type: 'refresh_token',
-            refresh_token: token.refreshToken,
-          }),
-        });
-
-        const refreshedTokens = await response.json();
-
-        if (!response.ok) {
-          logger.error(
-            {
-              userId: token.id,
-              status: response.status,
-              error: refreshedTokens,
-            },
-            'Token refresh failed',
-          );
-          throw refreshedTokens;
-        }
-
-        const newToken = {
-          ...token,
-          accessToken: refreshedTokens.access_token,
-          expiresAt: Math.floor(Date.now() / 1000 + refreshedTokens.expires_in),
-          refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
-        };
-
-        logger.info(
-          { userId: token.id },
-          'Successfully refreshed access token',
-        );
-
-        // Update tokens in database for background service
-        try {
-          await query(
-            `UPDATE users
-             SET access_token = $1,
-                 refresh_token = $2,
-                 token_expires_at = $3,
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE id = $4`,
-            [
-              newToken.accessToken,
-              newToken.refreshToken,
-              newToken.expiresAt,
-              token.id,
-            ],
-          );
           logger.info(
             { userId: token.id },
-            'Updated refreshed tokens in database',
+            'Attempting to refresh access token',
           );
+          const response = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              client_id: process.env.GOOGLE_CLIENT_ID!,
+              client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+              grant_type: 'refresh_token',
+              refresh_token: token.refreshToken,
+            }),
+          });
+
+          const refreshedTokens = await response.json();
+
+          if (!response.ok) {
+            logger.error(
+              {
+                userId: token.id,
+                status: response.status,
+                error: refreshedTokens,
+              },
+              'Token refresh failed',
+            );
+            throw refreshedTokens;
+          }
+
+          const newToken = {
+            ...token,
+            accessToken: refreshedTokens.access_token,
+            expiresAt: Math.floor(
+              Date.now() / 1000 + refreshedTokens.expires_in,
+            ),
+            refreshToken: refreshedTokens.refresh_token ?? token.refreshToken, // Fall back to old refresh token
+          };
+
+          logger.info(
+            { userId: token.id },
+            'Successfully refreshed access token',
+          );
+
+          // Update tokens in database for background service
+          try {
+            await query(
+              `UPDATE users
+               SET access_token = $1,
+                   refresh_token = $2,
+                   token_expires_at = $3,
+                   updated_at = CURRENT_TIMESTAMP
+               WHERE id = $4`,
+              [
+                newToken.accessToken,
+                newToken.refreshToken,
+                newToken.expiresAt,
+                token.id,
+              ],
+            );
+            logger.info(
+              { userId: token.id },
+              'Updated refreshed tokens in database',
+            );
+          } catch (error) {
+            logger.error(
+              { userId: token.id, error },
+              'Failed to update refreshed tokens in database',
+            );
+            SentryHelper.captureException(error, {
+              tags: {
+                operation: 'jwt-callback',
+                step: 'update-refreshed-tokens',
+                userId: token.id as string,
+              },
+              level: 'error',
+            });
+          }
+
+          return newToken;
         } catch (error) {
           logger.error(
             { userId: token.id, error },
-            'Failed to update refreshed tokens in database',
+            'Error refreshing access token',
           );
+          // Add more detailed logging for debugging
+          if (error && typeof error === 'object' && 'error' in error) {
+            logger.error(
+              {
+                userId: token.id,
+                oauthError: (error as any).error, // eslint-disable-line @typescript-eslint/no-explicit-any
+                oauthErrorDescription: (error as any).error_description, // eslint-disable-line @typescript-eslint/no-explicit-any
+              },
+              'Google OAuth error details',
+            );
+          }
           SentryHelper.captureException(error, {
             tags: {
               operation: 'jwt-callback',
-              step: 'update-refreshed-tokens',
+              step: 'refresh-token',
               userId: token.id as string,
             },
             level: 'error',
+            extra: error && typeof error === 'object' ? error : {},
           });
+          // The user will be signed out on the client if the session is invalid
+          return { ...token, error: 'RefreshAccessTokenError' as const };
         }
-
-        return newToken;
       } catch (error) {
-        logger.error(
-          { userId: token.id, error },
-          'Error refreshing access token',
-        );
-        // Add more detailed logging for debugging
-        if (error && typeof error === 'object' && 'error' in error) {
-          logger.error(
-            {
-              userId: token.id,
-              oauthError: (error as any).error, // eslint-disable-line @typescript-eslint/no-explicit-any
-              oauthErrorDescription: (error as any).error_description, // eslint-disable-line @typescript-eslint/no-explicit-any
-            },
-            'Google OAuth error details',
-          );
-        }
+        // Catch any uncaught errors in the JWT callback to prevent HTML error responses
+        logger.error({ error }, 'Critical error in JWT callback');
         SentryHelper.captureException(error, {
           tags: {
             operation: 'jwt-callback',
-            step: 'refresh-token',
-            userId: token.id as string,
+            step: 'uncaught-error',
           },
-          level: 'error',
-          extra: error && typeof error === 'object' ? error : {},
+          level: 'fatal',
         });
-        // The user will be signed out on the client if the session is invalid
+        // Return token with error instead of throwing
         return { ...token, error: 'RefreshAccessTokenError' as const };
       }
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken;
-      session.error = token.error;
-      session.user.id = token.id as string;
-      session.user.calbrew_calendar_id = token.calbrew_calendar_id as string;
-      return session;
+      try {
+        session.accessToken = token.accessToken;
+        session.error = token.error;
+        session.user.id = token.id as string;
+        session.user.calbrew_calendar_id = token.calbrew_calendar_id as string;
+        return session;
+      } catch (error) {
+        // Catch any uncaught errors in the session callback to prevent HTML error responses
+        logger.error({ error }, 'Critical error in session callback');
+        SentryHelper.captureException(error, {
+          tags: {
+            operation: 'session-callback',
+            step: 'uncaught-error',
+          },
+          level: 'fatal',
+        });
+        // Return a minimal valid session to prevent JSON parsing errors
+        return {
+          ...session,
+          error: 'RefreshAccessTokenError',
+        };
+      }
     },
   },
 };
