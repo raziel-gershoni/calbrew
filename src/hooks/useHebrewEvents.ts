@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export function useHebrewEvents() {
   const [showHebrewEvents, setShowHebrewEvents] = useState<boolean>(true); // Default to true
@@ -21,6 +22,13 @@ export function useHebrewEvents() {
         }
       } catch (error) {
         console.error('Error loading Hebrew events preference:', error);
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useHebrewEvents',
+            operation: 'fetch-hebrew-events-preference',
+          },
+          level: 'error',
+        });
       } finally {
         setIsLoading(false);
       }
@@ -72,6 +80,13 @@ export function useHebrewEvents() {
       }
     } catch (error) {
       console.error('Failed to update Hebrew events preference:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useHebrewEvents',
+          operation: 'update-hebrew-events-preference',
+        },
+        level: 'error',
+      });
       // TODO: Show error toast to user
     } finally {
       setIsLoading(false);

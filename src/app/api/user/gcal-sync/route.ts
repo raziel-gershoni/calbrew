@@ -12,16 +12,24 @@ import {
   updateUserGcalSyncEnabled,
 } from '@/lib/postgres-utils';
 import { AppError } from '@/lib/retry';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 const UpdateSyncPreferenceSchema = z.object({
   enabled: z.boolean(),
 });
 
 export async function GET() {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to GET /api/user/gcal-sync',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/gcal-sync', method: 'GET' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
@@ -32,6 +40,18 @@ export async function GET() {
     return NextResponse.json(createSuccessResponse({ enabled }));
   } catch (error) {
     console.error('Get sync preference error:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/gcal-sync',
+        method: 'GET',
+        operation: 'get-gcal-sync',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
 
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {
@@ -47,10 +67,17 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to PUT /api/user/gcal-sync',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/gcal-sync', method: 'PUT' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
@@ -62,6 +89,16 @@ export async function PUT(req: NextRequest) {
     const validation = validateRequest(UpdateSyncPreferenceSchema, requestBody);
 
     if (!validation.success) {
+      SentryHelper.addBreadcrumb({
+        message: 'Validation error in PUT /api/user/gcal-sync',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/gcal-sync',
+          method: 'PUT',
+          validationErrors: validation.details,
+        },
+      });
       return NextResponse.json(
         createErrorResponse(
           validation.error!,
@@ -84,6 +121,18 @@ export async function PUT(req: NextRequest) {
     );
   } catch (error) {
     console.error('Update sync preference error:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/gcal-sync',
+        method: 'PUT',
+        operation: 'update-gcal-sync',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
 
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {

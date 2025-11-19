@@ -1,5 +1,6 @@
 import { signOut, signIn } from 'next-auth/react';
 import { useCallback } from 'react';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 /**
  * Hook to handle automatic re-authentication when user is not found in database
@@ -27,6 +28,13 @@ export function useAutoReauth() {
         }
       } catch (error) {
         console.error('Error parsing response for re-auth check:', error);
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useAutoReauth',
+            operation: 'parse-reauth-response',
+          },
+          level: 'error',
+        });
       }
     }
 

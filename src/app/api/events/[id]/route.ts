@@ -24,6 +24,7 @@ import {
   isEventSynced,
 } from '@/lib/postgres-utils';
 import { withGoogleCalendarRetry, AppError } from '@/lib/retry';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 // Keeping for potential future use
 // interface EventOccurrence {
@@ -37,21 +38,35 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let session;
+  let id;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to PUT /api/events/[id]',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/events/[id]', method: 'PUT' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
       );
     }
 
-    const { id } = await params;
+    ({ id } = await params);
 
     // Validate event ID
     const idValidation = validateRequest(EventIdSchema, { id });
     if (!idValidation.success) {
+      SentryHelper.addBreadcrumb({
+        message: 'Invalid event ID in PUT /api/events/[id]',
+        category: 'validation',
+        level: 'info',
+        data: { endpoint: '/api/events/[id]', method: 'PUT', eventId: id },
+      });
       return NextResponse.json(
         createErrorResponse(
           idValidation.error!,
@@ -70,6 +85,17 @@ export async function PUT(
     });
 
     if (!validation.success) {
+      SentryHelper.addBreadcrumb({
+        message: 'Validation error in PUT /api/events/[id]',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/events/[id]',
+          method: 'PUT',
+          eventId: id,
+          validationErrors: validation.details,
+        },
+      });
       return NextResponse.json(
         createErrorResponse(
           validation.error!,
@@ -245,6 +271,19 @@ export async function PUT(
   } catch (error) {
     console.error('Update event error:', error);
 
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/events/[id]',
+        method: 'PUT',
+        operation: 'update-event',
+      },
+      extra: {
+        userId: session?.user?.id,
+        eventId: id,
+      },
+      level: 'error',
+    });
+
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {
         status:
@@ -269,21 +308,35 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let session;
+  let id;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized DELETE attempt',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/events/[id]', method: 'DELETE' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
       );
     }
 
-    const { id } = await params;
+    ({ id } = await params);
 
     // Validate event ID
     const idValidation = validateRequest(EventIdSchema, { id });
     if (!idValidation.success) {
+      SentryHelper.addBreadcrumb({
+        message: 'Invalid event ID for DELETE',
+        category: 'validation',
+        level: 'info',
+        data: { endpoint: '/api/events/[id]', method: 'DELETE', eventId: id },
+      });
       return NextResponse.json(
         createErrorResponse(
           idValidation.error!,
@@ -398,6 +451,19 @@ export async function DELETE(
     );
   } catch (error) {
     console.error('Delete event error:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/events/[id]',
+        method: 'DELETE',
+        operation: 'delete-event',
+      },
+      extra: {
+        userId: session?.user?.id,
+        eventId: id,
+      },
+      level: 'error',
+    });
 
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {

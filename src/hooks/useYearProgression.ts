@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
 import { useNotifications } from '@/contexts/NotificationContext';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export interface YearProgressionStatus {
   eventId: string;
@@ -64,6 +65,15 @@ export function useYearProgression() {
       setSummary(data.data);
     } catch (err) {
       console.error('Error fetching year progression summary:', err);
+
+      SentryHelper.captureException(err, {
+        tags: {
+          hook: 'useYearProgression',
+          operation: 'fetch-summary',
+        },
+        level: 'error',
+      });
+
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setIsLoading(false);
@@ -111,6 +121,15 @@ export function useYearProgression() {
         return data.data;
       } catch (err) {
         console.error('Error processing year progression:', err);
+
+        SentryHelper.captureException(err, {
+          tags: {
+            hook: 'useYearProgression',
+            operation: 'process-year-progression',
+          },
+          level: 'error',
+        });
+
         setError(err instanceof Error ? err.message : 'Unknown error');
         return null;
       } finally {
@@ -138,6 +157,15 @@ export function useYearProgression() {
         return data.data;
       } catch (err) {
         console.error('Error checking event year progression:', err);
+
+        SentryHelper.captureException(err, {
+          tags: {
+            hook: 'useYearProgression',
+            operation: 'check-event-year-progression',
+          },
+          level: 'error',
+        });
+
         return null;
       }
     },
@@ -173,6 +201,15 @@ export function useYearProgression() {
         return true;
       } catch (err) {
         console.error('Error syncing event new years:', err);
+
+        SentryHelper.captureException(err, {
+          tags: {
+            hook: 'useYearProgression',
+            operation: 'sync-event-new-years',
+          },
+          level: 'error',
+        });
+
         return false;
       }
     },

@@ -5,6 +5,7 @@ import {
   HebrewEventPreferences,
   DEFAULT_HEBREW_EVENT_PREFERENCES,
 } from '@/types/hebrewEventPreferences';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export function useHebrewEventPreferences() {
   const [preferences, setPreferences] = useState<HebrewEventPreferences>(
@@ -28,6 +29,13 @@ export function useHebrewEventPreferences() {
         }
       } catch (error) {
         console.error('Error loading Hebrew event preferences:', error);
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useHebrewEventPreferences',
+            operation: 'fetch-hebrew-event-preferences',
+          },
+          level: 'error',
+        });
         setPreferences(DEFAULT_HEBREW_EVENT_PREFERENCES);
       } finally {
         setIsLoading(false);
@@ -84,6 +92,13 @@ export function useHebrewEventPreferences() {
       }
     } catch (error) {
       console.error('Failed to update Hebrew event preferences:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useHebrewEventPreferences',
+          operation: 'update-hebrew-event-preferences',
+        },
+        level: 'error',
+      });
       // TODO: Show error toast to user
     } finally {
       setIsLoading(false);

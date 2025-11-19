@@ -8,6 +8,7 @@ import {
 } from '@hebcal/core';
 import '@hebcal/learning';
 import { HebrewEventPreferences } from '@/types/hebrewEventPreferences';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export interface HebrewDateRange {
   startYear: number;
@@ -435,6 +436,13 @@ export function getHebrewEventsForHebrewMonth(
     });
   } catch (error) {
     console.error('Error fetching Hebrew events for Hebrew month:', error);
+    SentryHelper.captureException(error, {
+      tags: {
+        module: 'hebrewDateUtils',
+        operation: 'get-hebrew-events-for-hebrew-month',
+      },
+      level: 'error',
+    });
     return [];
   }
 }
@@ -481,6 +489,13 @@ export function getHebrewEventsForGregorianMonth(
     });
   } catch (error) {
     console.error('Error fetching Hebrew events for Gregorian month:', error);
+    SentryHelper.captureException(error, {
+      tags: {
+        module: 'hebrewDateUtils',
+        operation: 'get-hebrew-events-for-gregorian-month',
+      },
+      level: 'error',
+    });
     return [];
   }
 }
@@ -546,6 +561,13 @@ function getHebrewEventsForDateRange(
     });
   } catch (error) {
     console.error('Error fetching Hebrew events for date range:', error);
+    SentryHelper.captureException(error, {
+      tags: {
+        module: 'hebrewDateUtils',
+        operation: 'get-hebrew-events-for-date-range',
+      },
+      level: 'error',
+    });
     return [];
   }
 }

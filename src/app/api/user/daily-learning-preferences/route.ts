@@ -6,6 +6,7 @@ import {
   DailyLearningPreferences,
   DEFAULT_DAILY_LEARNING_PREFERENCES,
 } from '@/types/hebrewEventPreferences';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -15,10 +16,21 @@ interface ApiResponse<T = unknown> {
 
 // GET /api/user/daily-learning-preferences - Get daily learning preferences
 export async function GET(): Promise<NextResponse<ApiResponse>> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to GET /api/user/daily-learning-preferences',
+        category: 'auth',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/daily-learning-preferences',
+          method: 'GET',
+        },
+      });
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 },
@@ -48,6 +60,19 @@ export async function GET(): Promise<NextResponse<ApiResponse>> {
     });
   } catch (error) {
     console.error('Error getting daily learning preferences:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/daily-learning-preferences',
+        method: 'GET',
+        operation: 'get-daily-learning-preferences',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 },
@@ -59,10 +84,21 @@ export async function GET(): Promise<NextResponse<ApiResponse>> {
 export async function PUT(
   request: NextRequest,
 ): Promise<NextResponse<ApiResponse>> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to PUT /api/user/daily-learning-preferences',
+        category: 'auth',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/daily-learning-preferences',
+          method: 'PUT',
+        },
+      });
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 },
@@ -76,6 +112,16 @@ export async function PUT(
       !dailyLearningPreferences ||
       typeof dailyLearningPreferences !== 'object'
     ) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Invalid preferences in PUT /api/user/daily-learning-preferences',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/daily-learning-preferences',
+          method: 'PUT',
+        },
+      });
       return NextResponse.json(
         { success: false, error: 'dailyLearningPreferences must be an object' },
         { status: 400 },
@@ -92,6 +138,17 @@ export async function PUT(
 
     for (const key of requiredKeys) {
       if (typeof dailyLearningPreferences[key] !== 'boolean') {
+        SentryHelper.addBreadcrumb({
+          message:
+            'Invalid preference type in PUT /api/user/daily-learning-preferences',
+          category: 'validation',
+          level: 'info',
+          data: {
+            endpoint: '/api/user/daily-learning-preferences',
+            method: 'PUT',
+            key,
+          },
+        });
         return NextResponse.json(
           { success: false, error: `${key} must be a boolean` },
           { status: 400 },
@@ -110,6 +167,19 @@ export async function PUT(
     });
   } catch (error) {
     console.error('Error updating daily learning preferences:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/daily-learning-preferences',
+        method: 'PUT',
+        operation: 'update-daily-learning-preferences',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 },

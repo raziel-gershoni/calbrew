@@ -12,6 +12,7 @@ import {
   validateRequest,
 } from '@/lib/validation';
 import { AppError } from '@/lib/retry';
+import * as SentryHelper from '@/lib/logger/sentry';
 import { z } from 'zod';
 
 const EventIdSchema = z.object({
@@ -26,21 +27,41 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> },
 ): Promise<Response> {
+  let session;
+  let eventId;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to GET /api/year-progression/[eventId]',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/year-progression/[eventId]', method: 'GET' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
       );
     }
 
-    const { eventId } = await params;
+    ({ eventId } = await params);
 
     // Validate event ID
     const idValidation = validateRequest(EventIdSchema, { eventId });
     if (!idValidation.success) {
+      SentryHelper.addBreadcrumb({
+        message: 'Invalid event ID in GET /api/year-progression/[eventId]',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/year-progression/[eventId]',
+          method: 'GET',
+          eventId,
+          validationErrors: idValidation.details,
+        },
+      });
       return NextResponse.json(
         createErrorResponse(
           idValidation.error!,
@@ -63,6 +84,19 @@ export async function GET(
     return NextResponse.json(createSuccessResponse(status));
   } catch (error) {
     console.error('Get event year progression error:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/year-progression/[eventId]',
+        method: 'GET',
+        operation: 'get-event-year-progression',
+      },
+      extra: {
+        userId: session?.user?.id,
+        eventId,
+      },
+      level: 'error',
+    });
 
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {
@@ -88,10 +122,19 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ eventId: string }> },
 ): Promise<Response> {
+  let session;
+  let eventId;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to POST /api/year-progression/[eventId]',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/year-progression/[eventId]', method: 'POST' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
@@ -99,6 +142,12 @@ export async function POST(
     }
 
     if (!session.accessToken) {
+      SentryHelper.addBreadcrumb({
+        message: 'Missing access token in POST /api/year-progression/[eventId]',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/year-progression/[eventId]', method: 'POST' },
+      });
       return NextResponse.json(
         createErrorResponse(
           'Google Calendar access token not available',
@@ -108,11 +157,22 @@ export async function POST(
       );
     }
 
-    const { eventId } = await params;
+    ({ eventId } = await params);
 
     // Validate event ID
     const idValidation = validateRequest(EventIdSchema, { eventId });
     if (!idValidation.success) {
+      SentryHelper.addBreadcrumb({
+        message: 'Invalid event ID in POST /api/year-progression/[eventId]',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/year-progression/[eventId]',
+          method: 'POST',
+          eventId,
+          validationErrors: idValidation.details,
+        },
+      });
       return NextResponse.json(
         createErrorResponse(
           idValidation.error!,
@@ -126,6 +186,18 @@ export async function POST(
     // Get user's calendar ID
     const calendarId = await getCurrentCalendarId(session.user.id);
     if (!calendarId) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Calendar not configured in POST /api/year-progression/[eventId]',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/year-progression/[eventId]',
+          method: 'POST',
+          userId: session.user.id,
+          eventId,
+        },
+      });
       return NextResponse.json(
         createErrorResponse('Google Calendar not configured', 'CALENDAR_ERROR'),
         { status: 400 },
@@ -159,6 +231,19 @@ export async function POST(
     );
   } catch (error) {
     console.error('Sync event year progression error:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/year-progression/[eventId]',
+        method: 'POST',
+        operation: 'sync-event-year-progression',
+      },
+      extra: {
+        userId: session?.user?.id,
+        eventId,
+      },
+      level: 'error',
+    });
 
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {

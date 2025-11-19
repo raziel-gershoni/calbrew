@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { query, initializeDatabase } from '@/lib/postgres';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export async function GET() {
   try {
@@ -20,8 +21,8 @@ export async function GET() {
 
     // Test tables exist
     const tablesResult = await query(`
-      SELECT table_name 
-      FROM information_schema.tables 
+      SELECT table_name
+      FROM information_schema.tables
       WHERE table_schema = 'public'
       ORDER BY table_name
     `);
@@ -36,6 +37,16 @@ export async function GET() {
     });
   } catch (error) {
     console.error('PostgreSQL test failed:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/test-postgres',
+        method: 'GET',
+        operation: 'test-postgres-connection',
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       {
         success: false,

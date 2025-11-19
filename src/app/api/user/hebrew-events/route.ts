@@ -2,12 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { query } from '@/lib/postgres';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export async function GET(): Promise<Response> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to GET /api/user/hebrew-events',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/hebrew-events', method: 'GET' },
+      });
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
@@ -26,6 +34,19 @@ export async function GET(): Promise<Response> {
     });
   } catch (error) {
     console.error('Error getting Hebrew events preference:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/hebrew-events',
+        method: 'GET',
+        operation: 'get-hebrew-events',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -34,16 +55,29 @@ export async function GET(): Promise<Response> {
 }
 
 export async function PUT(request: NextRequest): Promise<Response> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to PUT /api/user/hebrew-events',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/hebrew-events', method: 'PUT' },
+      });
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const { hebrewEventsEnabled } = await request.json();
 
     if (typeof hebrewEventsEnabled !== 'boolean') {
+      SentryHelper.addBreadcrumb({
+        message: 'Invalid value in PUT /api/user/hebrew-events',
+        category: 'validation',
+        level: 'info',
+        data: { endpoint: '/api/user/hebrew-events', method: 'PUT' },
+      });
       return NextResponse.json(
         { error: 'Invalid hebrewEventsEnabled value' },
         { status: 400 },
@@ -65,6 +99,19 @@ export async function PUT(request: NextRequest): Promise<Response> {
     });
   } catch (error) {
     console.error('Error updating Hebrew events preference:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/hebrew-events',
+        method: 'PUT',
+        operation: 'update-hebrew-events',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { query } from '@/lib/postgres';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -11,10 +12,17 @@ interface ApiResponse<T = unknown> {
 
 // GET /api/user/daily-learning - Get daily learning enabled status
 export async function GET(): Promise<NextResponse<ApiResponse>> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to GET /api/user/daily-learning',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/daily-learning', method: 'GET' },
+      });
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 },
@@ -41,6 +49,19 @@ export async function GET(): Promise<NextResponse<ApiResponse>> {
     });
   } catch (error) {
     console.error('Error getting daily learning preference:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/daily-learning',
+        method: 'GET',
+        operation: 'get-daily-learning',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 },
@@ -52,10 +73,17 @@ export async function GET(): Promise<NextResponse<ApiResponse>> {
 export async function PUT(
   request: NextRequest,
 ): Promise<NextResponse<ApiResponse>> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to PUT /api/user/daily-learning',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/daily-learning', method: 'PUT' },
+      });
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 },
@@ -66,6 +94,12 @@ export async function PUT(
     const { dailyLearningEnabled } = body;
 
     if (typeof dailyLearningEnabled !== 'boolean') {
+      SentryHelper.addBreadcrumb({
+        message: 'Invalid value in PUT /api/user/daily-learning',
+        category: 'validation',
+        level: 'info',
+        data: { endpoint: '/api/user/daily-learning', method: 'PUT' },
+      });
       return NextResponse.json(
         { success: false, error: 'dailyLearningEnabled must be a boolean' },
         { status: 400 },
@@ -83,6 +117,19 @@ export async function PUT(
     });
   } catch (error) {
     console.error('Error updating daily learning preference:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/daily-learning',
+        method: 'PUT',
+        operation: 'update-daily-learning',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 },

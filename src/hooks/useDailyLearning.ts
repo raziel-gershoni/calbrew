@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export function useDailyLearning() {
   const [showDailyLearning, setShowDailyLearning] = useState<boolean>(true); // Default to true
@@ -21,6 +22,13 @@ export function useDailyLearning() {
         }
       } catch (error) {
         console.error('Error loading daily learning preference:', error);
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useDailyLearning',
+            operation: 'fetch-daily-learning-preference',
+          },
+          level: 'error',
+        });
       } finally {
         setIsLoading(false);
       }
@@ -72,6 +80,13 @@ export function useDailyLearning() {
       }
     } catch (error) {
       console.error('Failed to update daily learning preference:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useDailyLearning',
+          operation: 'update-daily-learning-preference',
+        },
+        level: 'error',
+      });
       // TODO: Show error toast to user
     } finally {
       setIsLoading(false);

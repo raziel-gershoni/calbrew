@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
 import { useAutoReauth } from './useAutoReauth';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export const useLanguage = () => {
   const { data: session } = useSession();
@@ -37,6 +38,13 @@ export const useLanguage = () => {
       }
     } catch (error) {
       console.error('Failed to fetch user language:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useLanguage',
+          operation: 'fetch-language',
+        },
+        level: 'error',
+      });
       // Fallback to localStorage
       const savedLanguage = localStorage.getItem('calbrew-language') || 'en';
       if (i18n.language !== savedLanguage) {
@@ -95,6 +103,13 @@ export const useLanguage = () => {
       }
     } catch (error) {
       console.error('Failed to change language:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useLanguage',
+          operation: 'update-language',
+        },
+        level: 'error',
+      });
     } finally {
       setIsLoading(false);
     }

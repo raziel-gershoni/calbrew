@@ -5,6 +5,7 @@ import {
   DailyLearningPreferences,
   DEFAULT_DAILY_LEARNING_PREFERENCES,
 } from '@/types/hebrewEventPreferences';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export function useDailyLearningPreferences() {
   const [preferences, setPreferences] = useState<DailyLearningPreferences>(
@@ -30,6 +31,13 @@ export function useDailyLearningPreferences() {
         }
       } catch (error) {
         console.error('Error loading daily learning preferences:', error);
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useDailyLearningPreferences',
+            operation: 'fetch-daily-learning-preferences',
+          },
+          level: 'error',
+        });
       } finally {
         setIsLoading(false);
       }
@@ -86,6 +94,13 @@ export function useDailyLearningPreferences() {
       }
     } catch (error) {
       console.error('Failed to update daily learning preference:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useDailyLearningPreferences',
+          operation: 'update-daily-learning-preference',
+        },
+        level: 'error',
+      });
       // TODO: Show error toast to user
     } finally {
       setIsLoading(false);

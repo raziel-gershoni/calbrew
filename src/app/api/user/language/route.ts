@@ -2,13 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getUserLanguage, updateUserLanguage } from '@/lib/postgres-utils';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 // GET: Get user's language preference
 export async function GET(_request: NextRequest) {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to GET /api/user/language',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/language', method: 'GET' },
+      });
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 },
@@ -25,6 +33,12 @@ export async function GET(_request: NextRequest) {
     } catch (error) {
       // If user not found, force re-authentication
       if (error instanceof Error && error.message.includes('User not found')) {
+        SentryHelper.addBreadcrumb({
+          message: 'User not found in GET /api/user/language',
+          category: 'auth',
+          level: 'info',
+          data: { endpoint: '/api/user/language', method: 'GET' },
+        });
         return NextResponse.json(
           {
             success: false,
@@ -38,6 +52,19 @@ export async function GET(_request: NextRequest) {
     }
   } catch (error) {
     console.error('Error fetching user language:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/language',
+        method: 'GET',
+        operation: 'get-language',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       {
         success: false,
@@ -50,10 +77,17 @@ export async function GET(_request: NextRequest) {
 
 // PUT: Update user's language preference
 export async function PUT(request: NextRequest) {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to PUT /api/user/language',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/language', method: 'PUT' },
+      });
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 },
@@ -65,6 +99,16 @@ export async function PUT(request: NextRequest) {
 
     // Validate language
     if (!language || !['en', 'he', 'es', 'ru', 'de'].includes(language)) {
+      SentryHelper.addBreadcrumb({
+        message: 'Invalid language in PUT /api/user/language',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/language',
+          method: 'PUT',
+          language,
+        },
+      });
       return NextResponse.json(
         {
           success: false,
@@ -82,6 +126,19 @@ export async function PUT(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating user language:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/language',
+        method: 'PUT',
+        operation: 'update-language',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       {
         success: false,

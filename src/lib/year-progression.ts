@@ -8,6 +8,7 @@ import { query } from './postgres';
 import { createEventOccurrence, getEventsByUserId } from './postgres-utils';
 import { google } from 'googleapis';
 import { withGoogleCalendarRetry } from './retry';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export interface YearProgressionStatus {
   eventId: string;
@@ -75,6 +76,13 @@ export async function checkEventYearProgression(
     };
   } catch (error) {
     console.error('Error checking event year progression:', error);
+    SentryHelper.captureException(error, {
+      tags: {
+        module: 'year-progression',
+        operation: 'check-event-year-progression',
+      },
+      level: 'error',
+    });
     return null;
   }
 }
@@ -99,6 +107,13 @@ export async function checkUserYearProgression(
     return progressionStatuses;
   } catch (error) {
     console.error('Error checking user year progression:', error);
+    SentryHelper.captureException(error, {
+      tags: {
+        module: 'year-progression',
+        operation: 'check-user-year-progression',
+      },
+      level: 'error',
+    });
     return [];
   }
 }
@@ -195,6 +210,13 @@ export async function syncEventNewYears(
         }
       } catch (error) {
         console.error(`Failed to create event for year ${year}:`, error);
+        SentryHelper.captureException(error, {
+          tags: {
+            module: 'year-progression',
+            operation: 'sync-event-new-years-create-occurrence',
+          },
+          level: 'error',
+        });
         // Continue with other years even if one fails
       }
     }
@@ -220,6 +242,13 @@ export async function syncEventNewYears(
     return { success: true, yearsSynced: syncedYears };
   } catch (error) {
     console.error('Error syncing event new years:', error);
+    SentryHelper.captureException(error, {
+      tags: {
+        module: 'year-progression',
+        operation: 'sync-event-new-years',
+      },
+      level: 'error',
+    });
     return {
       success: false,
       yearsSynced: [],
@@ -278,6 +307,13 @@ export async function processUserYearProgression(
     return result;
   } catch (error) {
     console.error('Error processing user year progression:', error);
+    SentryHelper.captureException(error, {
+      tags: {
+        module: 'year-progression',
+        operation: 'process-user-year-progression',
+      },
+      level: 'error',
+    });
     result.errors.push(
       error instanceof Error ? error.message : 'Unknown error',
     );
@@ -317,6 +353,13 @@ export async function getYearProgressionSummary(userId: string): Promise<{
     };
   } catch (error) {
     console.error('Error getting year progression summary:', error);
+    SentryHelper.captureException(error, {
+      tags: {
+        module: 'year-progression',
+        operation: 'get-year-progression-summary',
+      },
+      level: 'error',
+    });
     return {
       totalEvents: 0,
       eventsNeedingUpdate: 0,

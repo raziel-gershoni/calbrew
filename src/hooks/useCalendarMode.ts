@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export type CalendarMode = 'hebrew' | 'gregorian';
 
@@ -68,6 +69,13 @@ export const useCalendarMode = () => {
       }
     } catch (error) {
       console.error('Failed to fetch user calendar mode:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useCalendarMode',
+          operation: 'fetch-calendar-mode',
+        },
+        level: 'error',
+      });
       // Fallback to localStorage
       const savedMode =
         (localStorage.getItem('calbrew-calendar-mode') as CalendarMode) ||
@@ -117,6 +125,13 @@ export const useCalendarMode = () => {
       }
     } catch (error) {
       console.error('Failed to change calendar mode:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useCalendarMode',
+          operation: 'update-calendar-mode',
+        },
+        level: 'error',
+      });
     } finally {
       setIsLoading(false);
     }

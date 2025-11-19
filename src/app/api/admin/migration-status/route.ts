@@ -2,12 +2,21 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 import { getMigrationStatus } from '@/lib/migrations';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export async function GET(): Promise<Response> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to GET /api/admin/migration-status',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/admin/migration-status', method: 'GET' },
+      });
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
@@ -23,6 +32,19 @@ export async function GET(): Promise<Response> {
     });
   } catch (error) {
     console.error('Error getting migration status:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/admin/migration-status',
+        method: 'GET',
+        operation: 'get-migration-status',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

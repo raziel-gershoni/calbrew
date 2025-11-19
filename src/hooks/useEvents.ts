@@ -3,6 +3,7 @@ import { Event } from '@/types/event';
 import { useToast } from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
 import { ApiResponse } from '@/lib/validation';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 interface DeleteResponse {
   success: boolean;
@@ -64,6 +65,15 @@ export function useEvents(): UseEventsReturn {
       }
     } catch (error) {
       console.error('Error fetching events:', error);
+
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useEvents',
+          operation: 'fetch-events',
+        },
+        level: 'error',
+      });
+
       showError(t('Failed to load events. Please try refreshing the page.'));
     } finally {
       setIsLoading(false);
@@ -122,6 +132,15 @@ export function useEvents(): UseEventsReturn {
         return true;
       } catch (error) {
         console.error('Error creating event:', error);
+
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useEvents',
+            operation: 'create-event',
+          },
+          level: 'error',
+        });
+
         showError(t('Failed to create event. Please try again.'));
         return false;
       } finally {
@@ -173,6 +192,15 @@ export function useEvents(): UseEventsReturn {
         return true;
       } catch (error) {
         console.error('Error saving event:', error);
+
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useEvents',
+            operation: 'update-event',
+          },
+          level: 'error',
+        });
+
         showError(t('Failed to save event. Please try again.'));
         return false;
       } finally {
@@ -216,6 +244,15 @@ export function useEvents(): UseEventsReturn {
         return true;
       } catch (error) {
         console.error('Error deleting event:', error);
+
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useEvents',
+            operation: 'delete-event',
+          },
+          level: 'error',
+        });
+
         showError(t('Failed to delete event. Please try again.'));
         return false;
       } finally {

@@ -17,6 +17,7 @@ import {
   createEventOccurrence,
 } from '@/lib/postgres-utils';
 import { withGoogleCalendarRetry, AppError } from '@/lib/retry';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 function calculateSyncWindow(event_start_year: number): {
   start: number;
@@ -40,21 +41,40 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  let session;
+  let id;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to POST /api/events/[id]/sync',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/events/[id]/sync', method: 'POST' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
       );
     }
 
-    const { id } = await params;
+    ({ id } = await params);
 
     // Validate event ID
     const idValidation = validateRequest(EventIdSchema, { id });
     if (!idValidation.success) {
+      SentryHelper.addBreadcrumb({
+        message: 'Invalid event ID in POST /api/events/[id]/sync',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/events/[id]/sync',
+          method: 'POST',
+          eventId: id,
+          validationErrors: idValidation.details,
+        },
+      });
       return NextResponse.json(
         createErrorResponse(
           idValidation.error!,
@@ -128,6 +148,7 @@ export async function POST(
 
     // Create Google Calendar events with retry logic
     const createdOccurrences = [];
+    const yearFailures: Array<{ year: number; error: string }> = [];
     for (const year of yearRange) {
       const anniversary = year - existingEvent.hebrew_year;
       const eventTitle =
@@ -175,12 +196,46 @@ export async function POST(
           });
         }
       } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.error(
           `Failed to create event for year ${year} during sync:`,
           error,
         );
+        SentryHelper.addBreadcrumb({
+          message: `Failed to sync event occurrence for year ${year}`,
+          category: 'google-calendar',
+          level: 'warning',
+          data: { year, eventId: id, error: errorMessage },
+        });
+        yearFailures.push({ year, error: errorMessage });
         // Continue to the next year even if one fails
       }
+    }
+
+    // Report aggregate failures if any occurred
+    if (yearFailures.length > 0) {
+      const level =
+        yearFailures.length === yearRange.length ? 'error' : 'warning';
+      SentryHelper.captureException(
+        new Error('Some Google Calendar event sync operations failed'),
+        {
+          tags: {
+            endpoint: '/api/events/[id]/sync',
+            method: 'POST',
+            operation: 'sync-gcal-events',
+            userId: session.user.id,
+          },
+          extra: {
+            eventId: id,
+            totalYears: yearRange.length,
+            successCount: createdOccurrences.length,
+            failureCount: yearFailures.length,
+            failures: yearFailures,
+          },
+          level,
+        },
+      );
     }
 
     // Batch insert event occurrences for better performance
@@ -203,6 +258,19 @@ export async function POST(
     );
   } catch (error) {
     console.error('Sync event error:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/events/[id]/sync',
+        method: 'POST',
+        operation: 'sync-event',
+      },
+      extra: {
+        userId: session?.user?.id,
+        eventId: id,
+      },
+      level: 'error',
+    });
 
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {

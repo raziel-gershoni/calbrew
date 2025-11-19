@@ -6,6 +6,7 @@ import {
   HebrewCalendarPreferences,
   DEFAULT_HEBREW_CALENDAR_PREFERENCES,
 } from '@/types/hebrewEventPreferences';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 interface ApiResponse<T = unknown> {
   success: boolean;
@@ -15,10 +16,21 @@ interface ApiResponse<T = unknown> {
 
 // GET /api/user/hebrew-calendar-preferences - Get Hebrew calendar preferences
 export async function GET(): Promise<NextResponse<ApiResponse>> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to GET /api/user/hebrew-calendar-preferences',
+        category: 'auth',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/hebrew-calendar-preferences',
+          method: 'GET',
+        },
+      });
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 },
@@ -48,6 +60,19 @@ export async function GET(): Promise<NextResponse<ApiResponse>> {
     });
   } catch (error) {
     console.error('Error getting Hebrew calendar preferences:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/hebrew-calendar-preferences',
+        method: 'GET',
+        operation: 'get-hebrew-calendar-preferences',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 },
@@ -59,10 +84,21 @@ export async function GET(): Promise<NextResponse<ApiResponse>> {
 export async function PUT(
   request: NextRequest,
 ): Promise<NextResponse<ApiResponse>> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to PUT /api/user/hebrew-calendar-preferences',
+        category: 'auth',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/hebrew-calendar-preferences',
+          method: 'PUT',
+        },
+      });
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 },
@@ -76,6 +112,17 @@ export async function PUT(
       !hebrewCalendarPreferences ||
       typeof hebrewCalendarPreferences !== 'object'
     ) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Invalid preferences object in PUT /api/user/hebrew-calendar-preferences',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/hebrew-calendar-preferences',
+          method: 'PUT',
+          error: 'hebrewCalendarPreferences must be an object',
+        },
+      });
       return NextResponse.json(
         {
           success: false,
@@ -99,6 +146,17 @@ export async function PUT(
 
     for (const key of requiredKeys) {
       if (typeof hebrewCalendarPreferences[key] !== 'boolean') {
+        SentryHelper.addBreadcrumb({
+          message: `Invalid preference type in PUT /api/user/hebrew-calendar-preferences`,
+          category: 'validation',
+          level: 'info',
+          data: {
+            endpoint: '/api/user/hebrew-calendar-preferences',
+            method: 'PUT',
+            error: `${key} must be a boolean`,
+            key,
+          },
+        });
         return NextResponse.json(
           { success: false, error: `${key} must be a boolean` },
           { status: 400 },
@@ -117,6 +175,19 @@ export async function PUT(
     });
   } catch (error) {
     console.error('Error updating Hebrew calendar preferences:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/hebrew-calendar-preferences',
+        method: 'PUT',
+        operation: 'update-hebrew-calendar-preferences',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 },

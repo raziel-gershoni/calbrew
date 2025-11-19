@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export interface GcalSyncState {
   enabled: boolean;
@@ -50,6 +51,15 @@ export function useGcalSync() {
         });
       } catch (error) {
         console.error('Error fetching sync preference:', error);
+
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useGcalSync',
+            operation: 'fetch-sync-preference',
+          },
+          level: 'error',
+        });
+
         setSyncState((prev) => ({
           ...prev,
           isLoading: false,
@@ -91,6 +101,15 @@ export function useGcalSync() {
       });
     } catch (error) {
       console.error('Error updating sync preference:', error);
+
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useGcalSync',
+          operation: 'update-sync-preference',
+        },
+        level: 'error',
+      });
+
       setSyncState((prev) => ({
         ...prev,
         isLoading: false,

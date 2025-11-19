@@ -6,12 +6,21 @@ import {
   HebrewEventPreferences,
   DEFAULT_HEBREW_EVENT_PREFERENCES,
 } from '@/types/hebrewEventPreferences';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export async function GET(): Promise<Response> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to GET /api/user/hebrew-event-preferences',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/hebrew-event-preferences', method: 'GET' },
+      });
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
@@ -35,6 +44,19 @@ export async function GET(): Promise<Response> {
     });
   } catch (error) {
     console.error('Error getting Hebrew event preferences:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/hebrew-event-preferences',
+        method: 'GET',
+        operation: 'get-hebrew-event-preferences',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },
@@ -43,16 +65,34 @@ export async function GET(): Promise<Response> {
 }
 
 export async function PUT(request: NextRequest): Promise<Response> {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Unauthorized access attempt to PUT /api/user/hebrew-event-preferences',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/user/hebrew-event-preferences', method: 'PUT' },
+      });
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const { preferences } = await request.json();
 
     if (!preferences || typeof preferences !== 'object') {
+      SentryHelper.addBreadcrumb({
+        message:
+          'Invalid preferences object in PUT /api/user/hebrew-event-preferences',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/user/hebrew-event-preferences',
+          method: 'PUT',
+        },
+      });
       return NextResponse.json(
         { error: 'Invalid preferences object' },
         { status: 400 },
@@ -77,6 +117,18 @@ export async function PUT(request: NextRequest): Promise<Response> {
 
     for (const key of requiredKeys) {
       if (typeof preferences[key] !== 'boolean') {
+        SentryHelper.addBreadcrumb({
+          message:
+            'Invalid preference type in PUT /api/user/hebrew-event-preferences',
+          category: 'validation',
+          level: 'info',
+          data: {
+            endpoint: '/api/user/hebrew-event-preferences',
+            method: 'PUT',
+            error: `Invalid value for ${key}`,
+            key,
+          },
+        });
         return NextResponse.json(
           { error: `Invalid value for ${key}. Expected boolean.` },
           { status: 400 },
@@ -99,6 +151,19 @@ export async function PUT(request: NextRequest): Promise<Response> {
     });
   } catch (error) {
     console.error('Error updating Hebrew event preferences:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/user/hebrew-event-preferences',
+        method: 'PUT',
+        operation: 'update-hebrew-event-preferences',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
+
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

@@ -17,6 +17,7 @@ import {
   createEventOccurrencesBatch,
 } from '@/lib/postgres-utils';
 import { withGoogleCalendarRetry, AppError } from '@/lib/retry';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 function calculateSyncWindow(event_start_year: number): {
   start: number;
@@ -37,10 +38,17 @@ function calculateSyncWindow(event_start_year: number): {
 }
 
 export async function GET() {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to GET /api/events',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/events', method: 'GET' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
@@ -51,6 +59,18 @@ export async function GET() {
     return NextResponse.json(createSuccessResponse(events));
   } catch (error) {
     console.error('Get events error:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/events',
+        method: 'GET',
+        operation: 'fetch-events',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
 
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {
@@ -66,10 +86,17 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  let session;
   try {
-    const session = await getServerSession(authOptions);
+    session = await getServerSession(authOptions);
 
     if (!session || !session.user) {
+      SentryHelper.addBreadcrumb({
+        message: 'Unauthorized access attempt to POST /api/events',
+        category: 'auth',
+        level: 'info',
+        data: { endpoint: '/api/events', method: 'POST' },
+      });
       return NextResponse.json(
         createErrorResponse('Unauthorized', 'AUTH_ERROR'),
         { status: 401 },
@@ -81,6 +108,16 @@ export async function POST(req: NextRequest) {
     const validation = validateRequest(CreateEventSchema, requestBody);
 
     if (!validation.success) {
+      SentryHelper.addBreadcrumb({
+        message: 'Validation error in POST /api/events',
+        category: 'validation',
+        level: 'info',
+        data: {
+          endpoint: '/api/events',
+          method: 'POST',
+          validationErrors: validation.details,
+        },
+      });
       return NextResponse.json(
         createErrorResponse(
           validation.error!,
@@ -174,6 +211,7 @@ export async function POST(req: NextRequest) {
 
       // Create Google Calendar events with retry logic
       const createdOccurrences = [];
+      const yearFailures: Array<{ year: number; error: string }> = [];
       for (const year of yearRange) {
         const anniversary = year - hebrew_year;
         const eventTitle =
@@ -222,6 +260,9 @@ export async function POST(req: NextRequest) {
             };
           }
 
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+
           // If calendar not found (404), try to create/find a new calendar and retry
           if (
             (error as GoogleApiError)?.response?.status === 404 &&
@@ -262,15 +303,43 @@ export async function POST(req: NextRequest) {
                 console.error(
                   `Failed to create event for year ${year}: Could not create/find calendar`,
                 );
+                SentryHelper.addBreadcrumb({
+                  message: `Failed to create event occurrence for year ${year}: Could not create/find calendar`,
+                  category: 'google-calendar',
+                  level: 'warning',
+                  data: { year, eventId, calendarId },
+                });
+                yearFailures.push({
+                  year,
+                  error: 'Could not create/find calendar',
+                });
               }
             } catch (retryError) {
+              const retryErrorMessage =
+                retryError instanceof Error
+                  ? retryError.message
+                  : String(retryError);
               console.error(
                 `Failed to create event for year ${year} even after calendar retry:`,
                 retryError,
               );
+              SentryHelper.addBreadcrumb({
+                message: `Failed to create event occurrence for year ${year} even after calendar retry`,
+                category: 'google-calendar',
+                level: 'warning',
+                data: { year, eventId, error: retryErrorMessage },
+              });
+              yearFailures.push({ year, error: retryErrorMessage });
             }
           } else {
             console.error(`Failed to create event for year ${year}:`, error);
+            SentryHelper.addBreadcrumb({
+              message: `Failed to create event occurrence for year ${year}`,
+              category: 'google-calendar',
+              level: 'warning',
+              data: { year, eventId, error: errorMessage },
+            });
+            yearFailures.push({ year, error: errorMessage });
           }
           // Continue to the next year even if one fails
         }
@@ -280,6 +349,31 @@ export async function POST(req: NextRequest) {
       if (createdOccurrences.length > 0) {
         await createEventOccurrencesBatch(createdOccurrences);
       }
+
+      // Report aggregate failures if any occurred
+      if (yearFailures.length > 0) {
+        const level =
+          yearFailures.length === yearRange.length ? 'error' : 'warning';
+        SentryHelper.captureException(
+          new Error('Some Google Calendar event creations failed'),
+          {
+            tags: {
+              endpoint: '/api/events',
+              method: 'POST',
+              operation: 'create-gcal-events',
+              userId: session.user.id,
+            },
+            extra: {
+              eventId,
+              totalYears: yearRange.length,
+              successCount: createdOccurrences.length,
+              failureCount: yearFailures.length,
+              failures: yearFailures,
+            },
+            level,
+          },
+        );
+      }
     }
 
     return NextResponse.json(
@@ -288,6 +382,18 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     console.error('Create event error:', error);
+
+    SentryHelper.captureException(error, {
+      tags: {
+        endpoint: '/api/events',
+        method: 'POST',
+        operation: 'create-event',
+      },
+      extra: {
+        userId: session?.user?.id,
+      },
+      level: 'error',
+    });
 
     if (error instanceof AppError) {
       return NextResponse.json(error.toApiError(), {

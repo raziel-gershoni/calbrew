@@ -5,6 +5,7 @@ import {
   HebrewCalendarPreferences,
   DEFAULT_HEBREW_CALENDAR_PREFERENCES,
 } from '@/types/hebrewEventPreferences';
+import * as SentryHelper from '@/lib/logger/sentry';
 
 export function useHebrewCalendarPreferences() {
   const [preferences, setPreferences] = useState<HebrewCalendarPreferences>(
@@ -30,6 +31,13 @@ export function useHebrewCalendarPreferences() {
         }
       } catch (error) {
         console.error('Error loading Hebrew calendar preferences:', error);
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useHebrewCalendarPreferences',
+            operation: 'fetch-hebrew-calendar-preferences',
+          },
+          level: 'error',
+        });
       } finally {
         setIsLoading(false);
       }
@@ -86,6 +94,13 @@ export function useHebrewCalendarPreferences() {
       }
     } catch (error) {
       console.error('Failed to update Hebrew calendar preference:', error);
+      SentryHelper.captureException(error, {
+        tags: {
+          hook: 'useHebrewCalendarPreferences',
+          operation: 'update-hebrew-calendar-preference',
+        },
+        level: 'error',
+      });
       // TODO: Show error toast to user
     } finally {
       setIsLoading(false);
