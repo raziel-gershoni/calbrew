@@ -53,7 +53,10 @@ NEXTAUTH_URL=http://localhost:3000
 BACKGROUND_YEAR_PROGRESSION_ENABLED=false
 
 # Optional: Sentry (for error tracking)
-SENTRY_DSN=your_sentry_dsn
+NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
+SENTRY_ORG=your_sentry_org
+SENTRY_PROJECT=your_sentry_project
+SENTRY_AUTH_TOKEN=your_sentry_auth_token
 ```
 
 ### Installation
@@ -111,10 +114,12 @@ To check migration status, visit: `/api/admin/migration-status`
 ### Key Components
 
 - **Authentication**: Google OAuth with automatic token refresh for background services
-- **Calendar Sync**: Per-event Google Calendar synchronization control
-- **Hebrew Date Conversion**: Cached conversions between Hebrew and Gregorian calendars
-- **State Management**: Custom hooks pattern with context providers
-- **API Layer**: RESTful endpoints with Zod validation
+- **Calendar Sync**: Per-event Google Calendar synchronization control with dedicated calendar
+- **Hebrew Date Conversion**: Cached conversions between Hebrew and Gregorian calendars using @hebcal/core
+- **Year Progression**: Automatic sync window calculation (±10 years) with tracking of last synced Hebrew year
+- **Error Monitoring**: Comprehensive Sentry integration across all API endpoints, hooks, and utilities
+- **State Management**: Custom hooks pattern with context providers and local storage backup
+- **API Layer**: RESTful endpoints with Zod validation and consistent error responses
 
 ### Important Files
 
@@ -122,14 +127,20 @@ To check migration status, visit: `/api/admin/migration-status`
 - `src/lib/postgres.ts` - PostgreSQL schema and connection pooling
 - `src/lib/migrations.ts` - Database migration system
 - `src/lib/google-calendar.ts` - Calendar API integration
-- `src/lib/year-progression.ts` - Hebrew year progression logic
-- `src/utils/hebrewDateUtils.ts` - Date conversion utilities
+- `src/lib/year-progression.ts` - Hebrew year progression logic and batch processing
+- `src/lib/background-service.ts` - Optional automatic year progression background worker
+- `src/lib/token-refresh.ts` - OAuth token refresh management for background services
+- `src/lib/logger/sentry.ts` - Sentry wrapper functions for error tracking
+- `src/utils/hebrewDateUtils.ts` - Date conversion utilities and Hebrew event generation
+- `src/hooks/useEvents.ts` - Event CRUD operations
+- `src/hooks/useYearProgression.ts` - Year progression state management
+- `src/i18n.ts` - Translation resources and RTL support
 
 ### Database Schema
 
-- **users**: User profiles, OAuth tokens, preferences
-- **events**: Hebrew calendar events with recurrence rules
-- **event_occurrences**: Google Calendar sync tracking
+- **users**: User profiles, OAuth tokens (access_token, refresh_token, token_expires_at), calendar preferences (mode, language, theme), Google Calendar IDs, Hebrew event preferences, daily learning preferences
+- **events**: Hebrew calendar events with recurrence rules, title, description, Hebrew dates (year, month, day), sync preferences, and last_synced_hebrew_year for year progression tracking
+- **event_occurrences**: Specific Google Calendar event instances with gregorian_date and google_event_id for sync tracking
 
 ## Features in Detail
 
