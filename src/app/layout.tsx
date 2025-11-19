@@ -50,7 +50,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#3b82f6',
+  themeColor: '#f29b2f',
 };
 
 export default function RootLayout({
@@ -65,7 +65,7 @@ export default function RootLayout({
         <meta name='apple-mobile-web-app-status-bar-style' content='default' />
         <meta name='apple-mobile-web-app-title' content='CalBrew' />
         <meta name='mobile-web-app-capable' content='yes' />
-        <meta name='msapplication-TileColor' content='#3b82f6' />
+        <meta name='msapplication-TileColor' content='#f29b2f' />
         <meta name='msapplication-tap-highlight' content='no' />
         <link rel='apple-touch-icon' href='/icons/icon-192x192.png' />
         <link
