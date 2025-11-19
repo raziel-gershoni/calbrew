@@ -3,7 +3,12 @@ import { z } from 'zod';
 // Event validation schemas
 export const CreateEventSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
-  description: z.string().max(1000, 'Description too long').optional(),
+  description: z
+    .string()
+    .max(1000, 'Description too long')
+    .optional()
+    .nullable()
+    .transform((val) => val || null), // Convert empty string to null
   hebrew_year: z
     .number()
     .int()
