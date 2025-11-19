@@ -541,6 +541,11 @@ export default function CalendarView() {
     const currentMonth = currentDate.getMonth(); // Get numeric month (1=Nisan, 7=Tishrei)
     const currentYear = currentDate.getFullYear();
 
+    // Get the current day from selectedDate to preserve it
+    const currentDay = selectedDateRef.current
+      ? new HDate(selectedDateRef.current).getDate()
+      : 1;
+
     let newMonth: number;
     let newYear: number;
 
@@ -584,15 +589,27 @@ export default function CalendarView() {
       }
     }
 
-    // Create new date and get its month name
-    const targetDate = new HDate(1, newMonth, newYear);
+    // Create new date with first day to get month info
+    const firstOfNewMonth = new HDate(1, newMonth, newYear);
+    const maxDayInNewMonth = firstOfNewMonth.daysInMonth();
+
+    // Preserve the current day, or use the last day of the month if it doesn't exist
+    const targetDay = Math.min(currentDay, maxDayInNewMonth);
+
+    // Create target date with preserved day
+    const targetDate = new HDate(targetDay, newMonth, newYear);
     setHebrewYear(newYear);
     setHebrewMonth(targetDate.getMonthName());
-    // Update selectedDate to the first day of the new month
+    // Update selectedDate to preserve the day of month
     updateSelectedDate(targetDate.greg());
   };
 
   const navigateGregorianMonth = (direction: 'prev' | 'next') => {
+    // Get the current day from selectedDate to preserve it
+    const currentDay = selectedDateRef.current
+      ? selectedDateRef.current.getDate()
+      : 1;
+
     let newMonth, newYear;
 
     if (direction === 'next') {
@@ -619,8 +636,14 @@ export default function CalendarView() {
       }
     }
 
-    // Update selectedDate to the first day of the new month
-    updateSelectedDate(new Date(newYear, newMonth, 1));
+    // Get max days in the new month
+    const maxDayInNewMonth = new Date(newYear, newMonth + 1, 0).getDate();
+
+    // Preserve the current day, or use the last day of the month if it doesn't exist
+    const targetDay = Math.min(currentDay, maxDayInNewMonth);
+
+    // Update selectedDate to preserve the day of month
+    updateSelectedDate(new Date(newYear, newMonth, targetDay));
   };
 
   const navigateToToday = () => {

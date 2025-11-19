@@ -266,8 +266,7 @@ export const authOptions: NextAuthOptions = {
               'SELECT calbrew_calendar_id FROM users WHERE id = $1',
               [user.id],
             );
-            token.calbrew_calendar_id =
-              userResult.rows[0]?.calbrew_calendar_id;
+            token.calbrew_calendar_id = userResult.rows[0]?.calbrew_calendar_id;
           } catch (error) {
             logger.error(
               { userId: user.id, error },
@@ -286,8 +285,7 @@ export const authOptions: NextAuthOptions = {
               'SELECT calbrew_calendar_id FROM users WHERE id = $1',
               [token.id as string],
             );
-            token.calbrew_calendar_id =
-              userResult.rows[0]?.calbrew_calendar_id;
+            token.calbrew_calendar_id = userResult.rows[0]?.calbrew_calendar_id;
           } catch (error) {
             logger.error(
               { userId: token.id, error },

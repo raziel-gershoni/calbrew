@@ -131,7 +131,10 @@ describe('POST /api/events', () => {
       sync_with_gcal: true,
     };
 
-    validateRequestMock.mockReturnValue({ success: true, data: requestPayload });
+    validateRequestMock.mockReturnValue({
+      success: true,
+      data: requestPayload,
+    });
 
     let insertCounter = 0;
     insertMock.mockImplementation(async ({ requestBody }) => {
@@ -154,10 +157,18 @@ describe('POST /api/events', () => {
     expect(createEventOccurrencesBatchMock).toHaveBeenCalledTimes(1);
     const occurrences = createEventOccurrencesBatchMock.mock.calls[0][0];
     expect(occurrences).toHaveLength(expectedOccurrences);
-    expect(new Set(occurrences.map((occ: { google_event_id: string }) => occ.google_event_id)).size).toBe(
+    expect(
+      new Set(
+        occurrences.map(
+          (occ: { google_event_id: string }) => occ.google_event_id,
+        ),
+      ).size,
+    ).toBe(expectedOccurrences);
+    expect(setCredentialsMock).toHaveBeenCalledWith({
+      access_token: 'access-token',
+    });
+    expect(withGoogleCalendarRetryMock).toHaveBeenCalledTimes(
       expectedOccurrences,
     );
-    expect(setCredentialsMock).toHaveBeenCalledWith({ access_token: 'access-token' });
-    expect(withGoogleCalendarRetryMock).toHaveBeenCalledTimes(expectedOccurrences);
   });
 });
