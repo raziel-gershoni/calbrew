@@ -44,7 +44,9 @@ async function ensureCalbrewCalendar(
 
     const calendarName = getCalendarName();
     let calbrewCalendar = calendars.items?.find(
-      (c) => c.summary === calendarName,
+      (c) =>
+        c.summary === calendarName &&
+        (c.accessRole === 'owner' || c.accessRole === 'writer'),
     );
 
     if (!calbrewCalendar) {

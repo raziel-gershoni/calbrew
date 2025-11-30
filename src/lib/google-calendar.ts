@@ -39,22 +39,29 @@ export async function ensureCalendarExists(
     oauth2Client.setCredentials({ access_token: accessToken });
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-    // First, check if the current calendar ID exists and has the right name (if provided)
+    // First, check if the current calendar ID exists, has the right name, and has write access (if provided)
     const expectedCalendarName = getCalendarName();
     if (currentCalendarId) {
       try {
-        const { data: currentCalendar } = await calendar.calendars.get({
+        const { data: currentCalendar } = await calendar.calendarList.get({
           calendarId: currentCalendarId,
         });
-        // Check if calendar exists AND has the correct name for current environment
-        if (currentCalendar.summary === expectedCalendarName) {
+        const hasWriteAccess =
+          currentCalendar.accessRole === 'owner' ||
+          currentCalendar.accessRole === 'writer';
+        // Check if calendar exists AND has the correct name for current environment AND has write access
+        if (
+          currentCalendar.summary === expectedCalendarName &&
+          hasWriteAccess
+        ) {
           logger.info(
             {
               userId,
               calendarId: currentCalendarId,
+              accessRole: currentCalendar.accessRole,
               durationMs: Date.now() - startTime,
             },
-            'Calendar already exists with correct name',
+            'Calendar already exists with correct name and write access',
           );
           return {
             calendarId: currentCalendarId,
@@ -68,8 +75,12 @@ export async function ensureCalendarExists(
               calendarId: currentCalendarId,
               currentName: currentCalendar.summary,
               expectedName: expectedCalendarName,
+              accessRole: currentCalendar.accessRole,
+              hasWriteAccess,
             },
-            'Calendar exists but has wrong name, will search for correct one',
+            hasWriteAccess
+              ? 'Calendar exists but has wrong name, will search for correct one'
+              : 'Calendar exists but lacks write access, will search for correct one',
           );
         }
       } catch {
@@ -85,10 +96,12 @@ export async function ensureCalendarExists(
       }
     }
 
-    // Search for existing calendar
+    // Search for existing calendar with write access
     const { data: calendars } = await calendar.calendarList.list();
     let calbrewCalendar = calendars.items?.find(
-      (c) => c.summary === expectedCalendarName,
+      (c) =>
+        c.summary === expectedCalendarName &&
+        (c.accessRole === 'owner' || c.accessRole === 'writer'),
     );
 
     let created = false;
@@ -176,7 +189,7 @@ export async function ensureCalendarExists(
 }
 
 /**
- * Checks if a calendar exists without trying to create it
+ * Checks if a calendar exists and has write access
  */
 export async function checkCalendarExists(
   accessToken: string,
@@ -191,8 +204,9 @@ export async function checkCalendarExists(
     oauth2Client.setCredentials({ access_token: accessToken });
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-    await calendar.calendars.get({ calendarId });
-    return true;
+    // Check if calendar exists and verify write access
+    const { data } = await calendar.calendarList.get({ calendarId });
+    return data.accessRole === 'owner' || data.accessRole === 'writer';
   } catch {
     return false;
   }
