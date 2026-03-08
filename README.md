@@ -5,6 +5,7 @@ A Hebrew calendar event management application with Google Calendar integration,
 ## Features
 
 ### User-Facing Features
+
 - **Dual Calendar Modes**: View and manage events in either Hebrew or Gregorian calendar
 - **Google Calendar Sync**: Automatic synchronization with a dedicated Google Calendar
 - **Hebrew Calendar Events**: Built-in support for Jewish holidays, fasts, special Shabbat, and more
@@ -15,6 +16,7 @@ A Hebrew calendar event management application with Google Calendar integration,
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 
 ### B2B API Service
+
 - **Third-Party API**: RESTful API for Hebrew date services (e.g., flower shops tracking customer birthdays)
 - **Two-Tier System**: Basic (date utilities) and Premium (contact management + webhooks)
 - **Flexible Authentication**: API keys and OAuth2 client credentials flow
@@ -107,7 +109,9 @@ CalBrew provides a comprehensive B2B API for Hebrew date services, enabling thir
 The API is organized into two service tiers:
 
 #### Tier 1 (Basic) - Date Utilities
+
 Stateless date conversion and lookup services:
+
 - Hebrew ↔ Gregorian date conversion
 - Generate Hebrew date occurrences in a date range
 - Holiday and fast day lookup with customizable filters
@@ -115,7 +119,9 @@ Stateless date conversion and lookup services:
 **Scopes**: `dates:read`
 
 #### Tier 2 (Premium) - Managed Service
+
 Full contact management with webhook notifications:
+
 - Store contacts with Hebrew dates (birthdays, anniversaries, etc.)
 - Query upcoming dates across all contacts
 - Webhook notifications N days before events
@@ -128,6 +134,7 @@ Full contact management with webhook notifications:
 Two authentication methods are supported:
 
 #### 1. API Keys (Recommended for most use cases)
+
 ```bash
 Authorization: Bearer cb_live_[32-char-random]
 ```
@@ -138,6 +145,7 @@ Authorization: Bearer cb_live_[32-char-random]
 - Optional expiration dates
 
 #### 2. OAuth2 Client Credentials Flow (Enterprise)
+
 ```bash
 POST /api/v1/auth/token
 Content-Type: application/x-www-form-urlencoded
@@ -154,18 +162,20 @@ Response:
 ```
 
 Use the access token:
+
 ```bash
 Authorization: Bearer eyJhbG...
 ```
 
 ### Rate Limiting
 
-| Tier    | Per Minute | Per Day   |
-|---------|------------|-----------|
-| Basic   | 60         | 10,000    |
-| Premium | 300        | 100,000   |
+| Tier    | Per Minute | Per Day |
+| ------- | ---------- | ------- |
+| Basic   | 60         | 10,000  |
+| Premium | 300        | 100,000 |
 
 Rate limit headers are included in all responses:
+
 ```
 X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 45
@@ -177,6 +187,7 @@ When rate limit is exceeded, you'll receive a `429 Too Many Requests` response w
 ### API Endpoints
 
 #### Health Check
+
 ```bash
 GET /api/v1/health
 # No authentication required
@@ -190,6 +201,7 @@ Response:
 ```
 
 #### Date Conversion (Tier 1)
+
 ```bash
 POST /api/v1/dates/convert
 Authorization: Bearer cb_live_xxx
@@ -231,6 +243,7 @@ Response:
 ```
 
 #### Generate Occurrences (Tier 1)
+
 ```bash
 POST /api/v1/dates/occurrences
 Authorization: Bearer cb_live_xxx
@@ -275,6 +288,7 @@ Response:
 ```
 
 #### List Holidays (Tier 1)
+
 ```bash
 GET /api/v1/dates/holidays?startDate=2025-01-01&endDate=2025-01-31&types=majorHolidays,minorHolidays&language=en
 Authorization: Bearer cb_live_xxx
@@ -304,6 +318,7 @@ Response:
 ```
 
 #### Create Contact (Tier 2)
+
 ```bash
 POST /api/v1/contacts
 Authorization: Bearer cb_live_xxx
@@ -357,6 +372,7 @@ Response:
 ```
 
 #### Query Upcoming Dates (Tier 2)
+
 ```bash
 GET /api/v1/contacts/dates/upcoming?daysAhead=30&dateTypes=birthday,anniversary&limit=100&offset=0
 Authorization: Bearer cb_live_xxx
@@ -403,6 +419,7 @@ Response:
 ```
 
 #### Create Webhook (Tier 2)
+
 ```bash
 POST /api/v1/webhooks
 Authorization: Bearer cb_live_xxx
@@ -439,6 +456,7 @@ Response:
 CalBrew uses **Upstash QStash** for reliable webhook delivery in a serverless environment.
 
 #### Webhook Payload Format
+
 ```json
 {
   "event": "date.upcoming",
@@ -467,12 +485,14 @@ CalBrew uses **Upstash QStash** for reliable webhook delivery in a serverless en
 All webhook requests include HMAC-SHA256 signatures for verification:
 
 **Headers:**
+
 ```
 X-Calbrew-Signature: sha256=abc123...
 X-Calbrew-Timestamp: 2025-02-06T06:00:00Z
 ```
 
 **Verification (Node.js example):**
+
 ```javascript
 const crypto = require('crypto');
 
@@ -499,6 +519,7 @@ const payload = JSON.parse(rawBody);
 #### Webhook Scheduling
 
 A daily cron job runs at **6:00 AM UTC** to check for upcoming dates and schedule webhooks:
+
 - Checks all contacts across all premium clients
 - Schedules webhooks N days before each date (based on `notifyDaysBefore`)
 - Uses QStash for reliable delivery with automatic retries
@@ -539,17 +560,17 @@ npm test
 
 The API service adds 10 new tables:
 
-| Table | Purpose |
-|-------|---------|
-| `api_clients` | Third-party app registration (tier, rate limits) |
-| `api_keys` | API key management with SHA-256 hashing |
-| `api_rate_limits` | Sliding window rate limit tracking |
-| `api_contacts` | Contact storage for Tier 2 clients |
-| `api_contact_dates` | Hebrew dates associated with contacts |
-| `webhook_configs` | Webhook endpoint configurations |
-| `webhook_deliveries` | Delivery tracking and retry queue |
-| `oauth_clients` | OAuth2 client credentials |
-| `oauth_access_tokens` | OAuth2 access tokens |
+| Table                 | Purpose                                          |
+| --------------------- | ------------------------------------------------ |
+| `api_clients`         | Third-party app registration (tier, rate limits) |
+| `api_keys`            | API key management with SHA-256 hashing          |
+| `api_rate_limits`     | Sliding window rate limit tracking               |
+| `api_contacts`        | Contact storage for Tier 2 clients               |
+| `api_contact_dates`   | Hebrew dates associated with contacts            |
+| `webhook_configs`     | Webhook endpoint configurations                  |
+| `webhook_deliveries`  | Delivery tracking and retry queue                |
+| `oauth_clients`       | OAuth2 client credentials                        |
+| `oauth_access_tokens` | OAuth2 access tokens                             |
 
 All tables include proper indexes for performance and foreign key constraints for data integrity.
 
@@ -574,20 +595,21 @@ npm run test:coverage # Run tests with coverage report
 
 CalBrew has comprehensive test coverage with **169 passing tests**:
 
-| Test Suite | Tests | Coverage |
-|------------|-------|----------|
-| **User Application** | 98 tests | |
-| `validation.test.ts` | 50 | Request validation, error responses |
-| `hebrewDateUtils.test.ts` | 32 | Date conversion, occurrence generation |
-| `year-progression.test.ts` | 15 | Year sync logic, batch processing |
-| `api/events/route.test.ts` | 1 | Event API endpoints |
-| **B2B API Service** | 71 tests | |
-| `api-validation.test.ts` | 37 | All API Zod schemas |
-| `api-auth.test.ts` | 15 | Key generation, hashing, scope checking |
-| `qstash.test.ts` | 12 | Webhook signatures, payload building |
-| `api-rate-limit.test.ts` | 7 | Rate limit header generation |
+| Test Suite                 | Tests    | Coverage                                |
+| -------------------------- | -------- | --------------------------------------- |
+| **User Application**       | 98 tests |                                         |
+| `validation.test.ts`       | 50       | Request validation, error responses     |
+| `hebrewDateUtils.test.ts`  | 32       | Date conversion, occurrence generation  |
+| `year-progression.test.ts` | 15       | Year sync logic, batch processing       |
+| `api/events/route.test.ts` | 1        | Event API endpoints                     |
+| **B2B API Service**        | 71 tests |                                         |
+| `api-validation.test.ts`   | 37       | All API Zod schemas                     |
+| `api-auth.test.ts`         | 15       | Key generation, hashing, scope checking |
+| `qstash.test.ts`           | 12       | Webhook signatures, payload building    |
+| `api-rate-limit.test.ts`   | 7        | Rate limit header generation            |
 
 All tests use **Vitest** with the following features:
+
 - Unit tests for utilities and libraries
 - Integration tests for API endpoints
 - Snapshot testing for complex objects
@@ -595,6 +617,7 @@ All tests use **Vitest** with the following features:
 - Happy-dom for DOM testing
 
 Run the full validation suite before committing:
+
 ```bash
 npm run lint:fix && npx tsc --noEmit && npm run format && npm test
 ```
@@ -620,6 +643,7 @@ To check migration status, visit: `/api/admin/migration-status`
 ### Important Files
 
 #### User Application
+
 - `src/lib/auth.ts` - NextAuth configuration with Google Calendar setup
 - `src/lib/postgres.ts` - PostgreSQL schema and connection pooling
 - `src/lib/migrations.ts` - Database migration system (now includes 10 API migrations)
@@ -634,6 +658,7 @@ To check migration status, visit: `/api/admin/migration-status`
 - `src/i18n.ts` - Translation resources and RTL support
 
 #### B2B API Service
+
 - `src/lib/api-auth.ts` - API key generation, validation, OAuth2 token management
 - `src/lib/api-rate-limit.ts` - PostgreSQL-based sliding window rate limiting
 - `src/lib/api-middleware.ts` - Authentication, rate limiting, scope checking middleware
@@ -647,11 +672,13 @@ To check migration status, visit: `/api/admin/migration-status`
 ### Database Schema
 
 #### User Application Tables
+
 - **users**: User profiles, OAuth tokens (access_token, refresh_token, token_expires_at), calendar preferences (mode, language, theme), Google Calendar IDs, Hebrew event preferences, daily learning preferences
 - **events**: Hebrew calendar events with recurrence rules, title, description, Hebrew dates (year, month, day), sync preferences, and last_synced_hebrew_year for year progression tracking
 - **event_occurrences**: Specific Google Calendar event instances with gregorian_date and google_event_id for sync tracking
 
 #### B2B API Tables
+
 - **api_clients**: Third-party app registration with tier (basic/premium), contact email, and configurable rate limits (per-minute, per-day)
 - **api_keys**: API key management with SHA-256 hashed keys, key prefixes for identification, scopes array, expiration dates
 - **api_rate_limits**: Rate limit tracking with sliding window (minute/day), request counts, and automatic cleanup
@@ -663,6 +690,7 @@ To check migration status, visit: `/api/admin/migration-status`
 - **oauth_access_tokens**: OAuth2 tokens with scopes, expiration times, and automatic cleanup
 
 All API tables use:
+
 - Foreign key constraints for data integrity
 - Client ID filtering for tenant isolation (security)
 - Proper indexes for query performance
@@ -693,6 +721,7 @@ All API tables use:
 ## Security
 
 ### User Application
+
 - CSP headers configured
 - Database foreign key constraints and indexes
 - OAuth scope validation with Google Calendar API
@@ -700,6 +729,7 @@ All API tables use:
 - Input validation with Zod schemas
 
 ### B2B API Service
+
 - **API Keys**: Stored as SHA-256 hashes, never in plaintext
 - **OAuth2 Secrets**: Client secrets stored as SHA-256 hashes
 - **Webhook Signatures**: HMAC-SHA256 for payload verification
