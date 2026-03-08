@@ -167,6 +167,13 @@ export const CreateApiClientSchema = z.object({
   rateLimitPerDay: z.number().int().min(1).max(1000000).optional(),
 });
 
+export const UpdateApiClientSchema = z.object({
+  tier: z.enum(['basic', 'premium']).optional(),
+  rateLimitPerMinute: z.number().int().min(1).max(1000).optional(),
+  rateLimitPerDay: z.number().int().min(1).max(1000000).optional(),
+  isActive: z.boolean().optional(),
+});
+
 export const CreateApiKeySchema = z.object({
   name: z.string().min(1).max(255),
   scopes: z
@@ -199,4 +206,5 @@ export type CreateWebhook = z.infer<typeof CreateWebhookSchema>;
 export type UpdateWebhook = z.infer<typeof UpdateWebhookSchema>;
 export type OAuth2TokenRequest = z.infer<typeof OAuth2TokenRequestSchema>;
 export type CreateApiClient = z.infer<typeof CreateApiClientSchema>;
+export type UpdateApiClient = z.infer<typeof UpdateApiClientSchema>;
 export type CreateApiKey = z.infer<typeof CreateApiKeySchema>;

@@ -333,6 +333,18 @@ const migrations: Migration[] = [
       DROP TABLE IF EXISTS oauth_clients;
     `,
   },
+  {
+    version: 11,
+    name: 'add_user_id_to_api_clients',
+    up: `
+      ALTER TABLE api_clients ADD COLUMN IF NOT EXISTS user_id TEXT REFERENCES users(id) ON DELETE SET NULL;
+      CREATE INDEX IF NOT EXISTS idx_api_clients_user_id ON api_clients(user_id);
+    `,
+    down: `
+      DROP INDEX IF EXISTS idx_api_clients_user_id;
+      ALTER TABLE api_clients DROP COLUMN IF EXISTS user_id;
+    `,
+  },
   // Add future migrations here with incrementing version numbers
 ];
 

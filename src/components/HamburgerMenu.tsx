@@ -27,6 +27,7 @@ import {
   ArrowRightOnRectangleIcon,
   ChevronDownIcon,
   CheckIcon,
+  CodeBracketIcon,
 } from '@heroicons/react/24/outline';
 
 interface HamburgerMenuProps {
@@ -572,6 +573,16 @@ export default function HamburgerMenu({
 
             {/* Divider */}
             <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
+
+            {/* Developer Dashboard */}
+            <a
+              href='/developer'
+              onClick={() => setIsOpen(false)}
+              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
+            >
+              <CodeBracketIcon className='w-4 h-4 me-3' />
+              {t('Developer')}
+            </a>
 
             {/* User Profile */}
             <button

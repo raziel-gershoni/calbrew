@@ -17,6 +17,7 @@ export interface ApiClient {
   rate_limit_per_minute: number;
   rate_limit_per_day: number;
   is_active: boolean;
+  user_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -444,6 +445,7 @@ export async function createApiClient(data: {
   contactEmail: string;
   rateLimitPerMinute?: number;
   rateLimitPerDay?: number;
+  userId?: string;
 }): Promise<ApiClient | null> {
   try {
     const tier = data.tier || 'basic';
@@ -453,10 +455,17 @@ export async function createApiClient(data: {
       data.rateLimitPerDay || (tier === 'premium' ? 100000 : 10000);
 
     const result = await query<ApiClient>(
-      `INSERT INTO api_clients (name, tier, contact_email, rate_limit_per_minute, rate_limit_per_day)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO api_clients (name, tier, contact_email, rate_limit_per_minute, rate_limit_per_day, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [data.name, tier, data.contactEmail, rateLimitPerMinute, rateLimitPerDay],
+      [
+        data.name,
+        tier,
+        data.contactEmail,
+        rateLimitPerMinute,
+        rateLimitPerDay,
+        data.userId || null,
+      ],
     );
 
     return result.rows[0] || null;
@@ -515,5 +524,148 @@ export async function createOAuthCredentials(
       level: 'error',
     });
     return null;
+  }
+}
+
+/**
+ * List API clients belonging to a specific user
+ */
+export async function listApiClientsByUserId(
+  userId: string,
+): Promise<ApiClient[]> {
+  try {
+    const result = await query<ApiClient>(
+      'SELECT * FROM api_clients WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId],
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error listing API clients by user:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'list-clients-by-user' },
+      extra: { userId },
+      level: 'error',
+    });
+    return [];
+  }
+}
+
+/**
+ * List all API clients (admin use)
+ */
+export async function listAllApiClients(): Promise<ApiClient[]> {
+  try {
+    const result = await query<ApiClient>(
+      'SELECT * FROM api_clients ORDER BY created_at DESC',
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error listing all API clients:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'list-all-clients' },
+      level: 'error',
+    });
+    return [];
+  }
+}
+
+/**
+ * List API keys for a specific client (excludes key_hash for security)
+ */
+export async function listApiKeysByClientId(
+  clientId: string,
+): Promise<Omit<ApiKey, 'key_hash'>[]> {
+  try {
+    const result = await query<ApiKey>(
+      `SELECT id, client_id, key_prefix, name, scopes, last_used_at, expires_at, is_active, created_at, updated_at
+       FROM api_keys WHERE client_id = $1 ORDER BY created_at DESC`,
+      [clientId],
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error listing API keys by client:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'list-keys-by-client' },
+      extra: { clientId },
+      level: 'error',
+    });
+    return [];
+  }
+}
+
+/**
+ * Update an API client (admin use: tier, rate limits, active status)
+ */
+export async function updateApiClient(
+  clientId: string,
+  data: {
+    tier?: 'basic' | 'premium';
+    rateLimitPerMinute?: number;
+    rateLimitPerDay?: number;
+    isActive?: boolean;
+  },
+): Promise<ApiClient | null> {
+  try {
+    const setClauses: string[] = [];
+    const values: (string | number | boolean)[] = [];
+    let paramIndex = 1;
+
+    if (data.tier !== undefined) {
+      setClauses.push(`tier = $${paramIndex++}`);
+      values.push(data.tier);
+    }
+    if (data.rateLimitPerMinute !== undefined) {
+      setClauses.push(`rate_limit_per_minute = $${paramIndex++}`);
+      values.push(data.rateLimitPerMinute);
+    }
+    if (data.rateLimitPerDay !== undefined) {
+      setClauses.push(`rate_limit_per_day = $${paramIndex++}`);
+      values.push(data.rateLimitPerDay);
+    }
+    if (data.isActive !== undefined) {
+      setClauses.push(`is_active = $${paramIndex++}`);
+      values.push(data.isActive);
+    }
+
+    if (setClauses.length === 0) {
+      return null;
+    }
+
+    setClauses.push(`updated_at = CURRENT_TIMESTAMP`);
+    values.push(clientId);
+
+    const result = await query<ApiClient>(
+      `UPDATE api_clients SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
+      values,
+    );
+
+    return result.rows[0] || null;
+  } catch (error) {
+    console.error('Error updating API client:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'update-api-client' },
+      extra: { clientId },
+      level: 'error',
+    });
+    return null;
+  }
+}
+
+/**
+ * Verify that a client belongs to a specific user
+ */
+export async function verifyClientOwnership(
+  clientId: string,
+  userId: string,
+): Promise<boolean> {
+  try {
+    const result = await query<{ id: string }>(
+      'SELECT id FROM api_clients WHERE id = $1 AND user_id = $2',
+      [clientId, userId],
+    );
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Error verifying client ownership:', error);
+    return false;
   }
 }

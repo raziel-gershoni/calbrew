@@ -76,6 +76,7 @@ describe('api-auth', () => {
       rate_limit_per_minute: 60,
       rate_limit_per_day: 10000,
       is_active: true,
+      user_id: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
