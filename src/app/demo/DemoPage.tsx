@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import ApiKeyInput from './components/ApiKeyInput';
 import DemoHealthCheck from './components/DemoHealthCheck';
 import DemoDateConvert from './components/DemoDateConvert';
@@ -16,6 +18,13 @@ export default function DemoPage() {
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
       <div className='max-w-5xl mx-auto px-4 py-8'>
         <header className='mb-8'>
+          <Link
+            href='/developer'
+            className='inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mb-4'
+          >
+            <ArrowLeftIcon className='w-4 h-4' />
+            Developer
+          </Link>
           <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
             Calbrew B2B API Explorer
           </h1>

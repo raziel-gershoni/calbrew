@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { useTranslation } from 'react-i18next';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAdminClients } from '@/hooks/useAdminClients';
 import { ApiClient } from '@/lib/api-auth';
 
@@ -13,6 +16,7 @@ interface EditFormState {
 }
 
 export default function AdminPage() {
+  const { t } = useTranslation();
   const { data: session, status } = useSession();
   const { clients, isLoading, isForbidden, updateClient } = useAdminClients();
 
@@ -117,6 +121,13 @@ export default function AdminPage() {
     <div className='min-h-screen bg-gray-50 dark:bg-gray-900'>
       <div className='max-w-4xl mx-auto px-4 py-8'>
         <header className='mb-8'>
+          <Link
+            href='/'
+            className='inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mb-4'
+          >
+            <ArrowLeftIcon className='w-4 h-4' />
+            {t('Back')}
+          </Link>
           <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
             Admin Dashboard
           </h1>

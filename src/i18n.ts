@@ -116,6 +116,47 @@ const resources = {
       'Go to Date': 'Go to Date',
       'Edit Date': 'Edit Date',
       Confirm: 'Confirm',
+      // Navigation
+      Back: 'Back',
+      Admin: 'Admin',
+      Developer: 'Developer',
+      // Developer page strings
+      'Developer Dashboard': 'Developer Dashboard',
+      'Manage your API clients and keys for the Calbrew B2B API.':
+        'Manage your API clients and keys for the Calbrew B2B API.',
+      'Create API Client': 'Create API Client',
+      'Client name (e.g. "My App")': 'Client name (e.g. "My App")',
+      Create: 'Create',
+      'No API clients yet': 'No API clients yet',
+      'Create your first API client above to get started.':
+        'Create your first API client above to get started.',
+      'Save Your API Key': 'Save Your API Key',
+      'This key will not be shown again. Copy it now and store it securely.':
+        'This key will not be shown again. Copy it now and store it securely.',
+      Copy: 'Copy',
+      'Copied!': 'Copied!',
+      'API Keys': 'API Keys',
+      '+ New Key': '+ New Key',
+      'Key name (e.g. "Production")': 'Key name (e.g. "Production")',
+      Scopes: 'Scopes',
+      'Expires in (days, optional)': 'Expires in (days, optional)',
+      'e.g. 90 (leave empty for no expiry)':
+        'e.g. 90 (leave empty for no expiry)',
+      'Generate Key': 'Generate Key',
+      'No API keys yet. Create one to get started.':
+        'No API keys yet. Create one to get started.',
+      revoked: 'revoked',
+      expires: 'expires',
+      Revoke: 'Revoke',
+      'Confirm?': 'Confirm?',
+      'Rate limit:': 'Rate limit:',
+      'Daily limit:': 'Daily limit:',
+      'Client ID:': 'Client ID:',
+      'Email:': 'Email:',
+      'Sign In Required': 'Sign In Required',
+      'Please sign in to access the Developer Dashboard.':
+        'Please sign in to access the Developer Dashboard.',
+      'API Explorer': 'API Explorer',
       // Hebrew Event Types
       'Event Types': 'Event Types',
       'Learning Types': 'Learning Types',
@@ -248,6 +289,46 @@ const resources = {
       'Go to Date': 'עבור לתאריך',
       'Edit Date': 'ערוך תאריך',
       Confirm: 'אשר',
+      // Navigation
+      Back: 'חזרה',
+      Admin: 'ניהול',
+      Developer: 'מפתחים',
+      // Developer page strings
+      'Developer Dashboard': 'לוח בקרה למפתחים',
+      'Manage your API clients and keys for the Calbrew B2B API.':
+        'נהל את לקוחות ה-API והמפתחות שלך עבור Calbrew B2B API.',
+      'Create API Client': 'צור לקוח API',
+      'Client name (e.g. "My App")': 'שם לקוח (לדוגמה "האפליקציה שלי")',
+      Create: 'צור',
+      'No API clients yet': 'אין עדיין לקוחות API',
+      'Create your first API client above to get started.':
+        'צור את לקוח ה-API הראשון שלך למעלה כדי להתחיל.',
+      'Save Your API Key': 'שמור את מפתח ה-API שלך',
+      'This key will not be shown again. Copy it now and store it securely.':
+        'מפתח זה לא יוצג שוב. העתק אותו כעת ושמור אותו במקום בטוח.',
+      Copy: 'העתק',
+      'Copied!': 'הועתק!',
+      'API Keys': 'מפתחות API',
+      '+ New Key': '+ מפתח חדש',
+      'Key name (e.g. "Production")': 'שם מפתח (לדוגמה "ייצור")',
+      Scopes: 'הרשאות',
+      'Expires in (days, optional)': 'תפוגה בימים (אופציונלי)',
+      'e.g. 90 (leave empty for no expiry)': 'לדוגמה 90 (השאר ריק ללא תפוגה)',
+      'Generate Key': 'צור מפתח',
+      'No API keys yet. Create one to get started.':
+        'אין עדיין מפתחות API. צור אחד כדי להתחיל.',
+      revoked: 'בוטל',
+      expires: 'תפוגה',
+      Revoke: 'בטל',
+      'Confirm?': 'אישור?',
+      'Rate limit:': 'מגבלת קצב:',
+      'Daily limit:': 'מגבלה יומית:',
+      'Client ID:': 'מזהה לקוח:',
+      'Email:': 'אימייל:',
+      'Sign In Required': 'נדרשת התחברות',
+      'Please sign in to access the Developer Dashboard.':
+        'אנא התחבר כדי לגשת ללוח הבקרה למפתחים.',
+      'API Explorer': 'סייר API',
       // Hebrew Event Types
       'Event Types': 'סוגי אירועים',
       'Learning Types': 'סוגי לימוד',
@@ -385,6 +466,47 @@ const resources = {
       'Go to Date': 'Ir a Fecha',
       'Edit Date': 'Editar Fecha',
       Confirm: 'Confirmar',
+      // Navigation
+      Back: 'Volver',
+      Admin: 'Admin',
+      Developer: 'Desarrollador',
+      // Developer page strings
+      'Developer Dashboard': 'Panel de Desarrollador',
+      'Manage your API clients and keys for the Calbrew B2B API.':
+        'Administra tus clientes y claves API para la API B2B de Calbrew.',
+      'Create API Client': 'Crear Cliente API',
+      'Client name (e.g. "My App")': 'Nombre del cliente (ej. "Mi App")',
+      Create: 'Crear',
+      'No API clients yet': 'No hay clientes API aún',
+      'Create your first API client above to get started.':
+        'Crea tu primer cliente API arriba para comenzar.',
+      'Save Your API Key': 'Guarda Tu Clave API',
+      'This key will not be shown again. Copy it now and store it securely.':
+        'Esta clave no se mostrará de nuevo. Cópiala ahora y guárdala de forma segura.',
+      Copy: 'Copiar',
+      'Copied!': '¡Copiado!',
+      'API Keys': 'Claves API',
+      '+ New Key': '+ Nueva Clave',
+      'Key name (e.g. "Production")': 'Nombre de clave (ej. "Producción")',
+      Scopes: 'Permisos',
+      'Expires in (days, optional)': 'Expira en (días, opcional)',
+      'e.g. 90 (leave empty for no expiry)':
+        'ej. 90 (dejar vacío sin expiración)',
+      'Generate Key': 'Generar Clave',
+      'No API keys yet. Create one to get started.':
+        'No hay claves API aún. Crea una para comenzar.',
+      revoked: 'revocada',
+      expires: 'expira',
+      Revoke: 'Revocar',
+      'Confirm?': '¿Confirmar?',
+      'Rate limit:': 'Límite de velocidad:',
+      'Daily limit:': 'Límite diario:',
+      'Client ID:': 'ID de Cliente:',
+      'Email:': 'Correo:',
+      'Sign In Required': 'Inicio de Sesión Requerido',
+      'Please sign in to access the Developer Dashboard.':
+        'Inicia sesión para acceder al Panel de Desarrollador.',
+      'API Explorer': 'Explorador API',
       // Hebrew Event Types
       'Event Types': 'Tipos de Eventos',
       'Learning Types': 'Tipos de Aprendizaje',
@@ -521,6 +643,47 @@ const resources = {
       'Go to Date': 'Перейти к дате',
       'Edit Date': 'Редактировать дату',
       Confirm: 'Подтвердить',
+      // Navigation
+      Back: 'Назад',
+      Admin: 'Админ',
+      Developer: 'Разработчик',
+      // Developer page strings
+      'Developer Dashboard': 'Панель разработчика',
+      'Manage your API clients and keys for the Calbrew B2B API.':
+        'Управляйте клиентами и ключами API для Calbrew B2B API.',
+      'Create API Client': 'Создать клиент API',
+      'Client name (e.g. "My App")': 'Имя клиента (напр. "Моё приложение")',
+      Create: 'Создать',
+      'No API clients yet': 'Клиентов API пока нет',
+      'Create your first API client above to get started.':
+        'Создайте первого клиента API выше, чтобы начать.',
+      'Save Your API Key': 'Сохраните ваш ключ API',
+      'This key will not be shown again. Copy it now and store it securely.':
+        'Этот ключ больше не будет показан. Скопируйте его сейчас и сохраните в безопасном месте.',
+      Copy: 'Копировать',
+      'Copied!': 'Скопировано!',
+      'API Keys': 'Ключи API',
+      '+ New Key': '+ Новый ключ',
+      'Key name (e.g. "Production")': 'Имя ключа (напр. "Продакшн")',
+      Scopes: 'Разрешения',
+      'Expires in (days, optional)': 'Истекает через (дни, необязательно)',
+      'e.g. 90 (leave empty for no expiry)':
+        'напр. 90 (оставьте пустым без срока)',
+      'Generate Key': 'Сгенерировать ключ',
+      'No API keys yet. Create one to get started.':
+        'Ключей API пока нет. Создайте один, чтобы начать.',
+      revoked: 'отозван',
+      expires: 'истекает',
+      Revoke: 'Отозвать',
+      'Confirm?': 'Подтвердить?',
+      'Rate limit:': 'Лимит запросов:',
+      'Daily limit:': 'Дневной лимит:',
+      'Client ID:': 'ID клиента:',
+      'Email:': 'Эл. почта:',
+      'Sign In Required': 'Требуется вход',
+      'Please sign in to access the Developer Dashboard.':
+        'Войдите, чтобы получить доступ к панели разработчика.',
+      'API Explorer': 'Обозреватель API',
       // Hebrew Event Types
       'Event Types': 'Типы событий',
       'Learning Types': 'Типы изучения',
@@ -660,6 +823,47 @@ const resources = {
       'Go to Date': 'Zu Datum gehen',
       'Edit Date': 'Datum bearbeiten',
       Confirm: 'Bestätigen',
+      // Navigation
+      Back: 'Zurück',
+      Admin: 'Admin',
+      Developer: 'Entwickler',
+      // Developer page strings
+      'Developer Dashboard': 'Entwickler-Dashboard',
+      'Manage your API clients and keys for the Calbrew B2B API.':
+        'Verwalten Sie Ihre API-Clients und Schlüssel für die Calbrew B2B API.',
+      'Create API Client': 'API-Client erstellen',
+      'Client name (e.g. "My App")': 'Client-Name (z.B. "Meine App")',
+      Create: 'Erstellen',
+      'No API clients yet': 'Noch keine API-Clients',
+      'Create your first API client above to get started.':
+        'Erstellen Sie oben Ihren ersten API-Client, um zu beginnen.',
+      'Save Your API Key': 'Speichern Sie Ihren API-Schlüssel',
+      'This key will not be shown again. Copy it now and store it securely.':
+        'Dieser Schlüssel wird nicht erneut angezeigt. Kopieren Sie ihn jetzt und speichern Sie ihn sicher.',
+      Copy: 'Kopieren',
+      'Copied!': 'Kopiert!',
+      'API Keys': 'API-Schlüssel',
+      '+ New Key': '+ Neuer Schlüssel',
+      'Key name (e.g. "Production")': 'Schlüsselname (z.B. "Produktion")',
+      Scopes: 'Berechtigungen',
+      'Expires in (days, optional)': 'Läuft ab in (Tage, optional)',
+      'e.g. 90 (leave empty for no expiry)':
+        'z.B. 90 (leer lassen für kein Ablaufdatum)',
+      'Generate Key': 'Schlüssel generieren',
+      'No API keys yet. Create one to get started.':
+        'Noch keine API-Schlüssel. Erstellen Sie einen, um zu beginnen.',
+      revoked: 'widerrufen',
+      expires: 'läuft ab',
+      Revoke: 'Widerrufen',
+      'Confirm?': 'Bestätigen?',
+      'Rate limit:': 'Rate-Limit:',
+      'Daily limit:': 'Tageslimit:',
+      'Client ID:': 'Client-ID:',
+      'Email:': 'E-Mail:',
+      'Sign In Required': 'Anmeldung erforderlich',
+      'Please sign in to access the Developer Dashboard.':
+        'Bitte melden Sie sich an, um auf das Entwickler-Dashboard zuzugreifen.',
+      'API Explorer': 'API-Explorer',
       // Hebrew Event Types
       'Event Types': 'Ereignistypen',
       'Learning Types': 'Lerntypen',
