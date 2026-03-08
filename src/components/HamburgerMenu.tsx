@@ -28,6 +28,7 @@ import {
   ChevronDownIcon,
   CheckIcon,
   CodeBracketIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 
 interface HamburgerMenuProps {
@@ -573,6 +574,16 @@ export default function HamburgerMenu({
 
             {/* Divider */}
             <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
+
+            {/* Admin Dashboard */}
+            <a
+              href='/admin'
+              onClick={() => setIsOpen(false)}
+              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
+            >
+              <ShieldCheckIcon className='w-4 h-4 me-3' />
+              {t('Admin')}
+            </a>
 
             {/* Developer Dashboard */}
             <a
