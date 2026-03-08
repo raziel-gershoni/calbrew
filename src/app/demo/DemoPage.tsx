@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import ApiKeyInput from './components/ApiKeyInput';
 import DemoHealthCheck from './components/DemoHealthCheck';
@@ -12,6 +13,7 @@ import DemoContacts from './components/DemoContacts';
 import DemoWebhooks from './components/DemoWebhooks';
 
 export default function DemoPage() {
+  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
 
   return (
@@ -23,7 +25,7 @@ export default function DemoPage() {
             className='inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mb-4'
           >
             <ArrowLeftIcon className='w-4 h-4' />
-            Developer
+            {t('Developer')}
           </Link>
           <h1 className='text-2xl font-bold text-gray-900 dark:text-gray-100'>
             Calbrew B2B API Explorer
