@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useSession, signIn } from 'next-auth/react';
 import { HDate, gematriya } from '@hebcal/core';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useCalendarMode } from '@/contexts/CalendarModeContext';
@@ -61,6 +62,8 @@ const isGregorianDay = (day: HebrewDay | GregorianDay): day is GregorianDay => {
 
 export default function CalendarView() {
   const { t, i18n } = useTranslation();
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user?.id;
   const { calendarMode } = useCalendarMode();
   const actualCalendarMode = calendarMode;
   const { showHebrewEvents } = useHebrewEvents();
@@ -712,34 +715,48 @@ export default function CalendarView() {
               </div>
             </div>
             <div className='p-4'>
-              <EventForm
-                key={`event-form-${isModalOpen}`}
-                selectedDate={selectedDateRef.current}
-                onDateChange={updateSelectedDate}
-                onAddEvent={async (eventData) => {
-                  try {
-                    if (selectedEvent) {
-                      const updateData = {
-                        id: selectedEvent.id,
-                        title: eventData.title,
-                        description: eventData.description,
-                        hebrew_year: eventData.hebrew_year,
-                        hebrew_month: eventData.hebrew_month,
-                        hebrew_day: eventData.hebrew_day,
-                        recurrence_rule: eventData.recurrence_rule,
-                      };
-                      await updateEvent(updateData);
-                    } else {
-                      await createEvent(eventData);
+              {isAuthenticated ? (
+                <EventForm
+                  key={`event-form-${isModalOpen}`}
+                  selectedDate={selectedDateRef.current}
+                  onDateChange={updateSelectedDate}
+                  onAddEvent={async (eventData) => {
+                    try {
+                      if (selectedEvent) {
+                        const updateData = {
+                          id: selectedEvent.id,
+                          title: eventData.title,
+                          description: eventData.description,
+                          hebrew_year: eventData.hebrew_year,
+                          hebrew_month: eventData.hebrew_month,
+                          hebrew_day: eventData.hebrew_day,
+                          recurrence_rule: eventData.recurrence_rule,
+                        };
+                        await updateEvent(updateData);
+                      } else {
+                        await createEvent(eventData);
+                      }
+                      setIsModalOpen(false);
+                      setSelectedEvent(null);
+                    } catch (error) {
+                      console.error('Error saving event:', error);
                     }
-                    setIsModalOpen(false);
-                    setSelectedEvent(null);
-                  } catch (error) {
-                    console.error('Error saving event:', error);
-                  }
-                }}
-                isCreating={isCreating || isSaving}
-              />
+                  }}
+                  isCreating={isCreating || isSaving}
+                />
+              ) : (
+                <div className='text-center py-8'>
+                  <p className='text-gray-600 dark:text-gray-400 mb-4'>
+                    {t('Sign in to create custom events')}
+                  </p>
+                  <button
+                    onClick={() => signIn('google')}
+                    className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
+                  >
+                    {t('Sign in with Google')}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,20 +1,46 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import * as SentryHelper from '@/lib/logger/sentry';
 
+const LS_KEY = 'calbrew-hebrew-events-enabled';
+
 export function useHebrewEvents() {
+  const { data: session } = useSession();
   const [showHebrewEvents, setShowHebrewEvents] = useState<boolean>(true); // Default to true
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load preference from database on mount
+  // Load preference from localStorage, then optionally from API
   useEffect(() => {
+    // Read from localStorage first
+    try {
+      const stored = localStorage.getItem(LS_KEY);
+      if (stored !== null) {
+        setShowHebrewEvents(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore localStorage errors
+    }
+
+    // Only fetch from API if authenticated
+    if (!session?.user?.id) {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchHebrewEventsPreference = async () => {
       try {
         const response = await fetch('/api/user/hebrew-events');
         if (response.ok) {
           const data = await response.json();
-          setShowHebrewEvents(data.hebrewEventsEnabled);
+          const serverVal = data.hebrewEventsEnabled;
+          setShowHebrewEvents(serverVal);
+          try {
+            localStorage.setItem(LS_KEY, JSON.stringify(serverVal));
+          } catch {
+            // Ignore localStorage errors
+          }
         } else {
           console.warn(
             'Failed to load Hebrew events preference, using default',
@@ -35,8 +61,10 @@ export function useHebrewEvents() {
     };
 
     fetchHebrewEventsPreference();
+  }, [session?.user?.id]);
 
-    // Listen for Hebrew events preference changes from other components
+  // Listen for Hebrew events preference changes from other components
+  useEffect(() => {
     const handleHebrewEventsChange = (event: CustomEvent) => {
       setShowHebrewEvents(event.detail.enabled);
     };
@@ -54,42 +82,51 @@ export function useHebrewEvents() {
     };
   }, []);
 
-  // Save preference to database
+  // Save preference to localStorage and optionally to database
   const updateShowHebrewEvents = async (enabled: boolean) => {
-    setIsLoading(true);
+    setShowHebrewEvents(enabled);
+
+    // Always persist to localStorage
     try {
-      const response = await fetch('/api/user/hebrew-events', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ hebrewEventsEnabled: enabled }),
-      });
+      localStorage.setItem(LS_KEY, JSON.stringify(enabled));
+    } catch {
+      // Ignore localStorage errors
+    }
 
-      if (response.ok) {
-        setShowHebrewEvents(enabled);
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(
+      new CustomEvent('hebrewEventsChanged', {
+        detail: { enabled },
+      }),
+    );
 
-        // Dispatch custom event to notify other components
-        window.dispatchEvent(
-          new CustomEvent('hebrewEventsChanged', {
-            detail: { enabled },
-          }),
-        );
-      } else {
-        throw new Error('Failed to update Hebrew events preference');
+    // Only save to API if authenticated
+    if (session?.user?.id) {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/user/hebrew-events', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ hebrewEventsEnabled: enabled }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to update Hebrew events preference');
+        }
+      } catch (error) {
+        console.error('Failed to update Hebrew events preference:', error);
+        SentryHelper.captureException(error, {
+          tags: {
+            hook: 'useHebrewEvents',
+            operation: 'update-hebrew-events-preference',
+          },
+          level: 'error',
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Failed to update Hebrew events preference:', error);
-      SentryHelper.captureException(error, {
-        tags: {
-          hook: 'useHebrewEvents',
-          operation: 'update-hebrew-events-preference',
-        },
-        level: 'error',
-      });
-      // TODO: Show error toast to user
-    } finally {
-      setIsLoading(false);
     }
   };
 

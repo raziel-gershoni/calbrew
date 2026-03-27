@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { signOut } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { useLanguage } from '@/hooks/useLanguage';
 import {
   useCalendarMode,
@@ -41,6 +41,8 @@ export default function HamburgerMenu({
   className = '',
 }: HamburgerMenuProps) {
   const { t, i18n } = useTranslation();
+  const { data: session } = useSession();
+  const isAuthenticated = !!session?.user?.id;
   const { changeLanguage, isLoading: isLanguageLoading } = useLanguage();
   const {
     calendarMode,
@@ -292,64 +294,68 @@ export default function HamburgerMenu({
             {/* Divider */}
             <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
 
-            {/* Google Calendar Sync */}
-            <button
-              onClick={handleSyncToggle}
-              disabled={isSyncLoading}
-              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
-            >
-              <div className='flex items-center'>
-                <ArrowPathIcon className='w-4 h-4 me-3' />
-                {t('Google Sync')}
-              </div>
-              <div className='relative'>
-                <input
-                  type='checkbox'
-                  checked={syncEnabled}
-                  onChange={() => {}} // Handled by button onClick
-                  className='sr-only'
-                />
-                <div
-                  className={`block w-8 h-4 rounded-full transition-all duration-200 ${
-                    isSyncLoading
-                      ? 'bg-blue-400 animate-pulse'
-                      : syncEnabled
-                        ? 'bg-blue-600'
-                        : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                ></div>
-                <div
-                  className={`absolute left-0 top-0 bg-white w-4 h-4 rounded-full transition-all duration-200 shadow flex items-center justify-center ${
-                    syncEnabled ? 'translate-x-4' : 'translate-x-0'
-                  }`}
+            {/* Google Calendar Sync - only for authenticated users */}
+            {isAuthenticated && (
+              <>
+                <button
+                  onClick={handleSyncToggle}
+                  disabled={isSyncLoading}
+                  className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center justify-between transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed'
                 >
-                  {isSyncLoading && (
-                    <svg
-                      className='w-2 h-2 animate-spin text-blue-600'
-                      fill='none'
-                      viewBox='0 0 24 24'
+                  <div className='flex items-center'>
+                    <ArrowPathIcon className='w-4 h-4 me-3' />
+                    {t('Google Sync')}
+                  </div>
+                  <div className='relative'>
+                    <input
+                      type='checkbox'
+                      checked={syncEnabled}
+                      onChange={() => {}} // Handled by button onClick
+                      className='sr-only'
+                    />
+                    <div
+                      className={`block w-8 h-4 rounded-full transition-all duration-200 ${
+                        isSyncLoading
+                          ? 'bg-blue-400 animate-pulse'
+                          : syncEnabled
+                            ? 'bg-blue-600'
+                            : 'bg-gray-300 dark:bg-gray-600'
+                      }`}
+                    ></div>
+                    <div
+                      className={`absolute left-0 top-0 bg-white w-4 h-4 rounded-full transition-all duration-200 shadow flex items-center justify-center ${
+                        syncEnabled ? 'translate-x-4' : 'translate-x-0'
+                      }`}
                     >
-                      <circle
-                        className='opacity-25'
-                        cx='12'
-                        cy='12'
-                        r='10'
-                        stroke='currentColor'
-                        strokeWidth='4'
-                      />
-                      <path
-                        className='opacity-75'
-                        fill='currentColor'
-                        d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
-                      />
-                    </svg>
-                  )}
-                </div>
-              </div>
-            </button>
+                      {isSyncLoading && (
+                        <svg
+                          className='w-2 h-2 animate-spin text-blue-600'
+                          fill='none'
+                          viewBox='0 0 24 24'
+                        >
+                          <circle
+                            className='opacity-25'
+                            cx='12'
+                            cy='12'
+                            r='10'
+                            stroke='currentColor'
+                            strokeWidth='4'
+                          />
+                          <path
+                            className='opacity-75'
+                            fill='currentColor'
+                            d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+                          />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                </button>
 
-            {/* Divider */}
-            <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
+                {/* Divider */}
+                <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
+              </>
+            )}
 
             {/* Hebrew Calendar Events */}
             <div>
@@ -575,43 +581,61 @@ export default function HamburgerMenu({
             {/* Divider */}
             <div className='border-t border-gray-200 dark:border-gray-700 my-1' />
 
-            {/* Admin Dashboard */}
-            <a
-              href='/admin'
-              onClick={() => setIsOpen(false)}
-              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
-            >
-              <ShieldCheckIcon className='w-4 h-4 me-3' />
-              {t('Admin')}
-            </a>
+            {isAuthenticated ? (
+              <>
+                {/* Admin Dashboard */}
+                <a
+                  href='/admin'
+                  onClick={() => setIsOpen(false)}
+                  className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
+                >
+                  <ShieldCheckIcon className='w-4 h-4 me-3' />
+                  {t('Admin')}
+                </a>
 
-            {/* Developer Dashboard */}
-            <a
-              href='/developer'
-              onClick={() => setIsOpen(false)}
-              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
-            >
-              <CodeBracketIcon className='w-4 h-4 me-3' />
-              {t('Developer')}
-            </a>
+                {/* Developer Dashboard */}
+                <a
+                  href='/developer'
+                  onClick={() => setIsOpen(false)}
+                  className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
+                >
+                  <CodeBracketIcon className='w-4 h-4 me-3' />
+                  {t('Developer')}
+                </a>
 
-            {/* User Profile */}
-            <button
-              onClick={handleOpenProfile}
-              className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
-            >
-              <UserIcon className='w-4 h-4 me-3' />
-              {t('User Profile')}
-            </button>
+                {/* User Profile */}
+                <button
+                  onClick={handleOpenProfile}
+                  className='w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors duration-200'
+                >
+                  <UserIcon className='w-4 h-4 me-3' />
+                  {t('User Profile')}
+                </button>
 
-            {/* Sign Out - No divider between profile and signout */}
-            <button
-              onClick={handleSignOut}
-              className='w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center transition-colors duration-200'
-            >
-              <ArrowRightOnRectangleIcon className='w-4 h-4 me-3' />
-              {t('Sign Out')}
-            </button>
+                {/* Sign Out */}
+                <button
+                  onClick={handleSignOut}
+                  className='w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center transition-colors duration-200'
+                >
+                  <ArrowRightOnRectangleIcon className='w-4 h-4 me-3' />
+                  {t('Sign Out')}
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Sign In with Google */}
+                <button
+                  onClick={() => {
+                    signIn('google');
+                    setIsOpen(false);
+                  }}
+                  className='w-full text-left px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center transition-colors duration-200'
+                >
+                  <ArrowRightOnRectangleIcon className='w-4 h-4 me-3' />
+                  {t('Sign in with Google')}
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}

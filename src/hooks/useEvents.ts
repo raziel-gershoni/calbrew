@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSession } from 'next-auth/react';
 import { Event } from '@/types/event';
 import { useToast } from '@/components/Toast';
 import { useTranslation } from 'react-i18next';
@@ -26,6 +27,7 @@ interface UseEventsReturn {
 }
 
 export function useEvents(): UseEventsReturn {
+  const { data: session } = useSession();
   const { showError, showSuccess } = useToast();
   const { t } = useTranslation();
 
@@ -37,9 +39,15 @@ export function useEvents(): UseEventsReturn {
 
   // Prevent duplicate calls
   const fetchingRef = useRef(false);
-  const hasInitializedRef = useRef(false);
 
   const fetchEvents = useCallback(async () => {
+    // Skip fetch for guest users
+    if (!session?.user?.id) {
+      setEvents([]);
+      setIsLoading(false);
+      return;
+    }
+
     // Prevent concurrent calls
     if (fetchingRef.current) {
       return;
@@ -79,16 +87,13 @@ export function useEvents(): UseEventsReturn {
       setIsLoading(false);
       fetchingRef.current = false;
     }
-  }, [showError, t]);
+  }, [showError, t, session?.user?.id]);
 
-  // Automatically fetch events on mount (with deduplication)
+  // Automatically fetch events when session changes
   useEffect(() => {
-    if (!hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      fetchEvents();
-    }
+    fetchEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array - only run on mount
+  }, [session?.user?.id]);
 
   const createEvent = useCallback(
     async (event: Omit<Event, 'id'>): Promise<boolean> => {

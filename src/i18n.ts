@@ -28,6 +28,8 @@ const resources = {
       'Creating...': 'Creating...',
       Close: 'Close',
       'Sign Out': 'Sign Out',
+      'Sign in with Google': 'Sign in with Google',
+      'Sign in to create custom events': 'Sign in to create custom events',
       'Loading your events...': 'Loading your events...',
       'Failed to load events. Please try refreshing the page.':
         'Failed to load events. Please try refreshing the page.',
@@ -203,6 +205,9 @@ const resources = {
       'Creating...': 'יוצר...',
       Close: 'סגור',
       'Sign Out': 'התנתק',
+      'Sign in with Google': 'התחבר עם Google',
+      'Sign in to create custom events':
+        'התחבר כדי ליצור אירועים מותאמים אישית',
       'Loading your events...': 'טוען את האירועים שלך...',
       'Failed to load events. Please try refreshing the page.':
         'נכשל בטעינת האירועים. אנא רענן את הדף.',
@@ -376,6 +381,9 @@ const resources = {
       'Creating...': 'Creando...',
       Close: 'Cerrar',
       'Sign Out': 'Cerrar Sesión',
+      'Sign in with Google': 'Iniciar sesión con Google',
+      'Sign in to create custom events':
+        'Inicia sesión para crear eventos personalizados',
       'Loading your events...': 'Cargando tus eventos...',
       'Failed to load events. Please try refreshing the page.':
         'Error al cargar eventos. Por favor recarga la página.',
@@ -554,6 +562,9 @@ const resources = {
       'Creating...': 'Создание...',
       Close: 'Закрыть',
       'Sign Out': 'Выйти',
+      'Sign in with Google': 'Войти через Google',
+      'Sign in to create custom events':
+        'Войдите, чтобы создавать пользовательские события',
       'Loading your events...': 'Загрузка ваших событий...',
       'Failed to load events. Please try refreshing the page.':
         'Не удалось загрузить события. Пожалуйста, обновите страницу.',
@@ -731,6 +742,9 @@ const resources = {
       'Creating...': 'Erstellen...',
       Close: 'Schließen',
       'Sign Out': 'Abmelden',
+      'Sign in with Google': 'Mit Google anmelden',
+      'Sign in to create custom events':
+        'Melden Sie sich an, um benutzerdefinierte Ereignisse zu erstellen',
       'Loading your events...': 'Lade deine Ereignisse...',
       'Failed to load events. Please try refreshing the page.':
         'Fehler beim Laden der Ereignisse. Bitte aktualisiere die Seite.',
