@@ -13,7 +13,10 @@ import {
   generateEventOccurrences,
   hebrewToGregorianCached,
   clearHebrewDateCache,
+  getHebrewEventsForCalendarRange,
+  ISRU_CHAG_FLAG,
 } from './hebrewDateUtils';
+import { DEFAULT_HEBREW_EVENT_PREFERENCES } from '@/types/hebrewEventPreferences';
 
 describe('getHebrewYearRange', () => {
   it('should calculate Hebrew year range for Gregorian dates', () => {
@@ -350,6 +353,75 @@ describe('generateEventOccurrences', () => {
     expect(occurrence.recurrence_rule).toBe('yearly');
     expect(occurrence.date).toBeInstanceOf(Date);
     expect(occurrence.anniversary).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('Isru Chag events', () => {
+  it('should include Isru Chag of Pesach when majorHolidays is true', () => {
+    // 22 Nisan 5786 (Israel) = April 9, 2026
+    const events = getHebrewEventsForCalendarRange(
+      new Date('2026-04-01'),
+      new Date('2026-04-30'),
+      'en',
+      { ...DEFAULT_HEBREW_EVENT_PREFERENCES, majorHolidays: true },
+    );
+    const isruChag = events.find(
+      (e) => e.type === 'isru_chag' && e.title.includes('Pesach'),
+    );
+    expect(isruChag).toBeDefined();
+    expect(isruChag!.flags).toBe(ISRU_CHAG_FLAG);
+  });
+
+  it('should include Isru Chag of Shavuot', () => {
+    // 7 Sivan 5786 (Israel) = May 24, 2026
+    const events = getHebrewEventsForCalendarRange(
+      new Date('2026-05-01'),
+      new Date('2026-05-31'),
+      'en',
+      { ...DEFAULT_HEBREW_EVENT_PREFERENCES, majorHolidays: true },
+    );
+    const isruChag = events.find(
+      (e) => e.type === 'isru_chag' && e.title.includes('Shavuot'),
+    );
+    expect(isruChag).toBeDefined();
+  });
+
+  it('should include Isru Chag of Sukkot', () => {
+    // 23 Tishrei 5787 (Israel) = October 16, 2026
+    const events = getHebrewEventsForCalendarRange(
+      new Date('2026-10-01'),
+      new Date('2026-10-31'),
+      'en',
+      { ...DEFAULT_HEBREW_EVENT_PREFERENCES, majorHolidays: true },
+    );
+    const isruChag = events.find(
+      (e) => e.type === 'isru_chag' && e.title.includes('Sukkot'),
+    );
+    expect(isruChag).toBeDefined();
+  });
+
+  it('should exclude Isru Chag when majorHolidays is false', () => {
+    const events = getHebrewEventsForCalendarRange(
+      new Date('2026-04-01'),
+      new Date('2026-04-30'),
+      'en',
+      { ...DEFAULT_HEBREW_EVENT_PREFERENCES, majorHolidays: false },
+    );
+    const isruChag = events.filter((e) => e.type === 'isru_chag');
+    expect(isruChag.length).toBe(0);
+  });
+
+  it('should render Hebrew titles when language is he', () => {
+    const events = getHebrewEventsForCalendarRange(
+      new Date('2026-04-01'),
+      new Date('2026-04-30'),
+      'he',
+      { ...DEFAULT_HEBREW_EVENT_PREFERENCES, majorHolidays: true },
+    );
+    const isruChag = events.find((e) => e.type === 'isru_chag');
+    expect(isruChag).toBeDefined();
+    expect(isruChag!.title).toContain('איסרו חג');
+    expect(isruChag!.title).toContain('פסח');
   });
 });
 
