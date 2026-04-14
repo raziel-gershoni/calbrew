@@ -371,22 +371,17 @@ const migrations: Migration[] = [
       ALTER TABLE api_rate_limits ALTER COLUMN client_id DROP NOT NULL;
       ALTER TABLE api_rate_limits ADD COLUMN IF NOT EXISTS pat_id TEXT REFERENCES personal_access_tokens(id) ON DELETE CASCADE;
 
-      -- Replace indexes and constraints for dual client_id/pat_id support
-      DROP INDEX IF EXISTS idx_api_rate_limits_lookup;
-      CREATE INDEX idx_api_rate_limits_lookup ON api_rate_limits(client_id, window_type, window_start) WHERE client_id IS NOT NULL;
-      CREATE INDEX IF NOT EXISTS idx_api_rate_limits_pat_lookup ON api_rate_limits(pat_id, window_type, window_start) WHERE pat_id IS NOT NULL;
-
-      ALTER TABLE api_rate_limits DROP CONSTRAINT IF EXISTS api_rate_limits_client_id_window_start_window_type_key;
-      ALTER TABLE api_rate_limits ADD CONSTRAINT api_rate_limits_unique_window UNIQUE NULLS NOT DISTINCT (client_id, pat_id, window_start, window_type);
+      -- Add partial unique index for PAT rate limiting (client constraint stays as-is)
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_api_rate_limits_pat_unique
+        ON api_rate_limits(pat_id, window_start, window_type) WHERE pat_id IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_api_rate_limits_pat_lookup
+        ON api_rate_limits(pat_id, window_type, window_start) WHERE pat_id IS NOT NULL;
     `,
     down: `
-      ALTER TABLE api_rate_limits DROP CONSTRAINT IF EXISTS api_rate_limits_unique_window;
       DROP INDEX IF EXISTS idx_api_rate_limits_pat_lookup;
-      DROP INDEX IF EXISTS idx_api_rate_limits_lookup;
+      DROP INDEX IF EXISTS idx_api_rate_limits_pat_unique;
       ALTER TABLE api_rate_limits DROP COLUMN IF EXISTS pat_id;
       ALTER TABLE api_rate_limits ALTER COLUMN client_id SET NOT NULL;
-      CREATE INDEX idx_api_rate_limits_lookup ON api_rate_limits(client_id, window_type, window_start);
-      ALTER TABLE api_rate_limits ADD CONSTRAINT api_rate_limits_client_id_window_start_window_type_key UNIQUE (client_id, window_start, window_type);
 
       DROP INDEX IF EXISTS idx_pat_token_hash;
       DROP INDEX IF EXISTS idx_pat_user_id;

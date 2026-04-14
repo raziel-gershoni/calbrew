@@ -82,7 +82,7 @@ export async function checkRateLimit(
     const result = await query<{ request_count: number }>(
       `INSERT INTO api_rate_limits (client_id, window_start, window_type, request_count)
        VALUES ($1, $2, $3, 1)
-       ON CONFLICT (client_id, pat_id, window_start, window_type)
+       ON CONFLICT (client_id, window_start, window_type)
        DO UPDATE SET request_count = api_rate_limits.request_count + 1
        RETURNING request_count`,
       [client.id, windowStart.toISOString(), windowType],
@@ -143,7 +143,7 @@ export async function checkRateLimitForPAT(
     const result = await query<{ request_count: number }>(
       `INSERT INTO api_rate_limits (pat_id, window_start, window_type, request_count)
        VALUES ($1, $2, $3, 1)
-       ON CONFLICT (client_id, pat_id, window_start, window_type)
+       ON CONFLICT (pat_id, window_start, window_type) WHERE pat_id IS NOT NULL
        DO UPDATE SET request_count = api_rate_limits.request_count + 1
        RETURNING request_count`,
       [patId, windowStart.toISOString(), windowType],
