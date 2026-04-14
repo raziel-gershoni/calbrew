@@ -12,6 +12,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getClientAuth,
 } from '@/lib/api-middleware';
 import { validateRequest } from '@/lib/validation';
 import { CreateWebhookSchema } from '@/lib/api-validation';
@@ -33,7 +34,7 @@ async function handleList(
   context: ApiContext,
 ): Promise<NextResponse> {
   try {
-    const webhooks = await getWebhooks(context.client.client.id);
+    const webhooks = await getWebhooks(getClientAuth(context).client.id);
 
     return apiSuccessResponse(
       {
@@ -59,7 +60,7 @@ async function handleList(
       tags: {
         endpoint: '/api/v1/webhooks',
         method: 'GET',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });
@@ -102,7 +103,7 @@ async function handleCreate(
 
     // Create webhook
     const webhook = await createWebhook({
-      clientId: context.client.client.id,
+      clientId: getClientAuth(context).client.id,
       url: data.url,
       secret,
       events: data.events,
@@ -136,7 +137,7 @@ async function handleCreate(
       tags: {
         endpoint: '/api/v1/webhooks',
         method: 'POST',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });

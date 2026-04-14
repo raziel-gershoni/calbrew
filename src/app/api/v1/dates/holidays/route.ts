@@ -11,6 +11,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getAuthId,
 } from '@/lib/api-middleware';
 import { getHebrewEventsForCalendarRange } from '@/utils/hebrewDateUtils';
 import { HebrewEventPreferences } from '@/types/hebrewEventPreferences';
@@ -199,7 +200,7 @@ async function handleHolidays(
       tags: {
         endpoint: '/api/v1/dates/holidays',
         method: 'GET',
-        clientId: context.client.client.id,
+        clientId: getAuthId(context),
       },
       level: 'error',
     });

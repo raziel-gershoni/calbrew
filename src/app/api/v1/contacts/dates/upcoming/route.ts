@@ -9,6 +9,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getClientAuth,
 } from '@/lib/api-middleware';
 import { getUpcomingDates } from '@/lib/api-postgres-utils';
 import * as SentryHelper from '@/lib/logger/sentry';
@@ -44,7 +45,7 @@ async function handleUpcoming(
 
     // Get upcoming dates
     const { dates, total } = await getUpcomingDates(
-      context.client.client.id,
+      getClientAuth(context).client.id,
       daysAhead,
       dateTypes,
       limit,
@@ -115,7 +116,7 @@ async function handleUpcoming(
       tags: {
         endpoint: '/api/v1/contacts/dates/upcoming',
         method: 'GET',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });

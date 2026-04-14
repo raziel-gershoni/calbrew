@@ -41,6 +41,24 @@ export interface AuthenticatedClient {
   key: ApiKey;
 }
 
+export interface PersonalAccessToken {
+  id: string;
+  user_id: string;
+  token_hash: string;
+  token_prefix: string;
+  name: string;
+  scopes: string[];
+  last_used_at: string | null;
+  expires_at: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AuthResult =
+  | { type: 'api_key'; client: ApiClient; key: ApiKey }
+  | { type: 'pat'; pat: PersonalAccessToken };
+
 export interface OAuthClient {
   id: string;
   client_id: string;
@@ -64,7 +82,9 @@ export interface OAuthAccessToken {
 
 const API_KEY_PREFIX_LIVE = 'cb_live_';
 const API_KEY_PREFIX_TEST = 'cb_test_';
+const PAT_PREFIX = 'cb_pat_';
 const API_KEY_LENGTH = 32;
+const PAT_LENGTH = 32;
 const OAUTH_TOKEN_LENGTH = 48;
 
 // ==================== Hash Utilities ====================
@@ -232,6 +252,155 @@ export async function revokeApiKey(
   }
 }
 
+// ==================== Personal Access Token Management ====================
+
+/**
+ * Generate a new PAT
+ */
+export function generatePAT(): {
+  plaintextToken: string;
+  tokenHash: string;
+  tokenPrefix: string;
+} {
+  const randomPart = generateRandomString(PAT_LENGTH);
+  const plaintextToken = `${PAT_PREFIX}${randomPart}`;
+  const tokenHash = hashString(plaintextToken);
+  const tokenPrefix = plaintextToken.slice(0, 12);
+
+  return { plaintextToken, tokenHash, tokenPrefix };
+}
+
+/**
+ * Validate a PAT and return auth result
+ */
+export async function validatePAT(token: string): Promise<AuthResult | null> {
+  try {
+    if (!token.startsWith(PAT_PREFIX)) {
+      return null;
+    }
+
+    const tokenHash = hashString(token);
+
+    const result = await query<PersonalAccessToken>(
+      `SELECT * FROM personal_access_tokens
+       WHERE token_hash = $1
+         AND is_active = TRUE
+         AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)`,
+      [tokenHash],
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    const pat = result.rows[0];
+
+    // Update last_used_at (fire and forget)
+    query(
+      'UPDATE personal_access_tokens SET last_used_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [pat.id],
+    ).catch((err) => {
+      console.error('Failed to update PAT last_used_at:', err);
+    });
+
+    return { type: 'pat', pat };
+  } catch (error) {
+    console.error('Error validating PAT:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'validate-pat' },
+      level: 'error',
+    });
+    return null;
+  }
+}
+
+/**
+ * Create a new PAT for a user
+ */
+export async function createPAT(
+  userId: string,
+  name: string,
+  scopes: string[] = ['events:read'],
+  expiresInDays?: number,
+): Promise<{ id: string; plaintextToken: string } | null> {
+  try {
+    const { plaintextToken, tokenHash, tokenPrefix } = generatePAT();
+
+    const expiresAt = expiresInDays
+      ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+      : null;
+
+    const result = await query<{ id: string }>(
+      `INSERT INTO personal_access_tokens (user_id, token_hash, token_prefix, name, scopes, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id`,
+      [userId, tokenHash, tokenPrefix, name, scopes, expiresAt],
+    );
+
+    if (result.rows.length === 0) {
+      return null;
+    }
+
+    return { id: result.rows[0].id, plaintextToken };
+  } catch (error) {
+    console.error('Error creating PAT:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'create-pat' },
+      extra: { userId, name },
+      level: 'error',
+    });
+    return null;
+  }
+}
+
+/**
+ * Revoke a PAT
+ */
+export async function revokePAT(
+  patId: string,
+  userId: string,
+): Promise<boolean> {
+  try {
+    const result = await query(
+      'UPDATE personal_access_tokens SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND user_id = $2',
+      [patId, userId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('Error revoking PAT:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'revoke-pat' },
+      extra: { patId, userId },
+      level: 'error',
+    });
+    return false;
+  }
+}
+
+/**
+ * List PATs for a user (excludes token_hash for security)
+ */
+export async function listPATsByUserId(
+  userId: string,
+): Promise<Omit<PersonalAccessToken, 'token_hash'>[]> {
+  try {
+    const result = await query<PersonalAccessToken>(
+      `SELECT id, user_id, token_prefix, name, scopes, last_used_at, expires_at, is_active, created_at, updated_at
+       FROM personal_access_tokens WHERE user_id = $1 ORDER BY created_at DESC`,
+      [userId],
+    );
+    return result.rows;
+  } catch (error) {
+    console.error('Error listing PATs:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'list-pats' },
+      extra: { userId },
+      level: 'error',
+    });
+    return [];
+  }
+}
+
 // ==================== OAuth2 Token Management ====================
 
 /**
@@ -381,12 +550,12 @@ export async function validateOAuthToken(
 // ==================== Unified Authentication ====================
 
 /**
- * Authenticate a request using either API key or OAuth token
+ * Authenticate a request using API key, PAT, or OAuth token
  * Extracts the token from the Authorization header
  */
 export async function authenticateRequest(
   authHeader: string | null,
-): Promise<AuthenticatedClient | null> {
+): Promise<AuthResult | null> {
   if (!authHeader) {
     return null;
   }
@@ -396,42 +565,50 @@ export async function authenticateRequest(
     ? authHeader.slice(7)
     : authHeader;
 
+  // Check if it's a PAT
+  if (token.startsWith(PAT_PREFIX)) {
+    return validatePAT(token);
+  }
+
   // Check if it's an API key (starts with cb_live_ or cb_test_)
   if (token.startsWith('cb_live_') || token.startsWith('cb_test_')) {
-    return validateApiKey(token);
+    const client = await validateApiKey(token);
+    return client ? { type: 'api_key', ...client } : null;
   }
 
   // Otherwise, try OAuth token
-  return validateOAuthToken(token);
+  const oauthClient = await validateOAuthToken(token);
+  return oauthClient ? { type: 'api_key', ...oauthClient } : null;
 }
 
 // ==================== Scope Checking ====================
 
 /**
- * Check if the authenticated client has the required scope
+ * Get scopes from an auth result
  */
-export function hasScope(auth: AuthenticatedClient, scope: string): boolean {
-  return auth.key.scopes.includes(scope);
+function getScopes(auth: AuthResult): string[] {
+  return auth.type === 'api_key' ? auth.key.scopes : auth.pat.scopes;
 }
 
 /**
- * Check if the authenticated client has any of the required scopes
+ * Check if the authenticated entity has the required scope
  */
-export function hasAnyScope(
-  auth: AuthenticatedClient,
-  scopes: string[],
-): boolean {
-  return scopes.some((scope) => auth.key.scopes.includes(scope));
+export function hasScope(auth: AuthResult, scope: string): boolean {
+  return getScopes(auth).includes(scope);
 }
 
 /**
- * Check if the authenticated client has all of the required scopes
+ * Check if the authenticated entity has any of the required scopes
  */
-export function hasAllScopes(
-  auth: AuthenticatedClient,
-  scopes: string[],
-): boolean {
-  return scopes.every((scope) => auth.key.scopes.includes(scope));
+export function hasAnyScope(auth: AuthResult, scopes: string[]): boolean {
+  return scopes.some((scope) => getScopes(auth).includes(scope));
+}
+
+/**
+ * Check if the authenticated entity has all of the required scopes
+ */
+export function hasAllScopes(auth: AuthResult, scopes: string[]): boolean {
+  return scopes.every((scope) => getScopes(auth).includes(scope));
 }
 
 // ==================== API Client Management ====================

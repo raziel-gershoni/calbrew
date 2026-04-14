@@ -12,6 +12,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getAuthId,
 } from '@/lib/api-middleware';
 import { validateRequest } from '@/lib/validation';
 import { ConvertDatesRequestSchema, HebrewDate } from '@/lib/api-validation';
@@ -145,7 +146,7 @@ async function handleConvert(
       tags: {
         endpoint: '/api/v1/dates/convert',
         method: 'POST',
-        clientId: context.client.client.id,
+        clientId: getAuthId(context),
       },
       level: 'error',
     });

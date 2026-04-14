@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useDeveloperClients } from '@/hooks/useDeveloperClients';
+import { usePersonalTokens } from '@/hooks/usePersonalTokens';
 import { ApiKey } from '@/lib/api-auth';
 
 const AVAILABLE_SCOPES = [
@@ -33,6 +34,21 @@ export default function DeveloperPage() {
     createKey,
     revokeKey,
   } = useDeveloperClients();
+
+  const {
+    tokens,
+    isLoading: isLoadingTokens,
+    isCreating: isCreatingToken,
+    createToken,
+    revokeToken,
+  } = usePersonalTokens();
+
+  const [newTokenName, setNewTokenName] = useState('');
+  const [revealedToken, setRevealedToken] = useState<string | null>(null);
+  const [confirmRevokeToken, setConfirmRevokeToken] = useState<string | null>(
+    null,
+  );
+  const [copiedToken, setCopiedToken] = useState(false);
 
   const [newClientName, setNewClientName] = useState('');
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -267,7 +283,7 @@ export default function DeveloperPage() {
             </p>
           </div>
         ) : (
-          <div className='space-y-4'>
+          <div className='space-y-4 mb-8'>
             {clients.map((client) => (
               <div
                 key={client.id}
@@ -534,6 +550,173 @@ export default function DeveloperPage() {
             ))}
           </div>
         )}
+        {/* Personal Access Tokens Section */}
+        <div className='mt-10'>
+          <h2 className='text-lg font-bold text-gray-900 dark:text-gray-100 mb-1'>
+            {t('Personal Access Tokens')}
+          </h2>
+          <p className='text-sm text-gray-600 dark:text-gray-400 mb-4'>
+            {t(
+              'Tokens for accessing your own data programmatically. Unlike API keys, tokens are tied to your user account.',
+            )}
+          </p>
+
+          {/* Create Token Form */}
+          <div className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4'>
+            <div className='flex gap-3'>
+              <input
+                type='text'
+                value={newTokenName}
+                onChange={(e) => setNewTokenName(e.target.value)}
+                placeholder={t('Token name (e.g. "My Script")')}
+                className='flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                onKeyDown={async (e) => {
+                  if (e.key === 'Enter' && newTokenName.trim()) {
+                    const result = await createToken(newTokenName.trim());
+                    if (result) {
+                      setRevealedToken(result.token);
+                      setNewTokenName('');
+                    }
+                  }
+                }}
+              />
+              <button
+                onClick={async () => {
+                  if (!newTokenName.trim()) {
+                    return;
+                  }
+                  const result = await createToken(newTokenName.trim());
+                  if (result) {
+                    setRevealedToken(result.token);
+                    setNewTokenName('');
+                  }
+                }}
+                disabled={isCreatingToken || !newTokenName.trim()}
+                className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+              >
+                {isCreatingToken ? t('Creating...') : t('Create Token')}
+              </button>
+            </div>
+          </div>
+
+          {/* One-Time Token Display */}
+          {revealedToken && (
+            <div className='bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4 mb-4'>
+              <div className='flex items-start justify-between'>
+                <div>
+                  <h3 className='text-sm font-semibold text-yellow-800 dark:text-yellow-200'>
+                    {t('Save Your Token')}
+                  </h3>
+                  <p className='text-xs text-yellow-700 dark:text-yellow-300 mt-1'>
+                    {t(
+                      'This token will not be shown again. Copy it now and store it securely.',
+                    )}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setRevealedToken(null)}
+                  className='text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 text-lg leading-none'
+                >
+                  &times;
+                </button>
+              </div>
+              <div className='mt-3 flex items-center gap-2'>
+                <code className='flex-1 px-3 py-2 bg-yellow-100 dark:bg-yellow-900/40 rounded text-xs font-mono text-yellow-900 dark:text-yellow-100 break-all select-all'>
+                  {revealedToken}
+                </code>
+                <button
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(revealedToken);
+                    setCopiedToken(true);
+                    setTimeout(() => setCopiedToken(false), 2000);
+                  }}
+                  className='px-3 py-2 text-xs font-medium text-yellow-800 dark:text-yellow-200 bg-yellow-200 dark:bg-yellow-800 rounded hover:bg-yellow-300 dark:hover:bg-yellow-700 transition-colors whitespace-nowrap'
+                >
+                  {copiedToken ? t('Copied!') : t('Copy')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Tokens List */}
+          {isLoadingTokens ? (
+            <div className='flex justify-center py-8'>
+              <div className='animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600' />
+            </div>
+          ) : tokens.length === 0 ? (
+            <div className='text-center py-8 text-gray-500 dark:text-gray-400'>
+              <p className='text-sm'>
+                {t('No personal tokens yet. Create one above to get started.')}
+              </p>
+            </div>
+          ) : (
+            <div className='space-y-2'>
+              {tokens.map((token) => (
+                <div
+                  key={token.id}
+                  className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between'
+                >
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-center gap-2'>
+                      <span className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
+                        {token.name}
+                      </span>
+                      <span className='text-xs text-gray-400 dark:text-gray-500 font-mono'>
+                        {token.tokenPrefix}...
+                      </span>
+                    </div>
+                    <div className='flex items-center gap-3 mt-0.5'>
+                      <span className='text-xs text-gray-500 dark:text-gray-400'>
+                        {token.scopes.join(', ')}
+                      </span>
+                      {token.lastUsedAt && (
+                        <span className='text-xs text-gray-400'>
+                          {t('last used')}{' '}
+                          {new Date(token.lastUsedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                      {token.expiresAt && (
+                        <span className='text-xs text-gray-400'>
+                          {t('expires')}{' '}
+                          {new Date(token.expiresAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {confirmRevokeToken === token.id ? (
+                    <div className='flex items-center gap-2'>
+                      <span className='text-xs text-red-600 dark:text-red-400'>
+                        {t('Confirm?')}
+                      </span>
+                      <button
+                        onClick={async () => {
+                          await revokeToken(token.id);
+                          setConfirmRevokeToken(null);
+                        }}
+                        className='px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors'
+                      >
+                        {t('Revoke')}
+                      </button>
+                      <button
+                        onClick={() => setConfirmRevokeToken(null)}
+                        className='px-2 py-1 text-xs text-gray-500 hover:text-gray-700 transition-colors'
+                      >
+                        {t('Cancel')}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmRevokeToken(token.id)}
+                      className='px-2 py-1 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors'
+                    >
+                      {t('Revoke')}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

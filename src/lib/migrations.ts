@@ -345,6 +345,54 @@ const migrations: Migration[] = [
       ALTER TABLE api_clients DROP COLUMN IF EXISTS user_id;
     `,
   },
+  {
+    version: 12,
+    name: 'add_personal_access_tokens',
+    up: `
+      -- Personal access tokens for direct user authentication
+      CREATE TABLE IF NOT EXISTS personal_access_tokens (
+        id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+        user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        token_hash TEXT NOT NULL UNIQUE,
+        token_prefix TEXT NOT NULL,
+        name TEXT NOT NULL,
+        scopes TEXT[] NOT NULL DEFAULT '{events:read}',
+        last_used_at TIMESTAMPTZ,
+        expires_at TIMESTAMPTZ,
+        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_pat_user_id ON personal_access_tokens(user_id);
+      CREATE INDEX IF NOT EXISTS idx_pat_token_hash ON personal_access_tokens(token_hash);
+
+      -- Update api_rate_limits to support PAT-based rate limiting
+      ALTER TABLE api_rate_limits ALTER COLUMN client_id DROP NOT NULL;
+      ALTER TABLE api_rate_limits ADD COLUMN IF NOT EXISTS pat_id TEXT REFERENCES personal_access_tokens(id) ON DELETE CASCADE;
+
+      -- Replace indexes and constraints for dual client_id/pat_id support
+      DROP INDEX IF EXISTS idx_api_rate_limits_lookup;
+      CREATE INDEX idx_api_rate_limits_lookup ON api_rate_limits(client_id, window_type, window_start) WHERE client_id IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS idx_api_rate_limits_pat_lookup ON api_rate_limits(pat_id, window_type, window_start) WHERE pat_id IS NOT NULL;
+
+      ALTER TABLE api_rate_limits DROP CONSTRAINT IF EXISTS api_rate_limits_client_id_window_start_window_type_key;
+      ALTER TABLE api_rate_limits ADD CONSTRAINT api_rate_limits_unique_window UNIQUE NULLS NOT DISTINCT (client_id, pat_id, window_start, window_type);
+    `,
+    down: `
+      ALTER TABLE api_rate_limits DROP CONSTRAINT IF EXISTS api_rate_limits_unique_window;
+      DROP INDEX IF EXISTS idx_api_rate_limits_pat_lookup;
+      DROP INDEX IF EXISTS idx_api_rate_limits_lookup;
+      ALTER TABLE api_rate_limits DROP COLUMN IF EXISTS pat_id;
+      ALTER TABLE api_rate_limits ALTER COLUMN client_id SET NOT NULL;
+      CREATE INDEX idx_api_rate_limits_lookup ON api_rate_limits(client_id, window_type, window_start);
+      ALTER TABLE api_rate_limits ADD CONSTRAINT api_rate_limits_client_id_window_start_window_type_key UNIQUE (client_id, window_start, window_type);
+
+      DROP INDEX IF EXISTS idx_pat_token_hash;
+      DROP INDEX IF EXISTS idx_pat_user_id;
+      DROP TABLE IF EXISTS personal_access_tokens;
+    `,
+  },
   // Add future migrations here with incrementing version numbers
 ];
 

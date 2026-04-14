@@ -11,6 +11,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getAuthId,
 } from '@/lib/api-middleware';
 import { validateRequest } from '@/lib/validation';
 import { OccurrencesRequestSchema } from '@/lib/api-validation';
@@ -175,7 +176,7 @@ async function handleOccurrences(
       tags: {
         endpoint: '/api/v1/dates/occurrences',
         method: 'POST',
-        clientId: context.client.client.id,
+        clientId: getAuthId(context),
       },
       level: 'error',
     });

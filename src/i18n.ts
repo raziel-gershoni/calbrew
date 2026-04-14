@@ -159,6 +159,18 @@ const resources = {
       'Please sign in to access the Developer Dashboard.':
         'Please sign in to access the Developer Dashboard.',
       'API Explorer': 'API Explorer',
+      // Personal Access Tokens
+      'Personal Access Tokens': 'Personal Access Tokens',
+      'Tokens for accessing your own data programmatically. Unlike API keys, tokens are tied to your user account.':
+        'Tokens for accessing your own data programmatically. Unlike API keys, tokens are tied to your user account.',
+      'Token name (e.g. "My Script")': 'Token name (e.g. "My Script")',
+      'Create Token': 'Create Token',
+      'Save Your Token': 'Save Your Token',
+      'This token will not be shown again. Copy it now and store it securely.':
+        'This token will not be shown again. Copy it now and store it securely.',
+      'No personal tokens yet. Create one above to get started.':
+        'No personal tokens yet. Create one above to get started.',
+      'last used': 'last used',
       // Hebrew Event Types
       'Event Types': 'Event Types',
       'Learning Types': 'Learning Types',
@@ -334,6 +346,18 @@ const resources = {
       'Please sign in to access the Developer Dashboard.':
         'אנא התחבר כדי לגשת ללוח הבקרה למפתחים.',
       'API Explorer': 'סייר API',
+      // Personal Access Tokens
+      'Personal Access Tokens': 'אסימונים אישיים',
+      'Tokens for accessing your own data programmatically. Unlike API keys, tokens are tied to your user account.':
+        'אסימונים לגישה לנתונים שלך באופן תכנותי. בניגוד למפתחות API, אסימונים קשורים לחשבון המשתמש שלך.',
+      'Token name (e.g. "My Script")': 'שם האסימון (למשל "הסקריפט שלי")',
+      'Create Token': 'צור אסימון',
+      'Save Your Token': 'שמור את האסימון שלך',
+      'This token will not be shown again. Copy it now and store it securely.':
+        'אסימון זה לא יוצג שוב. העתק אותו עכשיו ושמור אותו במקום מאובטח.',
+      'No personal tokens yet. Create one above to get started.':
+        'אין עדיין אסימונים אישיים. צור אחד למעלה כדי להתחיל.',
+      'last used': 'שימוש אחרון',
       // Hebrew Event Types
       'Event Types': 'סוגי אירועים',
       'Learning Types': 'סוגי לימוד',
@@ -515,6 +539,18 @@ const resources = {
       'Please sign in to access the Developer Dashboard.':
         'Inicia sesión para acceder al Panel de Desarrollador.',
       'API Explorer': 'Explorador API',
+      // Personal Access Tokens
+      'Personal Access Tokens': 'Tokens de Acceso Personal',
+      'Tokens for accessing your own data programmatically. Unlike API keys, tokens are tied to your user account.':
+        'Tokens para acceder a tus datos de forma programática. A diferencia de las claves API, los tokens están vinculados a tu cuenta de usuario.',
+      'Token name (e.g. "My Script")': 'Nombre del token (ej. "Mi Script")',
+      'Create Token': 'Crear Token',
+      'Save Your Token': 'Guarda Tu Token',
+      'This token will not be shown again. Copy it now and store it securely.':
+        'Este token no se mostrará de nuevo. Cópialo ahora y guárdalo de forma segura.',
+      'No personal tokens yet. Create one above to get started.':
+        'Aún no hay tokens personales. Crea uno arriba para comenzar.',
+      'last used': 'último uso',
       // Hebrew Event Types
       'Event Types': 'Tipos de Eventos',
       'Learning Types': 'Tipos de Aprendizaje',
@@ -695,6 +731,18 @@ const resources = {
       'Please sign in to access the Developer Dashboard.':
         'Войдите, чтобы получить доступ к панели разработчика.',
       'API Explorer': 'Обозреватель API',
+      // Personal Access Tokens
+      'Personal Access Tokens': 'Персональные токены доступа',
+      'Tokens for accessing your own data programmatically. Unlike API keys, tokens are tied to your user account.':
+        'Токены для программного доступа к вашим данным. В отличие от ключей API, токены привязаны к вашей учётной записи.',
+      'Token name (e.g. "My Script")': 'Имя токена (напр. "Мой скрипт")',
+      'Create Token': 'Создать токен',
+      'Save Your Token': 'Сохраните ваш токен',
+      'This token will not be shown again. Copy it now and store it securely.':
+        'Этот токен не будет показан снова. Скопируйте его сейчас и храните в безопасном месте.',
+      'No personal tokens yet. Create one above to get started.':
+        'Пока нет персональных токенов. Создайте один выше, чтобы начать.',
+      'last used': 'последнее использование',
       // Hebrew Event Types
       'Event Types': 'Типы событий',
       'Learning Types': 'Типы изучения',
@@ -878,6 +926,18 @@ const resources = {
       'Please sign in to access the Developer Dashboard.':
         'Bitte melden Sie sich an, um auf das Entwickler-Dashboard zuzugreifen.',
       'API Explorer': 'API-Explorer',
+      // Personal Access Tokens
+      'Personal Access Tokens': 'Persönliche Zugangstokens',
+      'Tokens for accessing your own data programmatically. Unlike API keys, tokens are tied to your user account.':
+        'Tokens für den programmatischen Zugriff auf Ihre eigenen Daten. Im Gegensatz zu API-Schlüsseln sind Tokens an Ihr Benutzerkonto gebunden.',
+      'Token name (e.g. "My Script")': 'Token-Name (z.B. "Mein Skript")',
+      'Create Token': 'Token erstellen',
+      'Save Your Token': 'Speichern Sie Ihr Token',
+      'This token will not be shown again. Copy it now and store it securely.':
+        'Dieses Token wird nicht erneut angezeigt. Kopieren Sie es jetzt und bewahren Sie es sicher auf.',
+      'No personal tokens yet. Create one above to get started.':
+        'Noch keine persönlichen Tokens. Erstellen Sie einen oben, um zu beginnen.',
+      'last used': 'zuletzt verwendet',
       // Hebrew Event Types
       'Event Types': 'Ereignistypen',
       'Learning Types': 'Lerntypen',

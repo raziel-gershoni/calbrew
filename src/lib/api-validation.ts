@@ -157,6 +157,17 @@ export const OAuth2TokenRequestSchema = z.object({
   scope: z.string().optional(),
 });
 
+// ==================== Personal Access Tokens ====================
+
+export const CreatePATSchema = z.object({
+  name: z.string().min(1).max(100),
+  scopes: z
+    .array(z.enum(['events:read']))
+    .optional()
+    .default(['events:read']),
+  expiresInDays: z.number().int().min(1).max(365).optional(),
+});
+
 // ==================== Admin ====================
 
 export const CreateApiClientSchema = z.object({

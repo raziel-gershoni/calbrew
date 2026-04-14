@@ -12,6 +12,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getClientAuth,
 } from '@/lib/api-middleware';
 import { validateRequest } from '@/lib/validation';
 import { UpdateContactSchema } from '@/lib/api-validation';
@@ -36,12 +37,18 @@ async function handleGet(
   try {
     const { contactId } = await routeContext.params;
 
-    const contact = await getContactById(contactId, context.client.client.id);
+    const contact = await getContactById(
+      contactId,
+      getClientAuth(context).client.id,
+    );
     if (!contact) {
       return apiErrorResponse('Contact not found', 'NOT_FOUND', context, 404);
     }
 
-    const dates = await getContactDates(contactId, context.client.client.id);
+    const dates = await getContactDates(
+      contactId,
+      getClientAuth(context).client.id,
+    );
 
     return apiSuccessResponse(
       {
@@ -76,7 +83,7 @@ async function handleGet(
       tags: {
         endpoint: '/api/v1/contacts/[contactId]',
         method: 'GET',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });
@@ -112,18 +119,25 @@ async function handleUpdate(
     const data = validation.data!;
 
     // Check if contact exists
-    const existing = await getContactById(contactId, context.client.client.id);
+    const existing = await getContactById(
+      contactId,
+      getClientAuth(context).client.id,
+    );
     if (!existing) {
       return apiErrorResponse('Contact not found', 'NOT_FOUND', context, 404);
     }
 
     // Update contact
-    const contact = await updateContact(contactId, context.client.client.id, {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      metadata: data.metadata,
-    });
+    const contact = await updateContact(
+      contactId,
+      getClientAuth(context).client.id,
+      {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        metadata: data.metadata,
+      },
+    );
 
     if (!contact) {
       return apiErrorResponse(
@@ -157,7 +171,7 @@ async function handleUpdate(
       tags: {
         endpoint: '/api/v1/contacts/[contactId]',
         method: 'PATCH',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });
@@ -183,13 +197,19 @@ async function handleDelete(
     const { contactId } = await routeContext.params;
 
     // Check if contact exists
-    const existing = await getContactById(contactId, context.client.client.id);
+    const existing = await getContactById(
+      contactId,
+      getClientAuth(context).client.id,
+    );
     if (!existing) {
       return apiErrorResponse('Contact not found', 'NOT_FOUND', context, 404);
     }
 
     // Delete contact (cascades to dates)
-    const deleted = await deleteContact(contactId, context.client.client.id);
+    const deleted = await deleteContact(
+      contactId,
+      getClientAuth(context).client.id,
+    );
     if (!deleted) {
       return apiErrorResponse(
         'Failed to delete contact',
@@ -211,7 +231,7 @@ async function handleDelete(
       tags: {
         endpoint: '/api/v1/contacts/[contactId]',
         method: 'DELETE',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });

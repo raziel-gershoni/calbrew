@@ -9,6 +9,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getClientAuth,
 } from '@/lib/api-middleware';
 import { getWebhookById } from '@/lib/api-postgres-utils';
 import {
@@ -52,7 +53,10 @@ async function handleTest(
     }
 
     // Get webhook
-    const webhook = await getWebhookById(webhookId, context.client.client.id);
+    const webhook = await getWebhookById(
+      webhookId,
+      getClientAuth(context).client.id,
+    );
     if (!webhook) {
       return apiErrorResponse('Webhook not found', 'NOT_FOUND', context, 404);
     }
@@ -116,7 +120,7 @@ async function handleTest(
       tags: {
         endpoint: '/api/v1/webhooks/test',
         method: 'POST',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });

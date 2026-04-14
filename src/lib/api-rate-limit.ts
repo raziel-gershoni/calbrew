@@ -82,7 +82,7 @@ export async function checkRateLimit(
     const result = await query<{ request_count: number }>(
       `INSERT INTO api_rate_limits (client_id, window_start, window_type, request_count)
        VALUES ($1, $2, $3, 1)
-       ON CONFLICT (client_id, window_start, window_type)
+       ON CONFLICT (client_id, pat_id, window_start, window_type)
        DO UPDATE SET request_count = api_rate_limits.request_count + 1
        RETURNING request_count`,
       [client.id, windowStart.toISOString(), windowType],
@@ -117,6 +117,94 @@ export async function checkRateLimit(
       windowType,
     };
   }
+}
+
+// ==================== PAT Rate Limiting ====================
+
+const PAT_RATE_LIMIT_PER_MINUTE = 60;
+const PAT_RATE_LIMIT_PER_DAY = 10000;
+
+/**
+ * Check and increment rate limit for a PAT
+ */
+export async function checkRateLimitForPAT(
+  patId: string,
+  windowType: 'minute' | 'day',
+): Promise<RateLimitResult> {
+  const limit =
+    windowType === 'minute'
+      ? PAT_RATE_LIMIT_PER_MINUTE
+      : PAT_RATE_LIMIT_PER_DAY;
+
+  const windowStart = getWindowStart(windowType);
+  const resetAt = getWindowReset(windowType);
+
+  try {
+    const result = await query<{ request_count: number }>(
+      `INSERT INTO api_rate_limits (pat_id, window_start, window_type, request_count)
+       VALUES ($1, $2, $3, 1)
+       ON CONFLICT (client_id, pat_id, window_start, window_type)
+       DO UPDATE SET request_count = api_rate_limits.request_count + 1
+       RETURNING request_count`,
+      [patId, windowStart.toISOString(), windowType],
+    );
+
+    const currentCount = result.rows[0]?.request_count || 1;
+    const remaining = Math.max(0, limit - currentCount);
+    const allowed = currentCount <= limit;
+
+    return {
+      allowed,
+      limit,
+      remaining,
+      resetAt,
+      windowType,
+    };
+  } catch (error) {
+    console.error('Error checking PAT rate limit:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-rate-limit', operation: 'check-pat-rate-limit' },
+      extra: { patId, windowType },
+      level: 'error',
+    });
+
+    return {
+      allowed: true,
+      limit,
+      remaining: limit,
+      resetAt,
+      windowType,
+    };
+  }
+}
+
+/**
+ * Check both minute and day rate limits for a PAT
+ */
+export async function checkAllRateLimitsForPAT(patId: string): Promise<{
+  allowed: boolean;
+  minuteLimit: RateLimitResult;
+  dayLimit: RateLimitResult;
+  restrictedBy: 'minute' | 'day' | null;
+}> {
+  const [minuteLimit, dayLimit] = await Promise.all([
+    checkRateLimitForPAT(patId, 'minute'),
+    checkRateLimitForPAT(patId, 'day'),
+  ]);
+
+  let restrictedBy: 'minute' | 'day' | null = null;
+  if (!minuteLimit.allowed) {
+    restrictedBy = 'minute';
+  } else if (!dayLimit.allowed) {
+    restrictedBy = 'day';
+  }
+
+  return {
+    allowed: minuteLimit.allowed && dayLimit.allowed,
+    minuteLimit,
+    dayLimit,
+    restrictedBy,
+  };
 }
 
 /**

@@ -12,6 +12,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getClientAuth,
 } from '@/lib/api-middleware';
 import { validateRequest } from '@/lib/validation';
 import { UpdateWebhookSchema } from '@/lib/api-validation';
@@ -35,7 +36,10 @@ async function handleGet(
   try {
     const { webhookId } = await routeContext.params;
 
-    const webhook = await getWebhookById(webhookId, context.client.client.id);
+    const webhook = await getWebhookById(
+      webhookId,
+      getClientAuth(context).client.id,
+    );
     if (!webhook) {
       return apiErrorResponse('Webhook not found', 'NOT_FOUND', context, 404);
     }
@@ -63,7 +67,7 @@ async function handleGet(
       tags: {
         endpoint: '/api/v1/webhooks/[webhookId]',
         method: 'GET',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });
@@ -99,19 +103,26 @@ async function handleUpdate(
     const data = validation.data!;
 
     // Check if webhook exists
-    const existing = await getWebhookById(webhookId, context.client.client.id);
+    const existing = await getWebhookById(
+      webhookId,
+      getClientAuth(context).client.id,
+    );
     if (!existing) {
       return apiErrorResponse('Webhook not found', 'NOT_FOUND', context, 404);
     }
 
     // Update webhook
-    const webhook = await updateWebhook(webhookId, context.client.client.id, {
-      url: data.url,
-      events: data.events,
-      isActive: data.isActive,
-      retryCount: data.retryCount,
-      timeoutMs: data.timeoutMs,
-    });
+    const webhook = await updateWebhook(
+      webhookId,
+      getClientAuth(context).client.id,
+      {
+        url: data.url,
+        events: data.events,
+        isActive: data.isActive,
+        retryCount: data.retryCount,
+        timeoutMs: data.timeoutMs,
+      },
+    );
 
     if (!webhook) {
       return apiErrorResponse(
@@ -145,7 +156,7 @@ async function handleUpdate(
       tags: {
         endpoint: '/api/v1/webhooks/[webhookId]',
         method: 'PATCH',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });
@@ -171,13 +182,19 @@ async function handleDelete(
     const { webhookId } = await routeContext.params;
 
     // Check if webhook exists
-    const existing = await getWebhookById(webhookId, context.client.client.id);
+    const existing = await getWebhookById(
+      webhookId,
+      getClientAuth(context).client.id,
+    );
     if (!existing) {
       return apiErrorResponse('Webhook not found', 'NOT_FOUND', context, 404);
     }
 
     // Delete webhook
-    const deleted = await deleteWebhook(webhookId, context.client.client.id);
+    const deleted = await deleteWebhook(
+      webhookId,
+      getClientAuth(context).client.id,
+    );
     if (!deleted) {
       return apiErrorResponse(
         'Failed to delete webhook',
@@ -199,7 +216,7 @@ async function handleDelete(
       tags: {
         endpoint: '/api/v1/webhooks/[webhookId]',
         method: 'DELETE',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });

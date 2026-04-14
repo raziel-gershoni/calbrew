@@ -618,32 +618,30 @@ function getHebrewEventsForDateRange(
       );
     }
 
-    const hebcalEvents = filteredEvents.map(
-      (event: Event, index: number) => {
-        const hebrewDate = event.getDate();
+    const hebcalEvents = filteredEvents.map((event: Event, index: number) => {
+      const hebrewDate = event.getDate();
 
-        // Use event.render() with the proper locale for direct translation
-        let title = event.render(language) || event.getDesc();
+      // Use event.render() with the proper locale for direct translation
+      let title = event.render(language) || event.getDesc();
 
-        // Convert Hebrew years to gematriya when displaying in Hebrew
-        if (language === 'he' && title) {
-          // Replace any 4-digit Hebrew years (5xxx) with gematriya
-          title = title.replace(/\b5\d{3}\b/g, (match) => {
-            const year = parseInt(match);
-            return gematriya(year);
-          });
-        }
+      // Convert Hebrew years to gematriya when displaying in Hebrew
+      if (language === 'he' && title) {
+        // Replace any 4-digit Hebrew years (5xxx) with gematriya
+        title = title.replace(/\b5\d{3}\b/g, (match) => {
+          const year = parseInt(match);
+          return gematriya(year);
+        });
+      }
 
-        return {
-          id: `hebrew-event-range-${index}`,
-          title,
-          date: hebrewDate.greg(),
-          hebrewDate,
-          type: getEventType(event.getFlags()),
-          flags: event.getFlags(),
-        };
-      },
-    );
+      return {
+        id: `hebrew-event-range-${index}`,
+        title,
+        date: hebrewDate.greg(),
+        hebrewDate,
+        type: getEventType(event.getFlags()),
+        flags: event.getFlags(),
+      };
+    });
 
     // Generate Isru Chag events (manually computed, not from hebcal)
     let isruChagEvents = generateIsruChagEvents(

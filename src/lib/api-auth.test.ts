@@ -5,7 +5,7 @@ import {
   hasScope,
   hasAnyScope,
   hasAllScopes,
-  AuthenticatedClient,
+  AuthResult,
   ApiClient,
   ApiKey,
 } from './api-auth';
@@ -95,7 +95,8 @@ describe('api-auth', () => {
       updated_at: new Date().toISOString(),
     };
 
-    const auth: AuthenticatedClient = {
+    const auth: AuthResult = {
+      type: 'api_key',
       client: mockClient,
       key: mockKey,
     };

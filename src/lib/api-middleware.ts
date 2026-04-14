@@ -4,9 +4,16 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { authenticateRequest, AuthenticatedClient, hasScope } from './api-auth';
+import {
+  authenticateRequest,
+  AuthResult,
+  ApiClient,
+  ApiKey,
+  hasScope,
+} from './api-auth';
 import {
   checkAllRateLimits,
+  checkAllRateLimitsForPAT,
   getRateLimitHeaders,
   RateLimitHeaders,
 } from './api-rate-limit';
@@ -16,8 +23,43 @@ import * as SentryHelper from './logger/sentry';
 // ==================== Types ====================
 
 export interface ApiContext {
-  client: AuthenticatedClient;
+  auth: AuthResult;
   rateLimitHeaders: RateLimitHeaders;
+}
+
+// ==================== Auth Context Helpers ====================
+
+/**
+ * Get client auth from context. Throws if auth is PAT-based (for client-scoped routes).
+ */
+export function getClientAuth(context: ApiContext): {
+  client: ApiClient;
+  key: ApiKey;
+} {
+  if (context.auth.type !== 'api_key') {
+    throw new Error('This endpoint requires API key authentication');
+  }
+  return { client: context.auth.client, key: context.auth.key };
+}
+
+/**
+ * Get user ID from context. Works with both PAT (pat.user_id) and API key (client.user_id).
+ */
+export function getUserId(context: ApiContext): string | null {
+  if (context.auth.type === 'pat') {
+    return context.auth.pat.user_id;
+  }
+  return context.auth.client.user_id;
+}
+
+/**
+ * Get identifier for logging (client ID or PAT ID).
+ */
+export function getAuthId(context: ApiContext): string {
+  if (context.auth.type === 'pat') {
+    return context.auth.pat.id;
+  }
+  return context.auth.client.id;
 }
 
 export type ApiHandler<T = unknown> = (
@@ -85,7 +127,7 @@ export function withApiMiddleware<T = unknown>(
   options: ApiMiddlewareOptions = {},
 ): (request: NextRequest) => Promise<NextResponse> {
   return async (request: NextRequest): Promise<NextResponse> => {
-    let auth: AuthenticatedClient | null = null;
+    let auth: AuthResult | null = null;
 
     try {
       // 1. Authenticate the request
@@ -105,6 +147,8 @@ export function withApiMiddleware<T = unknown>(
         return unauthorizedResponse();
       }
 
+      const authId = auth.type === 'api_key' ? auth.client.id : auth.pat.id;
+
       // 2. Check required scopes
       if (options.requiredScopes && options.requiredScopes.length > 0) {
         const missingScopes = options.requiredScopes.filter(
@@ -117,7 +161,7 @@ export function withApiMiddleware<T = unknown>(
             category: 'api-auth',
             level: 'info',
             data: {
-              clientId: auth.client.id,
+              authId,
               missingScopes,
             },
           });
@@ -127,8 +171,12 @@ export function withApiMiddleware<T = unknown>(
         }
       }
 
-      // 3. Check tier requirements
-      if (options.requirePremiumTier && auth.client.tier !== 'premium') {
+      // 3. Check tier requirements (skip for PATs — no tier concept)
+      if (
+        options.requirePremiumTier &&
+        auth.type === 'api_key' &&
+        auth.client.tier !== 'premium'
+      ) {
         SentryHelper.addBreadcrumb({
           message: 'API request requires premium tier',
           category: 'api-auth',
@@ -143,8 +191,19 @@ export function withApiMiddleware<T = unknown>(
         );
       }
 
+      // PATs cannot access tier-gated endpoints
+      if (options.requirePremiumTier && auth.type === 'pat') {
+        return forbiddenResponse(
+          'This endpoint requires API key authentication with a premium tier subscription',
+        );
+      }
+
       // 4. Check rate limits
-      const rateLimits = await checkAllRateLimits(auth.client);
+      const rateLimits =
+        auth.type === 'api_key'
+          ? await checkAllRateLimits(auth.client)
+          : await checkAllRateLimitsForPAT(auth.pat.id);
+
       const rateLimitHeaders = getRateLimitHeaders(
         rateLimits.minuteLimit,
         rateLimits.dayLimit,
@@ -156,7 +215,7 @@ export function withApiMiddleware<T = unknown>(
           category: 'api-rate-limit',
           level: 'warning',
           data: {
-            clientId: auth.client.id,
+            authId,
             restrictedBy: rateLimits.restrictedBy,
           },
         });
@@ -168,7 +227,7 @@ export function withApiMiddleware<T = unknown>(
 
       // 5. Execute the handler
       const context: ApiContext = {
-        client: auth,
+        auth,
         rateLimitHeaders,
       };
 
@@ -183,6 +242,12 @@ export function withApiMiddleware<T = unknown>(
     } catch (error) {
       console.error('API handler error:', error);
 
+      const authId = auth
+        ? auth.type === 'api_key'
+          ? auth.client.id
+          : auth.pat.id
+        : undefined;
+
       SentryHelper.captureException(error, {
         tags: {
           module: 'api-middleware',
@@ -190,7 +255,7 @@ export function withApiMiddleware<T = unknown>(
           method: request.method,
         },
         extra: {
-          clientId: auth?.client.id,
+          authId,
         },
         level: 'error',
       });
@@ -286,5 +351,17 @@ export function withTier2WriteMiddleware<T = unknown>(
   return withApiMiddleware(handler, {
     requiredScopes: [scope],
     requirePremiumTier: true,
+  });
+}
+
+/**
+ * Middleware for events endpoints - requires events:read scope, no tier requirement
+ * Works with both API keys (if client has user_id) and PATs
+ */
+export function withEventsMiddleware<T = unknown>(
+  handler: ApiHandler<T>,
+): (request: NextRequest) => Promise<NextResponse> {
+  return withApiMiddleware(handler, {
+    requiredScopes: ['events:read'],
   });
 }

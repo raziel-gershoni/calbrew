@@ -11,6 +11,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getClientAuth,
 } from '@/lib/api-middleware';
 import { validateRequest } from '@/lib/validation';
 import { CreateContactSchema } from '@/lib/api-validation';
@@ -34,7 +35,7 @@ async function handleList(
     const offset = parseInt(searchParams.get('offset') || '0');
 
     const { contacts, total } = await listContacts(
-      context.client.client.id,
+      getClientAuth(context).client.id,
       limit,
       offset,
     );
@@ -67,7 +68,7 @@ async function handleList(
       tags: {
         endpoint: '/api/v1/contacts',
         method: 'GET',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });
@@ -108,7 +109,7 @@ async function handleCreate(
     // Check if external ID already exists
     const existing = await getContactByExternalId(
       data.externalId,
-      context.client.client.id,
+      getClientAuth(context).client.id,
     );
     if (existing) {
       return apiErrorResponse(
@@ -121,7 +122,7 @@ async function handleCreate(
 
     // Create contact with dates
     const { contact, dates } = await createContactWithDates({
-      clientId: context.client.client.id,
+      clientId: getClientAuth(context).client.id,
       externalId: data.externalId,
       name: data.name,
       email: data.email,
@@ -170,7 +171,7 @@ async function handleCreate(
       tags: {
         endpoint: '/api/v1/contacts',
         method: 'POST',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });

@@ -11,6 +11,7 @@ import {
   apiSuccessResponse,
   apiErrorResponse,
   ApiContext,
+  getClientAuth,
 } from '@/lib/api-middleware';
 import { validateRequest } from '@/lib/validation';
 import { AddContactDateSchema } from '@/lib/api-validation';
@@ -35,12 +36,18 @@ async function handleList(
     const { contactId } = await routeContext.params;
 
     // Check if contact exists
-    const contact = await getContactById(contactId, context.client.client.id);
+    const contact = await getContactById(
+      contactId,
+      getClientAuth(context).client.id,
+    );
     if (!contact) {
       return apiErrorResponse('Contact not found', 'NOT_FOUND', context, 404);
     }
 
-    const dates = await getContactDates(contactId, context.client.client.id);
+    const dates = await getContactDates(
+      contactId,
+      getClientAuth(context).client.id,
+    );
 
     return apiSuccessResponse(
       {
@@ -67,7 +74,7 @@ async function handleList(
       tags: {
         endpoint: '/api/v1/contacts/[contactId]/dates',
         method: 'GET',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });
@@ -108,7 +115,10 @@ async function handleAdd(
     const data = validation.data!;
 
     // Check if contact exists
-    const contact = await getContactById(contactId, context.client.client.id);
+    const contact = await getContactById(
+      contactId,
+      getClientAuth(context).client.id,
+    );
     if (!contact) {
       return apiErrorResponse('Contact not found', 'NOT_FOUND', context, 404);
     }
@@ -116,7 +126,7 @@ async function handleAdd(
     // Add the date
     const date = await addContactDate({
       contactId,
-      clientId: context.client.client.id,
+      clientId: getClientAuth(context).client.id,
       dateType: data.type,
       hebrewDay: data.hebrewDay,
       hebrewMonth: data.hebrewMonth,
@@ -149,7 +159,7 @@ async function handleAdd(
       tags: {
         endpoint: '/api/v1/contacts/[contactId]/dates',
         method: 'POST',
-        clientId: context.client.client.id,
+        clientId: getClientAuth(context).client.id,
       },
       level: 'error',
     });

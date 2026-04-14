@@ -65,6 +65,27 @@ export async function getEventsByUserId(
   return result.rows;
 }
 
+export async function getEventsByUserIdPaginated(
+  userId: string,
+  limit: number,
+  offset: number,
+): Promise<{ events: DatabaseEvent[]; total: number }> {
+  const [eventsResult, countResult] = await Promise.all([
+    query<DatabaseEvent>(
+      'SELECT * FROM events WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3',
+      [userId, limit, offset],
+    ),
+    query<{ count: string }>(
+      'SELECT COUNT(*) as count FROM events WHERE user_id = $1',
+      [userId],
+    ),
+  ]);
+  return {
+    events: eventsResult.rows,
+    total: parseInt(countResult.rows[0]?.count || '0'),
+  };
+}
+
 export async function getEventById(
   eventId: string,
   userId: string,
