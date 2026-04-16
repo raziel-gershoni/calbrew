@@ -159,10 +159,13 @@ export const OAuth2TokenRequestSchema = z.object({
 
 // ==================== Personal Access Tokens ====================
 
+export const PAT_AVAILABLE_SCOPES = ['events:read', 'dates:read'] as const;
+
 export const CreatePATSchema = z.object({
   name: z.string().min(1).max(100),
   scopes: z
-    .array(z.enum(['events:read']))
+    .array(z.enum(PAT_AVAILABLE_SCOPES))
+    .min(1)
     .optional()
     .default(['events:read']),
   expiresInDays: z.number().int().min(1).max(365).optional(),

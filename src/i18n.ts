@@ -171,6 +171,9 @@ const resources = {
       'No personal tokens yet. Create one above to get started.':
         'No personal tokens yet. Create one above to get started.',
       'last used': 'last used',
+      'Delete Client': 'Delete Client',
+      'This will permanently delete the client and all its API keys.':
+        'This will permanently delete the client and all its API keys.',
       // Hebrew Event Types
       'Event Types': 'Event Types',
       'Learning Types': 'Learning Types',
@@ -358,6 +361,9 @@ const resources = {
       'No personal tokens yet. Create one above to get started.':
         'אין עדיין אסימונים אישיים. צור אחד למעלה כדי להתחיל.',
       'last used': 'שימוש אחרון',
+      'Delete Client': 'מחק לקוח',
+      'This will permanently delete the client and all its API keys.':
+        'פעולה זו תמחק לצמיתות את הלקוח ואת כל מפתחות ה-API שלו.',
       // Hebrew Event Types
       'Event Types': 'סוגי אירועים',
       'Learning Types': 'סוגי לימוד',
@@ -551,6 +557,9 @@ const resources = {
       'No personal tokens yet. Create one above to get started.':
         'Aún no hay tokens personales. Crea uno arriba para comenzar.',
       'last used': 'último uso',
+      'Delete Client': 'Eliminar Cliente',
+      'This will permanently delete the client and all its API keys.':
+        'Esto eliminará permanentemente el cliente y todas sus claves API.',
       // Hebrew Event Types
       'Event Types': 'Tipos de Eventos',
       'Learning Types': 'Tipos de Aprendizaje',
@@ -743,6 +752,9 @@ const resources = {
       'No personal tokens yet. Create one above to get started.':
         'Пока нет персональных токенов. Создайте один выше, чтобы начать.',
       'last used': 'последнее использование',
+      'Delete Client': 'Удалить клиента',
+      'This will permanently delete the client and all its API keys.':
+        'Это навсегда удалит клиента и все его ключи API.',
       // Hebrew Event Types
       'Event Types': 'Типы событий',
       'Learning Types': 'Типы изучения',
@@ -938,6 +950,9 @@ const resources = {
       'No personal tokens yet. Create one above to get started.':
         'Noch keine persönlichen Tokens. Erstellen Sie einen oben, um zu beginnen.',
       'last used': 'zuletzt verwendet',
+      'Delete Client': 'Client löschen',
+      'This will permanently delete the client and all its API keys.':
+        'Dies wird den Client und alle seine API-Schlüssel dauerhaft löschen.',
       // Hebrew Event Types
       'Event Types': 'Ereignistypen',
       'Learning Types': 'Lerntypen',

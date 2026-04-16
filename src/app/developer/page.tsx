@@ -33,6 +33,7 @@ export default function DeveloperPage() {
     fetchKeys,
     createKey,
     revokeKey,
+    deleteClient,
   } = useDeveloperClients();
 
   const {
@@ -44,6 +45,10 @@ export default function DeveloperPage() {
   } = usePersonalTokens();
 
   const [newTokenName, setNewTokenName] = useState('');
+  const [newTokenScopes, setNewTokenScopes] = useState<string[]>([
+    'events:read',
+    'dates:read',
+  ]);
   const [revealedToken, setRevealedToken] = useState<string | null>(null);
   const [confirmRevokeToken, setConfirmRevokeToken] = useState<string | null>(
     null,
@@ -71,6 +76,9 @@ export default function DeveloperPage() {
     keyId: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [confirmDeleteClient, setConfirmDeleteClient] = useState<string | null>(
+    null,
+  );
 
   const loadKeys = useCallback(
     async (clientId: string) => {
@@ -543,6 +551,40 @@ export default function DeveloperPage() {
                           {t('Email:')} {client.contact_email}
                         </div>
                       </div>
+                      <div className='mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-end'>
+                        {confirmDeleteClient === client.id ? (
+                          <div className='flex items-center gap-2'>
+                            <span className='text-xs text-red-600 dark:text-red-400'>
+                              {t(
+                                'This will permanently delete the client and all its API keys.',
+                              )}
+                            </span>
+                            <button
+                              onClick={async () => {
+                                await deleteClient(client.id);
+                                setConfirmDeleteClient(null);
+                                setExpandedClient(null);
+                              }}
+                              className='px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 transition-colors'
+                            >
+                              {t('Confirm')}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteClient(null)}
+                              className='px-2 py-1 text-xs text-gray-500 hover:text-gray-700 transition-colors'
+                            >
+                              {t('Cancel')}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteClient(client.id)}
+                            className='px-2 py-1 text-xs text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors'
+                          >
+                            {t('Delete Client')}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -563,39 +605,64 @@ export default function DeveloperPage() {
 
           {/* Create Token Form */}
           <div className='bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-4'>
-            <div className='flex gap-3'>
-              <input
-                type='text'
-                value={newTokenName}
-                onChange={(e) => setNewTokenName(e.target.value)}
-                placeholder={t('Token name (e.g. "My Script")')}
-                className='flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500'
-                onKeyDown={async (e) => {
-                  if (e.key === 'Enter' && newTokenName.trim()) {
-                    const result = await createToken(newTokenName.trim());
+            <div className='space-y-3'>
+              <div className='flex gap-3'>
+                <input
+                  type='text'
+                  value={newTokenName}
+                  onChange={(e) => setNewTokenName(e.target.value)}
+                  placeholder={t('Token name (e.g. "My Script")')}
+                  className='flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500'
+                />
+                <button
+                  onClick={async () => {
+                    if (!newTokenName.trim() || newTokenScopes.length === 0) {
+                      return;
+                    }
+                    const result = await createToken(
+                      newTokenName.trim(),
+                      newTokenScopes,
+                    );
                     if (result) {
                       setRevealedToken(result.token);
                       setNewTokenName('');
                     }
+                  }}
+                  disabled={
+                    isCreatingToken ||
+                    !newTokenName.trim() ||
+                    newTokenScopes.length === 0
                   }
-                }}
-              />
-              <button
-                onClick={async () => {
-                  if (!newTokenName.trim()) {
-                    return;
-                  }
-                  const result = await createToken(newTokenName.trim());
-                  if (result) {
-                    setRevealedToken(result.token);
-                    setNewTokenName('');
-                  }
-                }}
-                disabled={isCreatingToken || !newTokenName.trim()}
-                className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
-              >
-                {isCreatingToken ? t('Creating...') : t('Create Token')}
-              </button>
+                  className='px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors'
+                >
+                  {isCreatingToken ? t('Creating...') : t('Create Token')}
+                </button>
+              </div>
+              <div className='flex items-center gap-4'>
+                <span className='text-xs font-medium text-gray-600 dark:text-gray-400'>
+                  {t('Scopes')}:
+                </span>
+                {(['events:read', 'dates:read'] as const).map((scope) => (
+                  <label
+                    key={scope}
+                    className='flex items-center gap-1.5 text-xs text-gray-700 dark:text-gray-300 cursor-pointer'
+                  >
+                    <input
+                      type='checkbox'
+                      checked={newTokenScopes.includes(scope)}
+                      onChange={() =>
+                        setNewTokenScopes((prev) =>
+                          prev.includes(scope)
+                            ? prev.filter((s) => s !== scope)
+                            : [...prev, scope],
+                        )
+                      }
+                      className='rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+                    />
+                    {scope}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 

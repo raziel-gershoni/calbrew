@@ -20,6 +20,7 @@ interface UseDeveloperClientsReturn {
     expiresInDays?: number,
   ) => Promise<{ keyId: string; plaintextKey: string } | null>;
   revokeKey: (clientId: string, keyId: string) => Promise<boolean>;
+  deleteClient: (clientId: string) => Promise<boolean>;
 }
 
 export function useDeveloperClients(): UseDeveloperClientsReturn {
@@ -212,6 +213,39 @@ export function useDeveloperClients(): UseDeveloperClientsReturn {
     [showError, showSuccess],
   );
 
+  const deleteClient = useCallback(
+    async (clientId: string): Promise<boolean> => {
+      try {
+        const res = await fetch(`/api/developer/clients/${clientId}`, {
+          method: 'DELETE',
+        });
+        const response: ApiResponse = await res.json();
+
+        if (!res.ok) {
+          if (response.success === false) {
+            showError(response.error);
+          } else {
+            throw new Error(`Failed to delete client: ${res.statusText}`);
+          }
+          return false;
+        }
+
+        await fetchClients();
+        showSuccess('API client deleted successfully.');
+        return true;
+      } catch (error) {
+        console.error('Error deleting client:', error);
+        SentryHelper.captureException(error, {
+          tags: { hook: 'useDeveloperClients', operation: 'delete-client' },
+          level: 'error',
+        });
+        showError('Failed to delete API client.');
+        return false;
+      }
+    },
+    [showError, showSuccess, fetchClients],
+  );
+
   return {
     clients,
     isLoading,
@@ -221,5 +255,6 @@ export function useDeveloperClients(): UseDeveloperClientsReturn {
     fetchKeys,
     createKey,
     revokeKey,
+    deleteClient,
   };
 }

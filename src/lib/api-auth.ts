@@ -829,6 +829,30 @@ export async function updateApiClient(
 }
 
 /**
+ * Delete an API client (cascades to keys, rate limits, contacts, webhooks, OAuth)
+ */
+export async function deleteApiClient(
+  clientId: string,
+  userId: string,
+): Promise<boolean> {
+  try {
+    const result = await query(
+      'DELETE FROM api_clients WHERE id = $1 AND user_id = $2',
+      [clientId, userId],
+    );
+    return (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('Error deleting API client:', error);
+    SentryHelper.captureException(error, {
+      tags: { module: 'api-auth', operation: 'delete-api-client' },
+      extra: { clientId, userId },
+      level: 'error',
+    });
+    return false;
+  }
+}
+
+/**
  * Verify that a client belongs to a specific user
  */
 export async function verifyClientOwnership(
