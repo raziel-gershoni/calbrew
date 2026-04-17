@@ -158,6 +158,11 @@ const resources = {
       'Sign In Required': 'Sign In Required',
       'Please sign in to access the Developer Dashboard.':
         'Please sign in to access the Developer Dashboard.',
+      'Please sign in to access the Admin Dashboard.':
+        'Please sign in to access the Admin Dashboard.',
+      'Access Denied': 'Access Denied',
+      'You do not have admin privileges.':
+        'You do not have admin privileges.',
       'API Explorer': 'API Explorer',
       // Personal Access Tokens
       'Personal Access Tokens': 'Personal Access Tokens',
@@ -348,6 +353,11 @@ const resources = {
       'Sign In Required': 'נדרשת התחברות',
       'Please sign in to access the Developer Dashboard.':
         'אנא התחבר כדי לגשת ללוח הבקרה למפתחים.',
+      'Please sign in to access the Admin Dashboard.':
+        'אנא התחבר כדי לגשת ללוח הבקרה למנהלים.',
+      'Access Denied': 'הגישה נדחתה',
+      'You do not have admin privileges.':
+        'אין לך הרשאות מנהל.',
       'API Explorer': 'סייר API',
       // Personal Access Tokens
       'Personal Access Tokens': 'אסימונים אישיים',
@@ -544,6 +554,11 @@ const resources = {
       'Sign In Required': 'Inicio de Sesión Requerido',
       'Please sign in to access the Developer Dashboard.':
         'Inicia sesión para acceder al Panel de Desarrollador.',
+      'Please sign in to access the Admin Dashboard.':
+        'Inicia sesión para acceder al Panel de Administrador.',
+      'Access Denied': 'Acceso Denegado',
+      'You do not have admin privileges.':
+        'No tienes privilegios de administrador.',
       'API Explorer': 'Explorador API',
       // Personal Access Tokens
       'Personal Access Tokens': 'Tokens de Acceso Personal',
@@ -739,6 +754,11 @@ const resources = {
       'Sign In Required': 'Требуется вход',
       'Please sign in to access the Developer Dashboard.':
         'Войдите, чтобы получить доступ к панели разработчика.',
+      'Please sign in to access the Admin Dashboard.':
+        'Войдите, чтобы получить доступ к панели администратора.',
+      'Access Denied': 'Доступ запрещён',
+      'You do not have admin privileges.':
+        'У вас нет прав администратора.',
       'API Explorer': 'Обозреватель API',
       // Personal Access Tokens
       'Personal Access Tokens': 'Персональные токены доступа',
@@ -937,6 +957,11 @@ const resources = {
       'Sign In Required': 'Anmeldung erforderlich',
       'Please sign in to access the Developer Dashboard.':
         'Bitte melden Sie sich an, um auf das Entwickler-Dashboard zuzugreifen.',
+      'Please sign in to access the Admin Dashboard.':
+        'Bitte melden Sie sich an, um auf das Admin-Dashboard zuzugreifen.',
+      'Access Denied': 'Zugriff verweigert',
+      'You do not have admin privileges.':
+        'Sie haben keine Administratorrechte.',
       'API Explorer': 'API-Explorer',
       // Personal Access Tokens
       'Personal Access Tokens': 'Persönliche Zugangstokens',

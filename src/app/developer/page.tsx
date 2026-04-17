@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { useTranslation } from 'react-i18next';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useDeveloperClients } from '@/hooks/useDeveloperClients';
@@ -25,6 +25,13 @@ interface ClientKeysState {
 export default function DeveloperPage() {
   const { t } = useTranslation();
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (session?.error === 'RefreshAccessTokenError') {
+      signOut({ callbackUrl: '/' });
+    }
+  }, [session]);
+
   const {
     clients,
     isLoading,
@@ -184,9 +191,23 @@ export default function DeveloperPage() {
           <h1 className='text-xl font-bold text-gray-900 dark:text-gray-100 mb-2'>
             {t('Sign In Required')}
           </h1>
-          <p className='text-gray-600 dark:text-gray-400'>
+          <p className='text-gray-600 dark:text-gray-400 mb-6'>
             {t('Please sign in to access the Developer Dashboard.')}
           </p>
+          <div className='flex flex-col items-center gap-3'>
+            <button
+              onClick={() => signIn('google')}
+              className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow-lg'
+            >
+              {t('Sign in with Google')}
+            </button>
+            <Link
+              href='/'
+              className='text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors'
+            >
+              {t('Back')}
+            </Link>
+          </div>
         </div>
       </div>
     );
